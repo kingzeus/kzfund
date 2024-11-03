@@ -34,10 +34,44 @@ def create_sidebar() -> html.Div:
                     {
                         "component": "Item",
                         "props": {
-                            "key": "portfolio",
-                            "title": "持仓分析",
+                            "key": "home",
+                            "title": "首页",
                             "icon": "antd-home",
                         },
+                    },
+                    {
+                        "component": "SubMenu",
+                        "props": {
+                            "key": "data",
+                            "icon": "antd-database",
+                            "title": "数据管理",
+                        },
+                        "children": [
+                            {
+                                "component": "Item",
+                                "props": {
+                                    "key": "account",
+                                    "title": "账户与组合",
+                                    "icon": "antd-partition",
+                                },
+                            },
+                            {
+                                "component": "Item",
+                                "props": {
+                                    "key": "manual-entry",
+                                    "title": "手动录入",
+                                    "icon": "FormOutlined",
+                                },
+                            },
+                            {
+                                "component": "Item",
+                                "props": {
+                                    "key": "export",
+                                    "title": "数据导出",
+                                    "icon": "ExportOutlined",
+                                },
+                            },
+                        ],
                     },
                     {
                         "component": "Item",
@@ -57,7 +91,8 @@ def create_sidebar() -> html.Div:
                     },
                 ],
                 mode="inline",
-                defaultSelectedKey="portfolio",
+                defaultSelectedKey="home",
+                defaultOpenKeys=["data"],
                 style={
                     "height": "calc(100% - 56px)",
                     "borderRight": "none",

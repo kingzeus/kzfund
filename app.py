@@ -1,16 +1,19 @@
-from typing import Tuple
+from typing import Any
 import dash
-from dash import html, dcc, callback, Input, Output
+from dash import html, callback, Input, Output
 import feffery_antd_components as fac
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-from dash.exceptions import PreventUpdate
 from components.header import create_header
 from components.sidebar import create_sidebar
+from pages.account import create_account_page
+from pages.home import create_home_page
 
 # 初始化Dash应用
-app = dash.Dash(__name__, title="基金持仓分析系统", update_title=None)
+app = dash.Dash(
+    __name__,
+    title="基金持仓分析系统",
+    update_title=None,
+    suppress_callback_exceptions=True,
+)
 server = app.server
 
 # 定义主题色和间距
@@ -33,171 +36,8 @@ app.layout = html.Div(
                 create_sidebar(),
                 # 右侧内容区
                 fac.AntdCol(
-                    [
-                        # 数据概览卡片
-                        fac.AntdRow(
-                            [
-                                fac.AntdCol(
-                                    fac.AntdCard(
-                                        title="总资产",
-                                        bordered=False,
-                                        children=[
-                                            html.H2(
-                                                "¥ 0.00",
-                                                id="total-assets",
-                                                style={
-                                                    "color": PRIMARY_COLOR,
-                                                    "margin": "16px 0",
-                                                },
-                                            ),
-                                            fac.AntdStatistic(
-                                                title="日收益",
-                                                value=0,
-                                                precision=2,
-                                                prefix="¥",
-                                                valueStyle={"color": SUCCESS_COLOR},
-                                            ),
-                                        ],
-                                        style={
-                                            "height": "100%",
-                                            "borderRadius": "4px",
-                                            "boxShadow": CARD_SHADOW,
-                                        },
-                                    ),
-                                    span=6,
-                                    style={"padding": "8px"},
-                                ),
-                                fac.AntdCol(
-                                    fac.AntdCard(
-                                        title="持仓基金数",
-                                        bordered=False,
-                                        children=[
-                                            html.H2(
-                                                "0",
-                                                id="fund-count",
-                                                style={
-                                                    "margin": "16px 0",
-                                                    "color": PRIMARY_COLOR,
-                                                },
-                                            ),
-                                            fac.AntdStatistic(
-                                                title="活跃基金",
-                                                value=0,
-                                                valueStyle={"fontSize": "16px"},
-                                            ),
-                                        ],
-                                        style={
-                                            "height": "100%",
-                                            "borderRadius": "4px",
-                                            "boxShadow": CARD_SHADOW,
-                                        },
-                                    ),
-                                    span=6,
-                                    style={"padding": "8px"},
-                                ),
-                            ],
-                            style={"marginBottom": "24px"},
-                        ),
-                        # 图表区域
-                        fac.AntdRow(
-                            [
-                                fac.AntdCol(
-                                    fac.AntdCard(
-                                        title="资产配置",
-                                        bordered=False,
-                                        children=[
-                                            dcc.Graph(
-                                                id="asset-allocation-pie",
-                                                style={
-                                                    "height": "360px",
-                                                    "padding": "12px 0",
-                                                },
-                                            )
-                                        ],
-                                        style={
-                                            "height": "100%",
-                                            "borderRadius": "4px",
-                                            "boxShadow": CARD_SHADOW,
-                                        },
-                                    ),
-                                    span=12,
-                                    style={"padding": "8px"},
-                                ),
-                                fac.AntdCol(
-                                    fac.AntdCard(
-                                        title="收益走势",
-                                        bordered=False,
-                                        children=[
-                                            dcc.Graph(
-                                                id="performance-line",
-                                                style={
-                                                    "height": "360px",
-                                                    "padding": "12px 0",
-                                                },
-                                            )
-                                        ],
-                                        style={
-                                            "height": "100%",
-                                            "borderRadius": "4px",
-                                            "boxShadow": CARD_SHADOW,
-                                        },
-                                    ),
-                                    span=12,
-                                    style={"padding": "8px"},
-                                ),
-                            ],
-                            style={"marginBottom": "24px"},
-                        ),
-                        # 基金列表
-                        fac.AntdRow(
-                            fac.AntdCol(
-                                fac.AntdCard(
-                                    title="基金持仓明细",
-                                    bordered=False,
-                                    children=[
-                                        fac.AntdTable(
-                                            id="fund-table",
-                                            columns=[
-                                                {
-                                                    "title": "基金代码",
-                                                    "dataIndex": "code",
-                                                },
-                                                {
-                                                    "title": "名称",
-                                                    "dataIndex": "name",
-                                                },
-                                                {
-                                                    "title": "持仓份额",
-                                                    "dataIndex": "shares",
-                                                },
-                                                {
-                                                    "title": "最新净值",
-                                                    "dataIndex": "nav",
-                                                },
-                                                {
-                                                    "title": "持仓市值",
-                                                    "dataIndex": "market_value",
-                                                },
-                                                {
-                                                    "title": "收益率",
-                                                    "dataIndex": "return_rate",
-                                                },
-                                            ],
-                                            data=[],
-                                            style={"marginTop": "12px"},
-                                        )
-                                    ],
-                                    style={
-                                        "borderRadius": "4px",
-                                        "boxShadow": CARD_SHADOW,
-                                    },
-                                ),
-                                span=24,
-                                style={"padding": "8px"},
-                            )
-                        ),
-                    ],
                     id="main-content",
+                    children=create_home_page(),
                     span=20,
                     style={
                         "padding": f"{PAGE_PADDING}px",
@@ -220,70 +60,6 @@ app.layout = html.Div(
 )
 
 
-# 回调函数示例
-@callback(
-    [
-        Output("asset-allocation-pie", "figure"),
-        Output("performance-line", "figure"),
-    ],
-    [Input("refresh-button", "nClicks")],
-    prevent_initial_call=True,
-)
-def update_charts(n_clicks: int) -> Tuple[go.Figure, go.Figure]:
-    if n_clicks is None:
-        raise PreventUpdate
-
-    try:
-        # 示例数据 - 资产配置
-        pie_data = pd.DataFrame(
-            {
-                "category": ["股票型", "债券型", "混合型", "货币型"],
-                "value": [40, 30, 20, 10],
-            }
-        )
-
-        pie_fig = px.pie(
-            pie_data,
-            values="value",
-            names="category",
-            title="资产配置比例",
-        )
-
-        # 拆分长行
-        legend_config = dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-        )
-        pie_fig.update_layout(showlegend=True, legend=legend_config)
-
-        # 示例数据 - 收益走势
-        line_data = pd.DataFrame(
-            {
-                "date": pd.date_range(start="2023-01-01", periods=100),
-                "value": range(100),
-            }
-        )
-
-        line_fig = px.line(
-            line_data,
-            x="date",
-            y="value",
-            title="收益走势",
-        )
-        line_fig.update_layout(
-            xaxis_title="日期",
-            yaxis_title="收益率(%)",
-        )
-
-        return pie_fig, line_fig
-    except Exception as e:
-        print(f"Error in update_charts: {str(e)}")
-        return go.Figure(), go.Figure()
-
-
 # 添加内容区域响应侧边栏折叠的回调
 @callback(
     Output("main-content", "style"),
@@ -299,6 +75,22 @@ def update_content_margin(is_collapsed: bool) -> dict:
         "marginTop": "64px",
         "transition": "margin-left 0.2s",
     }
+
+
+# 添加页面内容回调
+@callback(
+    Output("main-content", "children"),
+    Input("side-menu", "currentKey"),
+    prevent_initial_call=False,
+)
+def update_page_content(current_key: str) -> Any:
+    """根据菜单选择更新页面内容"""
+    if current_key is None or current_key == "home":
+        return create_home_page()
+    elif current_key == "account":
+        return create_account_page()
+    # 其他页面返回空白内容
+    return html.Div()
 
 
 if __name__ == "__main__":

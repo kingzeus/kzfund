@@ -1,82 +1,116 @@
 # 基金持仓分析系统
 
-一个基于 Dash 和 Ant Design 构建的基金持仓分析系统。
+一个基于 Dash 和 Ant Design 构建的基金投资组合的可视化分析系统。
 
 ## 项目结构
 
     fund-analysis/
     ├── app.py                 # 主应用程序入口
-    ├── components/            # 组件目录
-    │   ├── __init__.py       # Python包标记文件
-    │   ├── header.py         # 顶部导航栏组件
-    │   └── sidebar.py        # 左侧菜单组件
-    ├── requirements.txt       # 项目依赖
-    └── start.sh              # 启动脚本
-
-## 依赖包列表
-
-    dash==2.18.1
-    feffery_antd_components>=0.3.8
-    feffery_dash_utils>=0.1.4
-    feffery_markdown_components>=0.3.0rc3
-    feffery_utils_components>=0.2.0rc20
-    Flask==3.0.3
-    pandas>=2.0.0
-    numpy>=1.24.0
-    plotly>=5.18.0
-    dash-bootstrap-components>=1.5.0
-    mypy>=1.8.0
-    black>=24.2.0
-    flake8>=7.0.0
-
-## 主要功能
-
-- 基金持仓数据可视化
-- 资产配置分析
-- 收益走势分析
-- 风险评估
+    ├── backend/              # 后端API目录
+    │   ├── __init__.py      # Flask应用初始化
+    │   └── apis/            # API模块目录
+    │       ├── account.py   # 账户相关API
+    │       ├── portfolio.py # 组合相关API
+    │       └── fund.py      # 基金相关API
+    ├── components/          # 前端组件目录
+    │   ├── __init__.py     # Python包标记文件
+    │   ├── header.py       # 顶部导航栏组件
+    │   └── sidebar.py      # 左侧菜单组件
+    ├── models/             # 数据模型目录
+    │   ├── __init__.py    # Python包标记文件
+    │   ├── account.py     # 账户数据模型
+    │   ├── database.py    # 数据库操作类
+    │   └── fund.py        # 基金数据模型
+    ├── pages/             # 页面组件目录
+    │   └── account.py     # 账户管理页���
+    ├── utils/             # 工具函数目录
+    │   └── db.py         # 数据库工具
+    ├── requirements.txt    # 项目依赖
+    └── start.sh           # 启动脚本
 
 ## 技术栈
 
-- Python
-- Dash
-- Plotly
+### 前端
+- Dash Framework
+- Plotly.js
 - Feffery Ant Design Components
+
+### 后端
+- Flask
+- Flask-RESTX
+- SQLite3
+
+## API 文档
+
+### 账户管理 API
+- `GET /api/accounts` - 获取所有账户列表
+- `POST /api/accounts` - 创建新账户
+- `GET /api/accounts/<id>` - 获取账户详情
+- `PUT /api/accounts/<id>` - 更新账户信息
+- `DELETE /api/accounts/<id>` - 删除账户
+
+### 组合管理 API
+- `GET /api/portfolios` - 获取投资组合列表
+- `POST /api/portfolios` - 创建新投资组合
+- `GET /api/portfolios/<id>` - 获取组合详情
+- `PUT /api/portfolios/<id>` - 更新组合信息
+- `DELETE /api/portfolios/<id>` - 删除组合
+
+### 基金管理 API
+- `GET /api/funds/positions/<portfolio_id>` - 获取组合持仓
+- `POST /api/funds/positions` - 添加基金持仓
+- `PUT /api/funds/positions/<id>` - 更新持仓信息
+- `DELETE /api/funds/positions/<id>` - 删除持仓
+
+## 数据结构
+
+### 账户体系
+```
+账户 (Account)
+├── 基金组合 (Portfolio)
+│   ├── 基金持仓 (FundPosition)
+│   └── 交易记录 (FundTransaction)
+└── 默认基���组合
+    ├── 基金持仓
+    └── 交易记录
+```
 
 ## 安装和运行
 
 1. 安装依赖：
-
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
 2. 运行应用：
+```bash
+python app.py
+```
 
-    python app.py
-
-或者使用启动脚本：
-
-    sh start.sh
-
-应用将在 http://localhost:8050 启动。
-
-## 开发说明
-
-- `app.py`: 主应用程序文件，包含应用初始化和主要布局
-- `components/`: 包含所有可重用的UI组件
-  - `header.py`: 实现顶部导航栏
-  - `sidebar.py`: 实现左侧菜单栏
+应用将在 http://localhost:8050 启动，API文档访问 http://localhost:8050/api/doc
 
 ## 开发计划
 
-- [ ] 添加基金数据导入功能
-- [ ] 实现基金收益分析
-- [ ] 添加风险评估功能
-- [ ] 添加数据导出功能
-- [ ] 优化图表交互体验
+- [x] 基础框架搭建
+- [x] 数据模型设计
+- [x] RESTful API 实现
+- [ ] 账户管理功能
+- [ ] 基金数据导入
+- [ ] 持仓分析
+- [ ] 收益分析
+- [ ] 风险评估
 
-## 贡献指南
+## 开发指南
 
-欢迎提交 Issue 和 Pull Request 来帮助改进项目。
+### API 开发
+1. 在 `backend/apis/` 下创建新的 API 模块
+2. 在 `backend/__init__.py` 中注册 API 命名空间
+3. 实现相应的数据库操作方法
+
+### 前端开发
+1. 在 `pages/` 下创建新的页面组件
+2. 在 `app.py` 中添加路由处理
+3. 在 `sidebar.py` 中添加菜单项
 
 ## 许可证
 
