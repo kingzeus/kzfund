@@ -3,8 +3,10 @@ import dash
 from dash import html
 import feffery_antd_components as fac
 from dash import Input, Output, callback
-from utils.db import get_db
+
 from datetime import datetime
+
+from models.database import Database
 
 
 def create_account_page() -> html.Div:
@@ -235,7 +237,7 @@ def create_account_page() -> html.Div:
 def handle_account_operations(n_clicks, name, description):
     """处理账户相关操作"""
     if n_clicks:
-        db = get_db()
+        db = Database()
         if name:
             # 添加新账户
             db.add_account(name, description)
@@ -244,7 +246,7 @@ def handle_account_operations(n_clicks, name, description):
             return accounts, False
 
     # 获取账户列表
-    accounts = get_db().get_accounts()
+    accounts = Database().get_accounts()
     return accounts, dash.no_update
 
 
@@ -259,7 +261,7 @@ def update_portfolio_list(selected_account):
         return []
 
     account_id = selected_account[0]
-    portfolios = get_db().get_portfolios(account_id)
+    portfolios = Database().get_portfolios(account_id)
 
     # 格式化数据
     for p in portfolios:

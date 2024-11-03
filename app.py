@@ -6,23 +6,31 @@ from components.header import create_header
 from components.sidebar import create_sidebar
 from pages.account import create_account_page
 from pages.home import create_home_page
+from backend import register_blueprint
+from config import (
+    APP_NAME,
+    DEBUG,
+    SERVER_CONFIG,
+    THEME_CONFIG,
+)
 
 # 初始化Dash应用
 app = dash.Dash(
     __name__,
-    title="基金持仓分析系统",
+    title=APP_NAME,
+    compress=True,
     update_title=None,
     suppress_callback_exceptions=True,
 )
-server = app.server
+server = register_blueprint(app.server)
 
-# 定义主题色和间距
-PRIMARY_COLOR = "#1890ff"
-SUCCESS_COLOR = "#52c41a"
-WARNING_COLOR = "#faad14"
-ERROR_COLOR = "#f5222d"
-PAGE_PADDING = 24
-CARD_SHADOW = "0 2px 8px rgba(0, 0, 0, 0.09)"
+# 使用主题配置
+PRIMARY_COLOR = THEME_CONFIG["primary_color"]
+SUCCESS_COLOR = THEME_CONFIG["success_color"]
+WARNING_COLOR = THEME_CONFIG["warning_color"]
+ERROR_COLOR = THEME_CONFIG["error_color"]
+PAGE_PADDING = THEME_CONFIG["page_padding"]
+CARD_SHADOW = THEME_CONFIG["card_shadow"]
 
 # 定义页面布局
 app.layout = html.Div(
@@ -94,4 +102,8 @@ def update_page_content(current_key: str) -> Any:
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port=8050)
+    app.run(
+        debug=DEBUG,
+        host=SERVER_CONFIG["host"],
+        port=SERVER_CONFIG["port"],
+    )

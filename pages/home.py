@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from dash import html
 import feffery_antd_components as fac
-from utils.db import get_db
+
 
 
 def create_home_page() -> html.Div:

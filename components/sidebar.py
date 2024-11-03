@@ -1,7 +1,9 @@
 from typing import Dict, Optional, Union, Any
+from config import API_CONFIG, SERVER_CONFIG
 from dash import html, Input, Output, callback, no_update
 from dash.dependencies import Component
 import feffery_antd_components as fac
+from flask import request
 
 # 定义类型别名
 StyleDict = Dict[str, Union[str, int]]
@@ -87,6 +89,26 @@ def create_sidebar() -> html.Div:
                             "key": "risk",
                             "title": "风险评估",
                             "icon": "antd-bell",
+                        },
+                    },
+                    {
+                        "component": "Divider",
+                        "props": {
+                            "style": {
+                                "backgroundColor": "rgba(255, 255, 255, 1)",
+                                "margin": "16px 0",
+                                "width": "80%",
+                                "marginLeft": "10%",
+                            }
+                        },
+                    },
+                    {
+                        "component": "ItemLink",
+                        "props": {
+                            "key": "api-doc",
+                            "title": "API文档",
+                            "icon": "antd-api",
+                            "href": f'http://{SERVER_CONFIG["host"]}:{SERVER_CONFIG["port"]}{API_CONFIG["doc"]}',
                         },
                     },
                 ],
