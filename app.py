@@ -163,7 +163,7 @@ app.layout = html.Div(
                                                     "dataIndex": "code",
                                                 },
                                                 {
-                                                    "title": "���名称",
+                                                    "title": "名称",
                                                     "dataIndex": "name",
                                                 },
                                                 {
@@ -222,7 +222,10 @@ app.layout = html.Div(
 
 # 回调函数示例
 @callback(
-    [Output("asset-allocation-pie", "figure"), Output("performance-line", "figure")],
+    [
+        Output("asset-allocation-pie", "figure"),
+        Output("performance-line", "figure"),
+    ],
     [Input("refresh-button", "nClicks")],
     prevent_initial_call=True,
 )
@@ -240,14 +243,21 @@ def update_charts(n_clicks: int) -> Tuple[go.Figure, go.Figure]:
         )
 
         pie_fig = px.pie(
-            pie_data, values="value", names="category", title="资产配置比例"
+            pie_data,
+            values="value",
+            names="category",
+            title="资产配置比例",
         )
-        pie_fig.update_layout(
-            showlegend=True,
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-            ),
+
+        # 拆分长行
+        legend_config = dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
         )
+        pie_fig.update_layout(showlegend=True, legend=legend_config)
 
         # 示例数据 - 收益走势
         line_data = pd.DataFrame(
@@ -257,13 +267,20 @@ def update_charts(n_clicks: int) -> Tuple[go.Figure, go.Figure]:
             }
         )
 
-        line_fig = px.line(line_data, x="date", y="value", title="收益走势")
-        line_fig.update_layout(xaxis_title="日期", yaxis_title="收益率(%)")
+        line_fig = px.line(
+            line_data,
+            x="date",
+            y="value",
+            title="收益走势",
+        )
+        line_fig.update_layout(
+            xaxis_title="日期",
+            yaxis_title="收益率(%)",
+        )
 
         return pie_fig, line_fig
     except Exception as e:
         print(f"Error in update_charts: {str(e)}")
-        # 返回空白图表
         return go.Figure(), go.Figure()
 
 
@@ -273,7 +290,7 @@ def update_charts(n_clicks: int) -> Tuple[go.Figure, go.Figure]:
     Input("side-menu", "inlineCollapsed"),
     prevent_initial_call=True,
 )
-def update_content_margin(is_collapsed):
+def update_content_margin(is_collapsed: bool) -> dict:
     return {
         "padding": f"{PAGE_PADDING}px",
         "backgroundColor": "#f0f2f5",

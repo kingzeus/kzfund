@@ -28,6 +28,8 @@ else
     exit 1
 fi
 
+
+
 # 运行代码格式检查
 echo "运行代码格式检查..."
 black app.py

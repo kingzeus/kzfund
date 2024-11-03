@@ -1,11 +1,16 @@
-import dash
-import feffery_antd_components as fac
+from typing import Dict, Optional, Union, Any
 from dash import html, Input, Output, callback, no_update
+from dash.dependencies import Component
+import feffery_antd_components as fac
 
-def create_sidebar():
+# 定义类型别名
+StyleDict = Dict[str, Union[str, int]]
+MenuItemDict = Dict[str, Union[str, Dict[str, str]]]
+
+
+def create_sidebar() -> html.Div:
     return html.Div(
         [
-            # 折叠按钮
             html.Div(
                 fac.AntdButton(
                     id="collapse-button",
@@ -23,7 +28,6 @@ def create_sidebar():
                     "textAlign": "right",
                 },
             ),
-            # 菜单主体
             fac.AntdMenu(
                 id="side-menu",
                 menuItems=[
@@ -77,7 +81,7 @@ def create_sidebar():
         },
     )
 
-# 添加折叠/展开回调
+
 @callback(
     [
         Output("sidebar-container", "style"),
@@ -87,13 +91,13 @@ def create_sidebar():
     Input("collapse-button", "nClicks"),
     prevent_initial_call=True,
 )
-def toggle_sidebar(n_clicks):
+def toggle_sidebar(n_clicks: Optional[int]) -> tuple[StyleDict, bool, Any]:
     if n_clicks is None:
         return no_update
 
     is_collapsed = n_clicks % 2 == 1
 
-    sidebar_style = {
+    sidebar_style: StyleDict = {
         "position": "fixed",
         "left": 0,
         "top": "64px",

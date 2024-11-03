@@ -1,9 +1,12 @@
+from typing import Dict, Union
 import dash
 from dash import html
 import feffery_antd_components as fac
 
+# 定义类型别名
+StyleDict = Dict[str, Union[str, int]]
 
-def create_header():
+def create_header() -> html.Div:
     return html.Div(
         fac.AntdRow(
             [
