@@ -11,7 +11,9 @@
     │   └── apis/            # API模块目录
     │       ├── account.py   # 账户相关API
     │       ├── portfolio.py # 组合相关API
-    │       └── fund.py      # 基金相关API
+    │       ├── fund.py      # 基金相关API
+    │       ├── runtime.py   # 运行时API
+    │       └── common.py    # 通用响应处理
     ├── components/          # 前端组件目录
     │   ├── __init__.py     # Python包标记文件
     │   ├── header.py       # 顶部导航栏组件
@@ -22,9 +24,12 @@
     │   ├── database.py    # 数据库操作类
     │   └── fund.py        # 基金数据模型
     ├── pages/             # 页面组件目录
-    │   └── account.py     # 账户管理页���
+    │   ├── home.py       # 首页仪表盘
+    │   └── account.py    # 账户管理页面
     ├── utils/             # 工具函数目录
-    │   └── db.py         # 数据库工具
+    │   ├── db.py         # 数据库工具
+    │   └── singleton.py  # 单例模式装饰器
+    ├── config.py          # 应用配置文件
     ├── requirements.txt    # 项目依赖
     └── start.sh           # 启动脚本
 
@@ -41,6 +46,10 @@
 - SQLite3
 
 ## API 文档
+
+### 运行时 API
+- `GET /api/runtime/status` - 获取系统运行状态
+- `GET /api/runtime/version` - 获取系统版本信息
 
 ### 账户管理 API
 - `GET /api/accounts` - 获取所有账户列表
@@ -70,7 +79,7 @@
 ├── 基金组合 (Portfolio)
 │   ├── 基金持仓 (FundPosition)
 │   └── 交易记录 (FundTransaction)
-└── 默认基���组合
+└── 默认基金组合
     ├── 基金持仓
     └── 交易记录
 ```
@@ -94,6 +103,7 @@ python app.py
 - [x] 基础框架搭建
 - [x] 数据模型设计
 - [x] RESTful API 实现
+- [x] 统一响应格式
 - [ ] 账户管理功能
 - [ ] 基金数据导入
 - [ ] 持仓分析
@@ -105,7 +115,8 @@ python app.py
 ### API 开发
 1. 在 `backend/apis/` 下创建新的 API 模块
 2. 在 `backend/__init__.py` 中注册 API 命名空间
-3. 实现相应的数据库操作方法
+3. 使用 common.response 确保响应格式统一
+4. 实现相应的数据库操作方法
 
 ### 前端开发
 1. 在 `pages/` 下创建新的页面组件

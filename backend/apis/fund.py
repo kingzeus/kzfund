@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from models.database import Database
-
+from .common import response
 
 api = Namespace("funds", description="基金相关操作")
 
@@ -26,8 +26,10 @@ fund_position_model = api.model(
 @api.param("portfolio_id", "组合ID")
 class FundPositionList(Resource):
     @api.doc("获取组合持仓")
-    @api.marshal_list_with(fund_position_model)
     def get(self, portfolio_id):
         """获取指定组合的基金持仓"""
         db = Database()
-        return db.get_fund_positions(portfolio_id)
+        positions = db.get_fund_positions(portfolio_id)
+        if positions is None:
+            return response(message="组合不存在", code=404)
+        return response(data=positions)
