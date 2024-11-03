@@ -6,89 +6,23 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from dash.exceptions import PreventUpdate
+from components.header import create_header
+from components.sidebar import create_sidebar
 
 # 初始化Dash应用
 app = dash.Dash(__name__, title="基金持仓分析系统", update_title=None)
-server = app.server  # 添加server实例，用于生产环境部署
+server = app.server
 
 # 定义页面布局
 app.layout = html.Div(
     [
         # 顶部导航栏
-        fac.AntdRow(
-            [
-                fac.AntdCol(
-                    fac.AntdPageHeader(
-                        title="基金持仓分析系统",
-                        ghost=False,
-                    ),
-                    span=18,
-                ),
-                fac.AntdCol(
-                    html.Div(
-                        [
-                            fac.AntdButton(
-                                "数据导入", type="primary", id="upload-button"
-                            ),
-                            fac.AntdButton(
-                                "刷新数据",
-                                id="refresh-button",
-                                style={"marginLeft": "8px"},
-                            ),
-                        ],
-                        style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "height": "100%",
-                            "padding": "0 16px",
-                        },
-                    ),
-                    span=6,
-                ),
-            ],
-            style={"marginBottom": "20px"},
-        ),
+        create_header(),
         # 主要内容区域
         fac.AntdRow(
             [
                 # 左侧菜单
-                fac.AntdCol(
-                    fac.AntdMenu(
-                        menuItems=[
-                            {
-                                "component": "Item",
-                                "props": {
-                                    "key": "portfolio",
-                                    "title": "持仓分析",
-                                    "icon": "fund",
-                                },
-                            },
-                            {
-                                "component": "Item",
-                                "props": {
-                                    "key": "performance",
-                                    "title": "收益分析",
-                                    "icon": "line-chart",
-                                },
-                            },
-                            {
-                                "component": "Item",
-                                "props": {
-                                    "key": "risk",
-                                    "title": "风险评估",
-                                    "icon": "warning",
-                                },
-                            },
-                        ],
-                        mode="inline",
-                        style={"height": "100%"},
-                    ),
-                    span=4,
-                    style={
-                        "borderRight": "1px solid #f0f0f0",
-                        "minHeight": "calc(100vh - 100px)",
-                    },
-                ),
+                create_sidebar(),
                 # 右侧内容区
                 fac.AntdCol(
                     [
