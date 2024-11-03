@@ -13,6 +13,14 @@ from components.sidebar import create_sidebar
 app = dash.Dash(__name__, title="基金持仓分析系统", update_title=None)
 server = app.server
 
+# 定义主题色和间距
+PRIMARY_COLOR = "#1890ff"
+SUCCESS_COLOR = "#52c41a"
+WARNING_COLOR = "#faad14"
+ERROR_COLOR = "#f5222d"
+PAGE_PADDING = 24
+CARD_SHADOW = "0 2px 8px rgba(0, 0, 0, 0.09)"
+
 # 定义页面布局
 app.layout = html.Div(
     [
@@ -32,36 +40,63 @@ app.layout = html.Div(
                                 fac.AntdCol(
                                     fac.AntdCard(
                                         title="总资产",
-                                        bordered=True,
+                                        bordered=False,
                                         children=[
-                                            html.H2("¥ 0.00", id="total-assets"),
+                                            html.H2(
+                                                "¥ 0.00",
+                                                id="total-assets",
+                                                style={
+                                                    "color": PRIMARY_COLOR,
+                                                    "margin": "16px 0",
+                                                },
+                                            ),
                                             fac.AntdStatistic(
                                                 title="日收益",
                                                 value=0,
                                                 precision=2,
                                                 prefix="¥",
-                                                valueStyle={"color": "#3f8600"},
+                                                valueStyle={"color": SUCCESS_COLOR},
                                             ),
                                         ],
+                                        style={
+                                            "height": "100%",
+                                            "borderRadius": "4px",
+                                            "boxShadow": CARD_SHADOW,
+                                        },
                                     ),
                                     span=6,
+                                    style={"padding": "8px"},
                                 ),
                                 fac.AntdCol(
                                     fac.AntdCard(
                                         title="持仓基金数",
-                                        bordered=True,
+                                        bordered=False,
                                         children=[
-                                            html.H2("0", id="fund-count"),
+                                            html.H2(
+                                                "0",
+                                                id="fund-count",
+                                                style={
+                                                    "margin": "16px 0",
+                                                    "color": PRIMARY_COLOR,
+                                                },
+                                            ),
                                             fac.AntdStatistic(
-                                                title="活跃基金", value=0
+                                                title="活跃基金",
+                                                value=0,
+                                                valueStyle={"fontSize": "16px"},
                                             ),
                                         ],
+                                        style={
+                                            "height": "100%",
+                                            "borderRadius": "4px",
+                                            "boxShadow": CARD_SHADOW,
+                                        },
                                     ),
                                     span=6,
+                                    style={"padding": "8px"},
                                 ),
                             ],
-                            gutter=16,
-                            style={"marginBottom": "20px"},
+                            style={"marginBottom": "24px"},
                         ),
                         # 图表区域
                         fac.AntdRow(
@@ -69,38 +104,56 @@ app.layout = html.Div(
                                 fac.AntdCol(
                                     fac.AntdCard(
                                         title="资产配置",
-                                        bordered=True,
+                                        bordered=False,
                                         children=[
                                             dcc.Graph(
                                                 id="asset-allocation-pie",
-                                                style={"height": "300px"},
+                                                style={
+                                                    "height": "360px",
+                                                    "padding": "12px 0",
+                                                },
                                             )
                                         ],
+                                        style={
+                                            "height": "100%",
+                                            "borderRadius": "4px",
+                                            "boxShadow": CARD_SHADOW,
+                                        },
                                     ),
                                     span=12,
+                                    style={"padding": "8px"},
                                 ),
                                 fac.AntdCol(
                                     fac.AntdCard(
                                         title="收益走势",
-                                        bordered=True,
+                                        bordered=False,
                                         children=[
                                             dcc.Graph(
                                                 id="performance-line",
-                                                style={"height": "300px"},
+                                                style={
+                                                    "height": "360px",
+                                                    "padding": "12px 0",
+                                                },
                                             )
                                         ],
+                                        style={
+                                            "height": "100%",
+                                            "borderRadius": "4px",
+                                            "boxShadow": CARD_SHADOW,
+                                        },
                                     ),
                                     span=12,
+                                    style={"padding": "8px"},
                                 ),
                             ],
-                            gutter=16,
+                            style={"marginBottom": "24px"},
                         ),
                         # 基金列表
                         fac.AntdRow(
                             fac.AntdCol(
                                 fac.AntdCard(
                                     title="基金持仓明细",
-                                    bordered=True,
+                                    bordered=False,
                                     children=[
                                         fac.AntdTable(
                                             id="fund-table",
@@ -110,7 +163,7 @@ app.layout = html.Div(
                                                     "dataIndex": "code",
                                                 },
                                                 {
-                                                    "title": "基金名称",
+                                                    "title": "���名称",
                                                     "dataIndex": "name",
                                                 },
                                                 {
@@ -131,20 +184,39 @@ app.layout = html.Div(
                                                 },
                                             ],
                                             data=[],
+                                            style={"marginTop": "12px"},
                                         )
                                     ],
+                                    style={
+                                        "borderRadius": "4px",
+                                        "boxShadow": CARD_SHADOW,
+                                    },
                                 ),
                                 span=24,
-                                style={"marginTop": "20px"},
+                                style={"padding": "8px"},
                             )
                         ),
                     ],
+                    id="main-content",
                     span=20,
-                    style={"padding": "20px"},
+                    style={
+                        "padding": f"{PAGE_PADDING}px",
+                        "backgroundColor": "#f0f2f5",
+                        "minHeight": "calc(100vh - 64px)",
+                        "marginLeft": "200px",
+                        "marginTop": "64px",
+                        "transition": "margin-left 0.2s",
+                    },
                 ),
-            ]
+            ],
+            style={
+                "position": "relative",
+            },
         ),
-    ]
+    ],
+    style={
+        "backgroundColor": "#f0f2f5",
+    },
 )
 
 
@@ -193,6 +265,23 @@ def update_charts(n_clicks: int) -> Tuple[go.Figure, go.Figure]:
         print(f"Error in update_charts: {str(e)}")
         # 返回空白图表
         return go.Figure(), go.Figure()
+
+
+# 添加内容区域响应侧边栏折叠的回调
+@callback(
+    Output("main-content", "style"),
+    Input("side-menu", "inlineCollapsed"),
+    prevent_initial_call=True,
+)
+def update_content_margin(is_collapsed):
+    return {
+        "padding": f"{PAGE_PADDING}px",
+        "backgroundColor": "#f0f2f5",
+        "minHeight": "calc(100vh - 64px)",
+        "marginLeft": "80px" if is_collapsed else "200px",
+        "marginTop": "64px",
+        "transition": "margin-left 0.2s",
+    }
 
 
 if __name__ == "__main__":
