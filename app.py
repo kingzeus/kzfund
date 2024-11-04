@@ -4,9 +4,10 @@ from dash import html, callback, Input, Output
 import feffery_antd_components as fac
 from components.header import create_header
 from components.sidebar import create_sidebar
-from pages.account import create_account_page
-from pages.home import create_home_page
+from pages.account import render_account_page
+from pages.home import render_home_page
 from backend import register_blueprint
+from models.database import init_database
 from config import (
     APP_NAME,
     DEBUG,
@@ -22,7 +23,12 @@ app = dash.Dash(
     update_title=None,
     suppress_callback_exceptions=True,
 )
+
+
 server = register_blueprint(app.server)
+
+# 初始化数据库
+init_database()
 
 # 使用主题配置
 PRIMARY_COLOR = THEME_CONFIG["primary_color"]
@@ -45,7 +51,7 @@ app.layout = html.Div(
                 # 右侧内容区
                 fac.AntdCol(
                     id="main-content",
-                    children=create_home_page(),
+                    children=render_home_page(),
                     span=20,
                     style={
                         "padding": f"{PAGE_PADDING}px",
@@ -94,9 +100,9 @@ def update_content_margin(is_collapsed: bool) -> dict:
 def update_page_content(current_key: str) -> Any:
     """根据菜单选择更新页面内容"""
     if current_key is None or current_key == "home":
-        return create_home_page()
+        return render_home_page()
     elif current_key == "account":
-        return create_account_page()
+        return render_account_page()
     # 其他页面返回空白内容
     return html.Div()
 

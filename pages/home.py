@@ -4,8 +4,8 @@ import feffery_antd_components as fac
 
 
 
-def create_home_page() -> html.Div:
-    """创建首页"""
+def render_home_page() -> html.Div:
+    """渲染首页"""
     return html.Div(
         [
             # 页面标题

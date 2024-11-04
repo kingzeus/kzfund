@@ -1,225 +1,292 @@
-from typing import Dict, Optional, List
-from datetime import datetime
-from decimal import Decimal
-from contextlib import contextmanager
-import sqlite3
+from typing import List, Dict, Any, Optional
 import uuid
-from utils.singleton import Singleton
-from config import DATABASE_CONFIG
+from datetime import datetime
+from .base import db_connection, db
+from .account import Account, Portfolio
+from .fund import FundPosition, FundTransaction, FundNav
+from peewee import fn, JOIN
 
+def init_database():
+    """初始化数据库"""
+    with db_connection():
+        db.create_tables([Account, Portfolio, FundPosition, FundTransaction, FundNav])
 
-@Singleton
-class Database:
-    """数据库管理类"""
+# 账户相关操作
+def get_accounts() -> List[Dict[str, Any]]:
+    """获取所有账户"""
+    with db_connection():
+        accounts = Account.select()
+        # 如果没有数据，返回空列表
+        if not accounts:
+            return []
 
-    def __init__(self, db_path: str = DATABASE_CONFIG["path"]):
-        self.db_path = db_path
-        self.init_database()
+        return [
+            {
+                "id": str(account.id),
+                "name": account.name,
+                "description": account.description,
+                "create_time": account.created_at,
+                "update_time": account.updated_at,
+            }
+            for account in accounts
+        ]
 
-    @contextmanager
-    def get_connection(self):
-        """获取数据库连接的上下文管理器"""
-        conn = sqlite3.connect(
-            self.db_path,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        )
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-        finally:
-            conn.close()
-
-    def init_database(self):
-        """初始化数据库表结构"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-
-            # 账户表
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS accounts (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    create_time TIMESTAMP NOT NULL,
-                    update_time TIMESTAMP NOT NULL
-                )
-            """
-            )
-
-            # 基金组合表
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS portfolios (
-                    id TEXT PRIMARY KEY,
-                    account_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    is_default BOOLEAN NOT NULL DEFAULT 0,
-                    create_time TIMESTAMP NOT NULL,
-                    update_time TIMESTAMP NOT NULL,
-                    FOREIGN KEY (account_id) REFERENCES accounts (id)
-                )
-            """
-            )
-
-            # 基金持仓表
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS fund_positions (
-                    id TEXT PRIMARY KEY,
-                    portfolio_id TEXT NOT NULL,
-                    code TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    shares DECIMAL NOT NULL,
-                    nav DECIMAL NOT NULL,
-                    market_value DECIMAL NOT NULL,
-                    cost DECIMAL NOT NULL,
-                    return_rate DECIMAL NOT NULL,
-                    type TEXT NOT NULL,
-                    purchase_date TIMESTAMP NOT NULL,
-                    last_update TIMESTAMP NOT NULL,
-                    FOREIGN KEY (portfolio_id) REFERENCES portfolios (id)
-                )
-            """
-            )
-
-            # 基金交易记录表
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS fund_transactions (
-                    id TEXT PRIMARY KEY,
-                    portfolio_id TEXT NOT NULL,
-                    code TEXT NOT NULL,
-                    date TIMESTAMP NOT NULL,
-                    type TEXT NOT NULL,
-                    shares DECIMAL NOT NULL,
-                    amount DECIMAL NOT NULL,
-                    nav DECIMAL NOT NULL,
-                    fee DECIMAL NOT NULL,
-                    FOREIGN KEY (portfolio_id) REFERENCES portfolios (id)
-                )
-            """
-            )
-
-            conn.commit()
-
-    def add_account(self, name: str, description: Optional[str] = None) -> str:
-        """添加账户"""
+def add_account(name: str, description: Optional[str] = None) -> str:
+    """添加账户"""
+    with db_connection():
         account_id = str(uuid.uuid4())
-        now = datetime.now()
-
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO accounts (id, name, description, create_time, update_time)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (account_id, name, description, now, now),
-            )
-            conn.commit()
+        Account.create(
+            id=account_id,
+            name=name,
+            description=description,
+        )
         return account_id
 
-    def get_accounts(self) -> List[Dict]:
-        """获取所有账户"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM accounts ORDER BY create_time DESC")
-            return [dict(row) for row in cursor.fetchall()]
 
-    def get_account(self, account_id: str) -> Optional[Dict]:
-        """获取指定账户的详情"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM accounts WHERE id = ?", (account_id,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
+def get_account(account_id: str) -> Optional[Dict[str, Any]]:
+    """获取账户详情"""
+    with db_connection():
+        try:
+            account = Account.get_by_id(account_id)
+            return {
+                "id": str(account.id),
+                "name": account.name,
+                "description": account.description,
+                "create_time": account.created_at,
+                "update_time": account.updated_at,
+            }
+        except Account.DoesNotExist:
+            return None
 
-    def update_account(self, account_id: str, data: Dict) -> Dict:
-        """更新账户信息"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            now = datetime.now()
-            cursor.execute(
-                """
-                UPDATE accounts
-                SET name = ?, description = ?, update_time = ?
-                WHERE id = ?
-                """,
-                (data["name"], data.get("description"), now, account_id),
+def update_account(account_id: str, name: str, description: str = None) -> bool:
+    """更新账户信息"""
+    try:
+        with db_connection():
+            account = Account.get_by_id(account_id)
+            account.name = name
+            account.description = description
+            account.save()
+            return True
+    except Exception as e:
+        print(f"更新账户失败: {e}")
+        return False
+
+def delete_account(account_id: str) -> bool:
+    """删除账户"""
+    try:
+        with db_connection():
+            # 首先检查是否有关联的组合
+            portfolio_count = (
+                Portfolio.select().where(Portfolio.account == account_id).count()
             )
-            conn.commit()
-            return self.get_account(account_id)
+            if portfolio_count > 0:
+                return False
 
-    def delete_account(self, account_id: str) -> None:
-        """删除账户"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            # 首先删除关联的组合
-            cursor.execute("DELETE FROM portfolios WHERE account_id = ?", (account_id,))
-            # 然后删除账户
-            cursor.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
-            conn.commit()
+            account = Account.get_by_id(account_id)
+            account.delete_instance()
+            return True
+    except Exception as e:
+        print(f"删除账户失败: {e}")
+        return False
 
-    def add_portfolio(
-        self,
-        account_id: str,
-        name: str,
-        description: Optional[str] = None,
-        is_default: bool = False,
-    ) -> str:
-        """添加投资组合"""
+# 投资组合相关操作
+def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
+    """获取账户下的所有投资组合"""
+    with db_connection():
+        portfolios = (
+            Portfolio.select(
+                Portfolio,
+                fn.COUNT(FundPosition.id).alias("fund_count"),
+                fn.COALESCE(fn.SUM(FundPosition.market_value), 0).alias(
+                    "total_market_value"
+                ),
+            )
+            .join(FundPosition, JOIN.LEFT_OUTER)
+            .where(Portfolio.account == account_id)
+            .group_by(Portfolio)
+        )
+
+        if not portfolios:
+            return []
+
+        return [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "description": p.description,
+                "is_default": p.is_default,
+                "create_time": p.created_at.isoformat(),
+                "update_time": p.updated_at.isoformat(),
+                "fund_count": p.fund_count,
+                "total_market_value": float(p.total_market_value),
+            }
+            for p in portfolios
+        ]
+
+def add_portfolio(
+    account_id: str,
+    name: str,
+    description: Optional[str] = None,
+    is_default: bool = False,
+) -> str:
+    """添加投资组合"""
+    with db_connection():
         portfolio_id = str(uuid.uuid4())
-        now = datetime.now()
-
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO portfolios
-                (id, account_id, name, description, is_default, create_time, update_time)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (portfolio_id, account_id, name, description, is_default, now, now),
-            )
-            conn.commit()
+        Portfolio.create(
+            id=portfolio_id,
+            account=account_id,
+            name=name,
+            description=description,
+            is_default=is_default,
+        )
         return portfolio_id
 
-    def get_portfolios(self, account_id: str) -> List[Dict]:
-        """获取账户下的所有投资组合"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT p.*,
-                       COUNT(DISTINCT fp.code) as fund_count,
-                       SUM(fp.market_value) as total_market_value
-                FROM portfolios p
-                LEFT JOIN fund_positions fp ON p.id = fp.portfolio_id
-                WHERE p.account_id = ?
-                GROUP BY p.id
-                ORDER BY p.create_time DESC
-                """,
-                (account_id,),
-            )
-            return [dict(row) for row in cursor.fetchall()]
+def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
+    """获取投资组合详情"""
+    with db_connection():
+        try:
+            portfolio = Portfolio.get_by_id(portfolio_id)
+            return {
+                "id": str(portfolio.id),
+                "account_id": str(portfolio.account.id),
+                "name": portfolio.name,
+                "description": portfolio.description,
+                "is_default": portfolio.is_default,
+                "create_time": portfolio.created_at,
+                "update_time": portfolio.updated_at,
+            }
+        except Portfolio.DoesNotExist:
+            return None
 
-    def get_portfolio(self, portfolio_id: str) -> Optional[Dict]:
-        """获取指定组合的详情"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT p.*,
-                       COUNT(DISTINCT fp.code) as fund_count,
-                       SUM(fp.market_value) as total_market_value
-                FROM portfolios p
-                LEFT JOIN fund_positions fp ON p.id = fp.portfolio_id
-                WHERE p.id = ?
-                GROUP BY p.id
-                """,
-                (portfolio_id,),
-            )
-            row = cursor.fetchone()
-            return dict(row) if row else None
+def update_portfolio(
+    portfolio_id: str, data: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """更新投资组合信息"""
+    with db_connection():
+        try:
+            portfolio = Portfolio.get_by_id(portfolio_id)
+            portfolio.name = data.get("name", portfolio.name)
+            portfolio.description = data.get("description", portfolio.description)
+            portfolio.is_default = data.get("is_default", portfolio.is_default)
+            portfolio.save()
+            return get_portfolio(portfolio_id)
+        except Portfolio.DoesNotExist:
+            return None
+
+def delete_portfolio(portfolio_id: str) -> bool:
+    """删除投资组合"""
+    with db_connection():
+        try:
+            portfolio = Portfolio.get_by_id(portfolio_id)
+            portfolio.delete_instance(recursive=True)
+            return True
+        except Portfolio.DoesNotExist:
+            return False
+
+# 基金持仓相关操作
+def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
+    """获取组合的基金持仓"""
+    with db_connection():
+        positions = FundPosition.select().where(FundPosition.portfolio == portfolio_id)
+
+        if not positions:
+            return []
+
+        return [
+            {
+                "id": str(pos.id),
+                "portfolio_id": str(pos.portfolio.id),
+                "code": pos.code,
+                "name": pos.name,
+                "shares": float(pos.shares),
+                "nav": float(pos.nav),
+                "market_value": float(pos.market_value),
+                "cost": float(pos.cost),
+                "return_rate": float(pos.return_rate),
+                "type": pos.type,
+                "purchase_date": pos.purchase_date.isoformat(),
+            }
+            for pos in positions
+        ]
+
+def add_fund_position(data: Dict[str, Any]) -> str:
+    """添加基金持仓"""
+    with db_connection():
+        position_id = str(uuid.uuid4())
+        market_value = float(data["shares"]) * float(data["nav"])
+        return_rate = (market_value - float(data["cost"])) / float(data["cost"])
+
+        FundPosition.create(
+            id=position_id,
+            portfolio=data["portfolio_id"],
+            code=data["code"],
+            name=data["name"],
+            shares=data["shares"],
+            nav=data["nav"],
+            market_value=market_value,
+            cost=data["cost"],
+            return_rate=return_rate,
+            type=data["type"],
+            purchase_date=datetime.now(),
+        )
+        return position_id
+
+
+def update_fund_position(
+    position_id: str, data: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """更新基金持仓信息"""
+    with db_connection():
+        try:
+            position = FundPosition.get_by_id(position_id)
+            for key, value in data.items():
+                if hasattr(position, key):
+                    setattr(position, key, value)
+
+            # 更新市值和收益率
+            position.market_value = float(position.shares) * float(position.nav)
+            position.return_rate = (
+                position.market_value - float(position.cost)
+            ) / float(position.cost)
+            position.save()
+
+            return get_fund_positions(str(position.portfolio.id))
+        except FundPosition.DoesNotExist:
+            return None
+
+def delete_fund_position(position_id: str) -> bool:
+    """删除基金持仓"""
+    with db_connection():
+        try:
+            position = FundPosition.get_by_id(position_id)
+            position.delete_instance()
+            return True
+        except FundPosition.DoesNotExist:
+            return False
+
+def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
+    """获取基金交易记录"""
+    with db_connection():
+        transactions = (
+            FundTransaction.select()
+            .where(FundTransaction.portfolio == portfolio_id)
+            .order_by(FundTransaction.transaction_date.desc())
+        )
+
+        if not transactions:
+            return []
+
+        return [
+            {
+                "id": str(trans.id),
+                "portfolio_id": str(trans.portfolio.id),
+                "code": trans.code,
+                "type": trans.type,
+                "shares": float(trans.shares),
+                "amount": float(trans.amount),
+                "nav": float(trans.nav),
+                "fee": float(trans.fee),
+                "transaction_date": trans.transaction_date.isoformat(),
+            }
+            for trans in transactions
+        ]

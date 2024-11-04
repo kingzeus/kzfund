@@ -22,6 +22,7 @@
     │   ├── __init__.py    # Python包标记文件
     │   ├── account.py     # 账户数据模型
     │   ├── database.py    # 数据库操作类
+    │   ├── base.py        # 基础模型类
     │   └── fund.py        # 基金数据模型
     ├── pages/             # 页面组件目录
     │   ├── home.py       # 首页仪表盘
@@ -31,7 +32,11 @@
     │   └── singleton.py  # 单例模式装饰器
     ├── config.py          # 应用配置文件
     ├── requirements.txt    # 项目依赖
-    └── start.sh           # 启动脚本
+    ├── start.sh           # 启动脚本
+    ├── .flake8            # Flake8配置文件
+    ├── mypy.ini           # MyPy配置文件
+    ├── .gitignore         # Git忽略文件
+    └── LICENSE            # 开源协议
 
 ## 技术栈
 
@@ -44,12 +49,13 @@
 - Flask
 - Flask-RESTX
 - SQLite3
+- Peewee ORM
 
 ## API 文档
 
 ### 运行时 API
 - `GET /api/runtime/status` - 获取系统运行状态
-- `GET /api/runtime/version` - 获取系统版本信息
+  - 返回：部署时间、运行时长、系统版本
 
 ### 账户管理 API
 - `GET /api/accounts` - 获取所有账户列表
@@ -59,7 +65,7 @@
 - `DELETE /api/accounts/<id>` - 删除账户
 
 ### 组合管理 API
-- `GET /api/portfolios` - 获取投资组合列表
+- `GET /api/portfolios?account_id=<id>` - 获取投资组合列表
 - `POST /api/portfolios` - 创建新投资组合
 - `GET /api/portfolios/<id>` - 获取组合详情
 - `PUT /api/portfolios/<id>` - 更新组合信息
@@ -67,9 +73,10 @@
 
 ### 基金管理 API
 - `GET /api/funds/positions/<portfolio_id>` - 获取组合持仓
-- `POST /api/funds/positions` - 添加基金持仓
+- `POST /api/funds/positions/<portfolio_id>` - 添加基金持仓
 - `PUT /api/funds/positions/<id>` - 更新持仓信息
 - `DELETE /api/funds/positions/<id>` - 删除持仓
+- `GET /api/funds/transactions/<portfolio_id>` - 获取交易记录
 
 ## 数据结构
 
@@ -104,6 +111,7 @@ python app.py
 - [x] 数据模型设计
 - [x] RESTful API 实现
 - [x] 统一响应格式
+- [x] ORM 集成
 - [ ] 账户管理功能
 - [ ] 基金数据导入
 - [ ] 持仓分析
@@ -117,6 +125,11 @@ python app.py
 2. 在 `backend/__init__.py` 中注册 API 命名空间
 3. 使用 common.response 确保响应格式统一
 4. 实现相应的数据库操作方法
+
+### 数据库开发
+1. 在 `models/` 下定义数据模型
+2. 使用 Peewee ORM 管理数据库操作
+3. 在 `models/database.py` 中实现数据操作函数
 
 ### 前端开发
 1. 在 `pages/` 下创建新的页面组件
