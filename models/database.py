@@ -32,16 +32,26 @@ def get_accounts() -> List[Dict[str, Any]]:
         ]
 
 def add_account(name: str, description: Optional[str] = None) -> str:
-    """添加账户"""
+    """添加账户并创建默认投资组合"""
     with db_connection():
+        # 创建账户
         account_id = str(uuid.uuid4())
         Account.create(
             id=account_id,
             name=name,
             description=description,
         )
-        return account_id
 
+        # 创建默认投资组合
+        Portfolio.create(
+            id=str(uuid.uuid4()),
+            account=account_id,
+            name=f"{name}-默认组合",
+            description=f"{name}的默认投资组合",
+            is_default=True,
+        )
+
+        return account_id
 
 def get_account(account_id: str) -> Optional[Dict[str, Any]]:
     """获取账户详情"""
@@ -104,6 +114,7 @@ def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
             .join(FundPosition, JOIN.LEFT_OUTER)
             .where(Portfolio.account == account_id)
             .group_by(Portfolio)
+            .order_by(Portfolio.created_at.asc())
         )
 
         if not portfolios:
@@ -175,13 +186,20 @@ def update_portfolio(
 
 def delete_portfolio(portfolio_id: str) -> bool:
     """删除投资组合"""
-    with db_connection():
-        try:
+    try:
+        with db_connection():
             portfolio = Portfolio.get_by_id(portfolio_id)
+
+            # 检查是否为默认组合
+            if portfolio.is_default:
+                return False
+
+            # 删除组合及其关联的基金持仓
             portfolio.delete_instance(recursive=True)
             return True
-        except Portfolio.DoesNotExist:
-            return False
+    except Exception as e:
+        print(f"删除组合失败: {e}")
+        return False
 
 # 基金持仓相关操作
 def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
