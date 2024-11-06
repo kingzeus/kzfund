@@ -308,3 +308,21 @@ def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
             }
             for trans in transactions
         ]
+
+def get_statistics() -> Dict[str, int]:
+    """获取统计数据"""
+    with db_connection():
+        # 获取账户总数
+        account_count = Account.select().count()
+
+        # 获取组合总数
+        portfolio_count = Portfolio.select().count()
+
+        # 获取基金持仓总数
+        position_count = FundPosition.select().count()
+
+        return {
+            "account_count": account_count,
+            "portfolio_count": portfolio_count,
+            "position_count": position_count,
+        }
