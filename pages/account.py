@@ -1,9 +1,8 @@
 from typing import Dict, Any, List, Optional, Tuple
+from datetime import datetime
 import dash
 from dash import html, dcc, Input, Output, State, callback, ALL
 import feffery_antd_components as fac
-from datetime import datetime
-import json
 from dash.exceptions import PreventUpdate
 
 from models.database import (
@@ -17,7 +16,86 @@ from models.database import (
     get_portfolio,
     update_portfolio,
 )
-from utils.datetime import format_datetime  # 导入格式化函数
+from utils.datetime import format_datetime
+
+
+# ============= 常量定义 =============
+NAME_MIN_LENGTH = 2
+NAME_MAX_LENGTH = 20
+
+
+# ============= 工具函数 =============
+def validate_name(name: Optional[str], field_name: str = "名称") -> Tuple[str, str]:
+    """通用的名称验证函数
+
+    Args:
+        name: 要验证的名称
+        field_name: 字段名称，用于错误消息
+
+    Returns:
+        验证状态和帮助信息的元组
+    """
+    if not name:
+        return "error", f"请输入{field_name}"
+    if len(name) < NAME_MIN_LENGTH:
+        return "error", f"{field_name}至少需要{NAME_MIN_LENGTH}个字符"
+    if len(name) > NAME_MAX_LENGTH:
+        return "error", f"{field_name}不能超过{NAME_MAX_LENGTH}个字符"
+    return "success", ""
+
+
+def create_operation_buttons(
+    object_id: str,
+    action_type: str,
+    account_id: Optional[str] = None,
+    is_danger: bool = False,
+) -> List[Dict[str, Any]]:
+    """创建操作按钮配置
+
+    Args:
+        object_id: 对象ID
+        action_type: 对象类型 ('account' 或 'portfolio')
+        account_id: 账户ID（仅用于组合）
+        is_danger: 是否为危险操作按钮
+
+    Returns:
+        按钮配置列表
+    """
+    buttons = []
+
+    # 编辑按钮
+    buttons.append(
+        {
+            "icon": "antd-edit",
+            "iconRenderer": "AntdIcon",
+            "type": "link",
+            "custom": {
+                "id": object_id,
+                "action": "edit",
+                "type": action_type,
+                **({"accountId": account_id} if account_id else {}),
+            },
+        }
+    )
+
+    # 删除按钮
+    if is_danger:
+        buttons.append(
+            {
+                "icon": "antd-delete",
+                "iconRenderer": "AntdIcon",
+                "type": "link",
+                "danger": True,
+                "custom": {
+                    "id": object_id,
+                    "action": "delete",
+                    "type": action_type,
+                    **({"accountId": account_id} if account_id else {}),
+                },
+            }
+        )
+
+    return buttons
 
 
 # ============= 数据处理函数 =============
@@ -25,57 +103,18 @@ def get_account_table_data() -> List[Dict[str, Any]]:
     """从数据库获取账户信息并转换为表格显示格式（包含嵌套的组合数据）"""
     accounts = get_accounts()
     table_data = []
-    for account in accounts:
-        # 处理创建时间
-        formatted_time = format_datetime(account["create_time"])
 
+    for account in accounts:
         # 获取该账户下的所有组合（已经在数据库层面排序）
         portfolios = get_portfolios(account["id"])
         portfolio_data = []
-        for p in portfolios:
-            # 根据是否为默认组合设置不同的操作按钮
-            operation_buttons = [
-                # {
-                #     "icon": "antd-eye",
-                #     "iconRenderer": "AntdIcon",
-                #     "type": "link",
-                #     "custom": {
-                #         "id": p["id"],
-                #         "action": "view",
-                #         "type": "portfolio",
-                #         "accountId": account["id"],
-                #     },
-                # }
-            ]
 
-            # 只有非默认组合才添加编辑和删除按钮
+        # 处理组合数据
+        for p in portfolios:
+            operation_buttons = []
             if not p["is_default"]:
-                operation_buttons.extend(
-                    [
-                        {
-                            "icon": "antd-edit",
-                            "iconRenderer": "AntdIcon",
-                            "type": "link",
-                            "custom": {
-                                "id": p["id"],
-                                "action": "edit",
-                                "type": "portfolio",
-                                "accountId": account["id"],
-                            },
-                        },
-                        {
-                            "icon": "antd-delete",
-                            "iconRenderer": "AntdIcon",
-                            "type": "link",
-                            "danger": True,
-                            "custom": {
-                                "id": p["id"],
-                                "action": "delete",
-                                "type": "portfolio",
-                                "accountId": account["id"],
-                            },
-                        },
-                    ]
+                operation_buttons = create_operation_buttons(
+                    p["id"], "portfolio", account["id"], is_danger=True
                 )
 
             portfolio_data.append(
@@ -93,39 +132,21 @@ def get_account_table_data() -> List[Dict[str, Any]]:
                 }
             )
 
+        # 处理账户数据
         table_data.append(
             {
                 "key": account["id"],
                 "id": account["id"],
                 "name": account["name"],
                 "description": account.get("description", ""),
-                "create_time": formatted_time,
-                "operation": [
-                    {
-                        "icon": "antd-edit",
-                        "iconRenderer": "AntdIcon",
-                        "type": "link",
-                        "custom": {
-                            "id": account["id"],
-                            "action": "edit",
-                            "type": "account",
-                        },
-                    },
-                    {
-                        "icon": "antd-delete",
-                        "iconRenderer": "AntdIcon",
-                        "type": "link",
-                        "danger": True,
-                        "custom": {
-                            "id": account["id"],
-                            "action": "delete",
-                            "type": "account",
-                        },
-                    },
-                ],
+                "create_time": format_datetime(account["create_time"]),
+                "operation": create_operation_buttons(
+                    account["id"], "account", is_danger=True
+                ),
                 "children": portfolio_data,
             }
         )
+
     return table_data
 
 
@@ -601,9 +622,7 @@ def update_portfolio_list(
     portfolios = get_portfolios(account_id)
 
     for p in portfolios:
-        p["create_time"] = datetime.fromisoformat(p["create_time"]).strftime(
-            "%Y-%m-%d %H:%M"
-        )
+        p["create_time"] = format_datetime(p["create_time"])
         p["market_value"] = (
             f"¥ {p['total_market_value']:,.2f}" if p["total_market_value"] else "¥ 0.00"
         )
