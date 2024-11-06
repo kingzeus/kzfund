@@ -14,6 +14,7 @@ from config import (
     SERVER_CONFIG,
     THEME_CONFIG,
 )
+from pages.transaction import render_transaction_page
 
 # 初始化Dash应用
 app = dash.Dash(
@@ -103,8 +104,11 @@ def update_page_content(current_key: str) -> Any:
         return render_home_page()
     elif current_key == "account":
         return render_account_page()
-    # 其他页面返回空白内容
-    return html.Div()
+    elif current_key == "transaction":
+        return render_transaction_page()
+    else:
+        # 其他页面返回空白内容
+        return html.Div()
 
 
 if __name__ == "__main__":

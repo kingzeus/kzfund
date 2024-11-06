@@ -60,9 +60,9 @@ def create_sidebar() -> html.Div:
                             {
                                 "component": "Item",
                                 "props": {
-                                    "key": "manual-entry",
-                                    "title": "手动录入",
-                                    "icon": "FormOutlined",
+                                    "key": "transaction",
+                                    "title": "交易记录",
+                                    "icon": "antd-calendar",
                                 },
                             },
                             {

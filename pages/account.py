@@ -382,7 +382,7 @@ def render_account_page() -> html.Div:
                     html.Div(
                         [
                             fac.AntdIcon(
-                                icon="UserOutlined",
+                                icon="antd-partition",
                                 style={"fontSize": "24px", "marginRight": "8px"},
                             ),
                             "账户与组合管理",
