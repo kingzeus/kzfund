@@ -39,3 +39,7 @@ THEME_CONFIG: Dict[str, Any] = {
     "page_padding": 24,
     "card_shadow": "0 2px 8px rgba(0, 0, 0, 0.09)",
 }
+
+# 数据源配置
+# 默认数据源 东方财富
+DATA_SOURCE_DEFAULT = "simple"

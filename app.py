@@ -1,6 +1,6 @@
 from typing import Any
 import dash
-from dash import html, callback, Input, Output
+from dash import html, callback, Input, Output, dcc
 import feffery_antd_components as fac
 from components.header import create_header
 from components.sidebar import create_sidebar
@@ -10,11 +10,22 @@ from backend import register_blueprint
 from models.database import init_database
 from config import (
     APP_NAME,
+    DATA_SOURCE_DEFAULT,
     DEBUG,
     SERVER_CONFIG,
     THEME_CONFIG,
 )
 from pages.transaction import render_transaction_page
+from data_source import init_data_source
+
+
+def init_application():
+    """应用初始化"""
+    # 初始化数据库
+    init_database()
+
+    # 初始化数据源
+    init_data_source()
 
 # 初始化Dash应用
 app = dash.Dash(
@@ -23,13 +34,14 @@ app = dash.Dash(
     compress=True,
     update_title=None,
     suppress_callback_exceptions=True,
+    assets_folder="assets",
 )
 
 
 server = register_blueprint(app.server)
 
-# 初始化数据库
-init_database()
+# 初始化数据库和数据源
+init_application()
 
 # 使用主题配置
 PRIMARY_COLOR = THEME_CONFIG["primary_color"]
@@ -42,6 +54,10 @@ CARD_SHADOW = THEME_CONFIG["card_shadow"]
 # 定义页面布局
 app.layout = html.Div(
     [
+        # 本地数据源存储
+        dcc.Store(
+            id="store-local-data-source", storage_type="local", data=DATA_SOURCE_DEFAULT
+        ),
         # 顶部导航栏
         create_header(),
         # 主要内容区域
@@ -109,7 +125,6 @@ def update_page_content(current_key: str) -> Any:
     else:
         # 其他页面返回空白内容
         return html.Div()
-
 
 if __name__ == "__main__":
     app.run(

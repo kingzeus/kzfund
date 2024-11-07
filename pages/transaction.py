@@ -6,6 +6,7 @@ import feffery_antd_components as fac
 from dash.exceptions import PreventUpdate
 
 from models.database import (
+    get_accounts,
     get_transactions,  # 需要在 models/database.py 中实现
     add_transaction,  # 需要在 models/database.py 中实现
     update_transaction,  # 需要在 models/database.py 中实现
@@ -13,6 +14,7 @@ from models.database import (
     get_portfolios,
 )
 from utils.datetime import format_datetime
+from components.fund_code_aio import FundCodeAIO
 
 
 def create_operation_buttons(transaction_id: str) -> List[Dict[str, Any]]:
@@ -47,7 +49,7 @@ def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard
         bordered=False,
         extra=[
             fac.AntdButton(
-                "新建交易",
+                "手工输入",
                 type="primary",
                 icon=fac.AntdIcon(icon="antd-plus"),
                 id="add-transaction-btn",
@@ -154,21 +156,18 @@ def render_transaction_modal() -> fac.AntdModal:
                 wrapperCol={"span": 18},
                 children=[
                     fac.AntdFormItem(
-                        fac.AntdSelect(
-                            id="portfolio-select",
-                            placeholder="请选择投资组合",
+                        fac.AntdCascader(
+                            id="portfolio-cascader",
+                            placeholder="请选择账户和组合",
                             options=[],
                             style={"width": "100%"},
+                            changeOnSelect=False,  # 只允许选择叶子节点
                         ),
                         label="投资组合",
                         required=True,
                     ),
                     fac.AntdFormItem(
-                        fac.AntdInput(
-                            id="fund-code-input",
-                            placeholder="请输入基金代码",
-                            allowClear=True,
-                        ),
+                        FundCodeAIO(aio_id="fund-code-aio"),
                         label="基金代码",
                         required=True,
                     ),
@@ -201,7 +200,6 @@ def render_transaction_modal() -> fac.AntdModal:
                             id="trade-time-picker",
                             placeholder="请选择交易时间",
                             style={"width": "100%"},
-                            showTime=True,
                         ),
                         label="交易时间",
                         required=True,
@@ -228,7 +226,7 @@ def render_delete_confirm_modal() -> fac.AntdModal:
 
 def render_transaction_page() -> html.Div:
     """渲染交易记录页面"""
-    initial_transactions = get_transactions()  # 需要实现这个函数
+    initial_transactions = get_transactions()
 
     return html.Div(
         [
@@ -278,9 +276,9 @@ def render_transaction_page() -> html.Div:
     [
         Output("transaction-modal", "visible"),
         Output("transaction-modal", "title"),
-        Output("portfolio-select", "options"),
-        Output("portfolio-select", "value"),
-        Output("fund-code-input", "value"),
+        Output("portfolio-cascader", "options"),
+        Output("portfolio-cascader", "value"),
+        Output(FundCodeAIO.ids.select("fund-code-aio"), "value"),
         Output("transaction-type-select", "value"),
         Output("amount-input", "value"),
         Output("trade-time-picker", "value"),
@@ -297,8 +295,8 @@ def render_transaction_page() -> html.Div:
     [
         State("transaction-list", "clickedCustom"),
         State("transaction-store", "data"),
-        State("portfolio-select", "value"),
-        State("fund-code-input", "value"),
+        State("portfolio-cascader", "value"),
+        State(FundCodeAIO.ids.select("fund-code-aio"), "value"),
         State("transaction-type-select", "value"),
         State("amount-input", "value"),
         State("trade-time-picker", "value"),
@@ -313,7 +311,7 @@ def handle_transaction_actions(
     delete_ok_counts,
     clicked_custom,
     store_data,
-    portfolio_id,
+    portfolio_path,
     fund_code,
     transaction_type,
     amount,
@@ -331,8 +329,8 @@ def handle_transaction_actions(
     default_return = (
         False,  # modal visible
         "新建交易",  # modal title
-        [],  # portfolio options
-        None,  # portfolio value
+        [],  # cascader options
+        None,  # cascader value
         "",  # fund code
         None,  # transaction type
         None,  # amount
@@ -344,13 +342,32 @@ def handle_transaction_actions(
 
     # 处理新建交易按钮点击
     if trigger_id == "add-transaction-btn.nClicks":
-        portfolios = get_portfolios(None)
-        portfolio_options = [{"label": p["name"], "value": p["id"]} for p in portfolios]
+        accounts = get_accounts()  # 获取所有账户
+        cascader_options = []
+
+        # 构建级联选择器的选项
+        for account in accounts:
+            portfolios = get_portfolios(account["id"])
+            portfolio_children = [
+                {
+                    "label": p["name"],
+                    "value": p["id"],
+                }
+                for p in portfolios
+            ]
+            cascader_options.append(
+                {
+                    "label": account["name"],
+                    "value": account["id"],
+                    "children": portfolio_children,
+                }
+            )
+
         return (
             True,  # modal visible
             "新建交易",  # modal title
-            portfolio_options,  # portfolio options
-            None,  # portfolio value
+            cascader_options,  # cascader options
+            None,  # cascader value
             "",  # fund code
             None,  # transaction type
             None,  # amount
@@ -360,7 +377,7 @@ def handle_transaction_actions(
             dash.no_update,  # store data
         )
 
-    # 处理表格按钮点击
+    # 处理格按钮点击 - 编辑模式
     elif trigger_id == "transaction-list.nClicksButton":
         if not clicked_custom:
             return default_return
@@ -373,15 +390,39 @@ def handle_transaction_actions(
             return default_return
 
         if action == "edit":
-            portfolios = get_portfolios(None)
-            portfolio_options = [
-                {"label": p["name"], "value": p["id"]} for p in portfolios
-            ]
+            # 构建级联选择器的选项和当前值
+            accounts = get_accounts()
+            cascader_options = []
+            cascader_value = None
+
+            for account in accounts:
+                portfolios = get_portfolios(account["id"])
+                portfolio_children = []
+
+                for p in portfolios:
+                    portfolio_children.append(
+                        {
+                            "label": p["name"],
+                            "value": p["id"],
+                        }
+                    )
+                    # 找到当前交易记录对应的组合，设置级联值
+                    if p["id"] == transaction["portfolio_id"]:
+                        cascader_value = [account["id"], p["id"]]
+
+                cascader_options.append(
+                    {
+                        "label": account["name"],
+                        "value": account["id"],
+                        "children": portfolio_children,
+                    }
+                )
+
             return (
                 True,  # modal visible
                 "编辑交易记录",  # modal title
-                portfolio_options,  # portfolio options
-                transaction["portfolio_id"],  # portfolio value
+                cascader_options,  # cascader options
+                cascader_value,  # cascader value
                 transaction["fund_code"],  # fund code
                 transaction["type"],  # transaction type
                 float(
@@ -392,27 +433,18 @@ def handle_transaction_actions(
                 transaction_id,  # editing id
                 dash.no_update,  # store data
             )
-        elif action == "delete":
-            return (
-                False,  # modal visible
-                dash.no_update,  # modal title
-                [],  # portfolio options
-                None,  # portfolio value
-                "",  # fund code
-                None,  # transaction type
-                None,  # amount
-                None,  # trade time
-                True,  # delete modal visible
-                transaction_id,  # editing id
-                dash.no_update,  # store data
-            )
 
-    # 处理模态框确认
+    # 处理模态框确认 - 创建或更新交易记录
     elif trigger_id == "transaction-modal.okCounts":
-        if not all([portfolio_id, fund_code, transaction_type, amount, trade_time]):
+        if not all([portfolio_path, fund_code, transaction_type, amount, trade_time]):
             return default_return
 
-        # 转换交易时间字符串为datetime对象
+        # 从级联路径中获取组合ID（最后一个值）
+        portfolio_id = portfolio_path[-1] if portfolio_path else None
+        if not portfolio_id:
+            return default_return
+
+        # 转换交易时间字串为datetime对象
         trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
 
         success = False
@@ -438,8 +470,8 @@ def handle_transaction_actions(
             return (
                 False,  # modal visible
                 dash.no_update,  # modal title
-                [],  # portfolio options
-                None,  # portfolio value
+                [],  # cascader options
+                None,  # cascader value
                 "",  # fund code
                 None,  # transaction type
                 None,  # amount
@@ -458,8 +490,8 @@ def handle_transaction_actions(
             return (
                 False,  # modal visible
                 dash.no_update,  # modal title
-                [],  # portfolio options
-                None,  # portfolio value
+                [],  # cascader options
+                None,  # cascader value
                 "",  # fund code
                 None,  # transaction type
                 None,  # amount
