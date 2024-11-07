@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
-from .base import db_connection, db
+from .base import Database, db_connection
 from .account import Account, Portfolio
 from .fund import FundPosition, FundTransaction, FundNav, Fund
 from peewee import fn, JOIN
@@ -9,7 +9,7 @@ from peewee import fn, JOIN
 def init_database():
     """初始化数据库"""
     with db_connection():
-        db.create_tables(
+        Database().get_db().create_tables(
             [Account, Portfolio, FundPosition, FundTransaction, FundNav, Fund]
         )
 

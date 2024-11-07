@@ -17,14 +17,21 @@ class Database:
             self.db.connect()
 
     def open(self, db_path: str):
-        self.close()
-        self.db_path = db_path or DATABASE_CONFIG["path"]
+        new_db_path = db_path or DATABASE_CONFIG["path"]
+        if self.db is not None:
+            if new_db_path == self.db_path:
+                return
+            else:
+                self.close()
+
+        self.db_path = new_db_path
         self.db = SqliteDatabase(self.db_path)
-        print(f"初始化数据库连接: {self.db_path}")
+        # print(f"初始化数据库连接: {self.db_path}")
 
     def close(self):
         if self.db is not None:
             if not self.db.is_closed():
+                # print("关闭数据库连接")
                 self.db.close()
                 self.db_path = None
                 self.db = None
@@ -59,12 +66,12 @@ class BaseModel(Model):
 @contextmanager
 def db_connection(db_path: str = None):
     """数据库连接上下文管理器"""
-    db_instance = Database(db_path)
-    db_instance.connect()
+    Database().open(db_path)
+    Database().connect()
     try:
-        yield db_instance.get_db()
+        yield Database().get_db()
     finally:
-        db_instance.close()
+        Database().close()
 
 
 # 初始化默认数据库连接
