@@ -3,13 +3,15 @@ import uuid
 from datetime import datetime
 from .base import db_connection, db
 from .account import Account, Portfolio
-from .fund import FundPosition, FundTransaction, FundNav
+from .fund import FundPosition, FundTransaction, FundNav, Fund
 from peewee import fn, JOIN
 
 def init_database():
     """初始化数据库"""
     with db_connection():
-        db.create_tables([Account, Portfolio, FundPosition, FundTransaction, FundNav])
+        db.create_tables(
+            [Account, Portfolio, FundPosition, FundTransaction, FundNav, Fund]
+        )
 
 # 账户相关操作
 def get_accounts() -> List[Dict[str, Any]]:
@@ -330,35 +332,49 @@ def get_statistics() -> Dict[str, int]:
 def get_transactions() -> List[Dict[str, Any]]:
     """获取所有交易记录"""
     with db_connection():
-        transactions = (
-            FundTransaction.select(
-                FundTransaction, Portfolio.name.alias("portfolio_name")
+        try:
+            transactions = (
+                FundTransaction.select(
+                    FundTransaction,
+                    Portfolio.name.alias("portfolio_name"),
+                    Portfolio.id.alias("portfolio_id"),
+                    Fund.name.alias("fund_name"),
+                )
+                .join(Portfolio)
+                .join(Fund)
+                .order_by(FundTransaction.transaction_date.desc())
             )
-            .join(Portfolio)
-            .order_by(FundTransaction.transaction_date.desc())
-        )
 
-        if not transactions:
+            transactions_list = list(transactions)
+            if not transactions_list:
+                return []
+
+            result = []
+            for trans in transactions_list:
+                try:
+                    transaction_dict = {
+                        "id": str(trans.id),
+                        "portfolio_id": str(trans.portfolio.id),
+                        "portfolio_name": trans.portfolio.name,
+                        "fund_code": trans.fund.code,
+                        "fund_name": trans.fund.name,
+                        "type": trans.type,
+                        "amount": f"¥ {float(trans.amount):,.2f}",
+                        "shares": float(trans.shares),
+                        "nav": float(trans.nav),
+                        "fee": float(trans.fee),
+                        "trade_time": format_datetime(trans.transaction_date),
+                        "operation": create_operation_buttons(str(trans.id)),
+                    }
+                    result.append(transaction_dict)
+                except Exception as e:
+                    print(f"Error processing transaction {trans.id}: {e}")
+
+            return result
+
+        except Exception as e:
+            print(f"获取交易记录失败: {e}")
             return []
-
-        return [
-            {
-                "id": str(trans.id),
-                "portfolio_id": str(trans.portfolio.id),
-                "portfolio_name": trans.portfolio_name,
-                "fund_code": trans.code,
-                "fund_name": trans.name,
-                "type": trans.type,
-                "amount": f"¥ {float(trans.amount):,.2f}",
-                "shares": float(trans.shares),
-                "nav": float(trans.nav),
-                "fee": float(trans.fee),
-                "trade_time": format_datetime(trans.transaction_date),
-                "operation": create_operation_buttons(str(trans.id)),
-            }
-            for trans in transactions
-        ]
-
 
 def add_transaction(
     portfolio_id: str,
@@ -366,7 +382,6 @@ def add_transaction(
     transaction_type: str,
     amount: float,
     trade_time: datetime,
-    fund_name: Optional[str] = None,
     nav: Optional[float] = None,
     shares: Optional[float] = None,
     fee: Optional[float] = 0.0,
@@ -374,15 +389,18 @@ def add_transaction(
     """添加交易记录"""
     try:
         with db_connection():
-            # 生成新的交易ID
-            transaction_id = str(uuid.uuid4())
+            # 检查基金是否存在
+            fund = Fund.get_or_none(Fund.code == fund_code)
+            if not fund:
+                # 如果基金不存在，可以从外部API获取基金信息并创建
+                # TODO: 实现从外部API获取基金信息的功能
+                return False
 
             # 创建交易记录
-            FundTransaction.create(
-                id=transaction_id,
+            transaction = FundTransaction.create(
+                id=str(uuid.uuid4()),
                 portfolio=portfolio_id,
-                code=fund_code,
-                name=fund_name,
+                fund=fund_code,
                 type=transaction_type,
                 amount=amount,
                 shares=shares or 0.0,
@@ -394,8 +412,7 @@ def add_transaction(
             # 更新持仓信息
             update_position_after_transaction(
                 portfolio_id=portfolio_id,
-                fund_code=fund_code,
-                fund_name=fund_name,
+                fund=fund,
                 transaction_type=transaction_type,
                 amount=amount,
                 shares=shares or 0.0,
@@ -470,8 +487,7 @@ def delete_transaction(transaction_id: str) -> bool:
 
 def update_position_after_transaction(
     portfolio_id: str,
-    fund_code: str,
-    fund_name: Optional[str],
+    fund: Fund,
     transaction_type: str,
     amount: float,
     shares: float,
@@ -484,7 +500,7 @@ def update_position_after_transaction(
             FundPosition.select()
             .where(
                 (FundPosition.portfolio == portfolio_id)
-                & (FundPosition.code == fund_code)
+                & (FundPosition.code == fund.code)
             )
             .first()
         )
@@ -518,8 +534,8 @@ def update_position_after_transaction(
                 FundPosition.create(
                     id=str(uuid.uuid4()),
                     portfolio=portfolio_id,
-                    code=fund_code,
-                    name=fund_name,
+                    code=fund.code,
+                    name=fund.name,
                     shares=shares,
                     nav=nav,
                     market_value=shares * nav,
@@ -591,3 +607,28 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                 )
     except Exception as e:
         print(f"重新计算持仓失败: {e}")
+
+def check_database_content():
+    """检查数据库内容"""
+    with db_connection():
+        # 检查交易记录表
+        trans_count = FundTransaction.select().count()
+        print(f"交易记录数量: {trans_count}")
+
+        # 检查组合表
+        portfolio_count = Portfolio.select().count()
+        print(f"组合数量: {portfolio_count}")
+
+        # 如果有交易记录，打印第一条记录的详细信息
+        if trans_count > 0:
+            first_trans = FundTransaction.select().first()
+            print(
+                "第一条交易记录:",
+                {
+                    "id": first_trans.id,
+                    "portfolio_id": first_trans.portfolio_id,
+                    "code": first_trans.code,
+                    "type": first_trans.type,
+                    "amount": first_trans.amount,
+                },
+            )

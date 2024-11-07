@@ -6,37 +6,18 @@
 
     fund-analysis/
     ├── app.py                 # 主应用程序入口
-    ├── backend/              # 后端API目录
-    │   ├── __init__.py      # Flask应用初始化
-    │   └── apis/            # API模块目录
-    │       ├── account.py   # 账户相关API
-    │       ├── portfolio.py # 组合相关API
-    │       ├── fund.py      # 基金相关API
-    │       ├── runtime.py   # 运行时API
-    │       └── common.py    # 通用响应处理
-    ├── components/          # 前端组件目录
-    │   ├── __init__.py     # Python包标记文件
-    │   ├── header.py       # 顶部导航栏组件
-    │   └── sidebar.py      # 左侧菜单组件
-    ├── models/             # 数据模型目录
-    │   ├── __init__.py    # Python包标记文件
-    │   ├── account.py     # 账户数据模型
-    │   ├── database.py    # 数据库操作类
-    │   ├── base.py        # 基础模型类
-    │   └── fund.py        # 基金数据模型
-    ├── pages/             # 页面组件目录
-    │   ├── home.py       # 首页仪表盘
-    │   └── account.py    # 账户管理页面
-    ├── utils/             # 工具函数目录
-    │   ├── db.py         # 数据库工具
-    │   └── singleton.py  # 单例模式装饰器
-    ├── config.py          # 应用配置文件
-    ├── requirements.txt    # 项目依赖
-    ├── start.sh           # 启动脚本
-    ├── .flake8            # Flake8配置文件
-    ├── mypy.ini           # MyPy配置文件
-    ├── .gitignore         # Git忽略文件
-    └── LICENSE            # 开源协议
+    ├── backend/               # 后端API目录
+    ├── components/            # 前端组件目录
+    ├── models/                # 数据模型目录
+    ├── pages/                 # 页面组件目录
+    ├── utils/                 # 工具函数目录
+    ├── config.py              # 应用配置文件
+    ├── requirements.txt       # 项目依赖
+    ├── start.sh               # 启动脚本
+    ├── .flake8                # Flake8配置文件
+    ├── mypy.ini               # MyPy配置文件
+    ├── .gitignore             # Git忽略文件
+    └── LICENSE                # 开源协议
 
 ## 技术栈
 
@@ -78,30 +59,11 @@
 - `DELETE /api/funds/positions/<id>` - 删除持仓
 - `GET /api/funds/transactions/<portfolio_id>` - 获取交易记录
 
-## 数据结构
-
-### 账户体系
-```
-账户 (Account)
-├── 基金组合 (Portfolio)
-│   ├── 基金持仓 (FundPosition)
-│   └── 交易记录 (FundTransaction)
-└── 默认基金组合
-    ├── 基金持仓
-    └── 交易记录
-```
 
 ## 安装和运行
 
-1. 安装依赖：
-```bash
-pip install -r requirements.txt
-```
+运行 start.sh
 
-2. 运行应用：
-```bash
-python app.py
-```
 
 应用将在 http://localhost:8050 启动，API文档访问 http://localhost:8050/api/doc
 
@@ -113,28 +75,12 @@ python app.py
 - [x] 统一响应格式
 - [x] ORM 集成
 - [x] 账户管理功能
+- [x] 数据库迁移
 - [ ] 基金数据导入
 - [ ] 持仓分析
 - [ ] 收益分析
 - [ ] 风险评估
 
-## 开发指南
-
-### API 开发
-1. 在 `backend/apis/` 下创建新的 API 模块
-2. 在 `backend/__init__.py` 中注册 API 命名空间
-3. 使用 common.response 确保响应格式统一
-4. 实现相应的数据库操作方法
-
-### 数据库开发
-1. 在 `models/` 下定义数据模型
-2. 使用 Peewee ORM 管理数据库操作
-3. 在 `models/database.py` 中实现数据操作函数
-
-### 前端开发
-1. 在 `pages/` 下创建新的页面组件
-2. 在 `app.py` 中添加路由处理
-3. 在 `sidebar.py` 中添加菜单项
 
 ## 许可证
 
