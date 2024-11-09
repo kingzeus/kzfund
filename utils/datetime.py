@@ -30,3 +30,8 @@ def format_datetime(
         pass
 
     return default
+
+
+def get_timestamp() -> int:
+    """获取当前时间戳"""
+    return int(datetime.now().timestamp())

@@ -29,6 +29,7 @@ class FundCodeAIO(html.Div):
         select_props["placeholder"] = placeholder or "请输入基金代码"
         select_props["debounceWait"] = debounceWait or 200
         select_props["options"] = []
+        select_props["optionFilterMode"] = "remote-match"
         select_props["style"] = {"width": "100%"}
         print(select_props)
         super().__init__([fac.AntdSelect(id=self.ids.select(aio_id), **select_props)])

@@ -42,4 +42,4 @@ THEME_CONFIG: Dict[str, Any] = {
 
 # 数据源配置
 # 默认数据源 东方财富
-DATA_SOURCE_DEFAULT = "simple"
+DATA_SOURCE_DEFAULT = "eastmoney"

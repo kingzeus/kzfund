@@ -1,3 +1,8 @@
+"""
+数据源接口定义模块。
+定义了数据源的抽象基类和通用接口。
+"""
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from datetime import datetime
