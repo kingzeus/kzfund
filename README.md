@@ -24,6 +24,13 @@
 
 > ⚠️ 注意：这是一个用于学习 Dash 的练手项目，目前还在开发中，请勿用于生产环境。
 
+### 系统界面
+
+<div align="center">
+  <img src=".github/images/account.png" alt="账户与组合管理" width="80%"/>
+  <p>账户与组合管理界面</p>
+</div>
+
 ## ✨ 功能特性
 
 - 📊 基金投资组合可视化分析
@@ -52,6 +59,10 @@ cd fund-analysis
 ```bash
 ./start.sh
 ```
+<div align="center">
+  <img src=".github/images/start.png" alt="基金选择器" width="80%"/>
+  <p>启动脚本</p>
+</div>
 访问 http://localhost:8050 即可使用系统。API文档地址: http://localhost:8050/api/doc
 
 ## 🏗️ 技术架构
