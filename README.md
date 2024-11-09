@@ -52,6 +52,10 @@ cd fund-analysis
 ```bash
 ./start.sh
 ```
+<div align="center">
+  <img src=".github/images/start.png" alt="基金选择器" width="80%"/>
+  <p>启动脚本</p>
+</div>
 访问 http://localhost:8050 即可使用系统。API文档地址: http://localhost:8050/api/doc
 
 ## 🏗️ 技术架构
