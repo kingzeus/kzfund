@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, date
 import dash
 from dash import html, dcc, Input, Output, State, callback
 import feffery_antd_components as fac
@@ -7,18 +7,43 @@ from dash.exceptions import PreventUpdate
 
 from models.database import (
     get_accounts,
-    get_transactions,  # 需要在 models/database.py 中实现
-    add_transaction,  # 需要在 models/database.py 中实现
-    update_transaction,  # 需要在 models/database.py 中实现
-    delete_transaction,  # 需要在 models/database.py 中实现
+    get_transactions,
+    add_transaction,
+    update_transaction,
+    delete_transaction,
     get_portfolios,
 )
 from utils.datetime import format_datetime
 from components.fund_code_aio import FundCodeAIO
 
 
+# ============= 类型定义 =============
+TransactionData = Dict[str, Any]
+CascaderOption = Dict[str, Any]
+
+# ============= 常量定义 =============
+TRANSACTION_TYPES = [
+    {"label": "买入", "value": "buy"},
+    {"label": "卖出", "value": "sell"},
+]
+
+# ============= 样式常量 =============
+PAGE_PADDING = 24
+TABLE_STYLES = {"marginTop": "8px", "width": "100%"}
+ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
+FORM_LAYOUT = {"labelCol": {"span": 6}, "wrapperCol": {"span": 18}}
+
+
+# ============= 工具函数 =============
 def create_operation_buttons(transaction_id: str) -> List[Dict[str, Any]]:
-    """创建操作按钮配置"""
+    """创建操作按钮配置
+
+    Args:
+        transaction_id: 交易记录ID
+
+    Returns:
+        按钮配置列表
+    """
     return [
         {
             "icon": "antd-edit",
@@ -42,8 +67,45 @@ def create_operation_buttons(transaction_id: str) -> List[Dict[str, Any]]:
     ]
 
 
-def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
-    """渲染交易记录表格"""
+def build_cascader_options() -> List[CascaderOption]:
+    """构建账户-组合级联选择器选项
+
+    Returns:
+        级联选择器选项列表
+    """
+    accounts = get_accounts()
+    cascader_options = []
+
+    for account in accounts:
+        portfolios = get_portfolios(account["id"])
+        portfolio_children = [
+            {
+                "label": p["name"],
+                "value": p["id"],
+            }
+            for p in portfolios
+        ]
+        cascader_options.append(
+            {
+                "label": account["name"],
+                "value": account["id"],
+                "children": portfolio_children,
+            }
+        )
+
+    return cascader_options
+
+
+# ============= 组件渲染函数 =============
+def render_transaction_table(initial_data: List[TransactionData]) -> fac.AntdCard:
+    """渲染交易记录表格
+
+    Args:
+        initial_data: 初始交易数据列表
+
+    Returns:
+        交易记录表格卡片组件
+    """
     return fac.AntdCard(
         title="交易记录",
         bordered=False,
@@ -84,19 +146,6 @@ def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard
                         "key": "fund_name",
                         "width": "15%",
                     },
-                    # {
-                    #     "title": "交易类型",
-                    #     "dataIndex": "type",
-                    #     "key": "type",
-                    #     "width": "10%",
-                    #     "renderOptions": {
-                    #         "renderType": "tags",
-                    #         "content": {
-                    #             "buy": {"tag": "买入", "color": "green"},
-                    #             "sell": {"tag": "卖出", "color": "red"},
-                    #         },
-                    #     },
-                    # },
                     {
                         "title": "交易金额",
                         "dataIndex": "amount",
@@ -127,10 +176,7 @@ def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard
                     "showSizeChanger": True,
                     "showQuickJumper": True,
                 },
-                style={
-                    "marginTop": "8px",
-                    "width": "100%",
-                },
+                style=TABLE_STYLES,
             ),
         ],
         bodyStyle={"padding": "12px"},
@@ -139,7 +185,11 @@ def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard
 
 
 def render_transaction_modal() -> fac.AntdModal:
-    """渲染交易记录编辑对话框"""
+    """渲染交易记录编辑对话框
+
+    Returns:
+        交易记录编辑对话框组件
+    """
     return fac.AntdModal(
         id="transaction-modal",
         title="新建交易",
@@ -152,8 +202,8 @@ def render_transaction_modal() -> fac.AntdModal:
         children=[
             fac.AntdForm(
                 id="transaction-form",
-                labelCol={"span": 6},
-                wrapperCol={"span": 18},
+                labelCol=FORM_LAYOUT["labelCol"],
+                wrapperCol=FORM_LAYOUT["wrapperCol"],
                 children=[
                     fac.AntdFormItem(
                         fac.AntdCascader(
@@ -161,7 +211,7 @@ def render_transaction_modal() -> fac.AntdModal:
                             placeholder="请选择账户和组合",
                             options=[],
                             style={"width": "100%"},
-                            changeOnSelect=False,  # 只允许选择叶子节点
+                            changeOnSelect=False,
                         ),
                         label="投资组合",
                         required=True,
@@ -175,10 +225,7 @@ def render_transaction_modal() -> fac.AntdModal:
                         fac.AntdSelect(
                             id="transaction-type-select",
                             placeholder="请选择交易类型",
-                            options=[
-                                {"label": "买入", "value": "buy"},
-                                {"label": "卖出", "value": "sell"},
-                            ],
+                            options=TRANSACTION_TYPES,
                             style={"width": "100%"},
                         ),
                         label="交易类型",
@@ -200,6 +247,8 @@ def render_transaction_modal() -> fac.AntdModal:
                             id="trade-time-picker",
                             placeholder="请选择交易时间",
                             style={"width": "100%"},
+                            format="YYYY-MM-DD",
+                            showTime=False,
                         ),
                         label="交易时间",
                         required=True,
@@ -211,7 +260,11 @@ def render_transaction_modal() -> fac.AntdModal:
 
 
 def render_delete_confirm_modal() -> fac.AntdModal:
-    """渲染删除确认对话框"""
+    """渲染删除确认对话框
+
+    Returns:
+        删除确认对话框组件
+    """
     return fac.AntdModal(
         id="delete-confirm-modal",
         title="确认删除",
@@ -224,8 +277,13 @@ def render_delete_confirm_modal() -> fac.AntdModal:
     )
 
 
+# ============= 页面主渲染函数 =============
 def render_transaction_page() -> html.Div:
-    """渲染交易记录页面"""
+    """渲染交易记录页面
+
+    Returns:
+        页面主容器组件
+    """
     initial_transactions = get_transactions()
 
     return html.Div(
@@ -240,7 +298,7 @@ def render_transaction_page() -> html.Div:
                         [
                             fac.AntdIcon(
                                 icon="antd-calendar",
-                                style={"fontSize": "24px", "marginRight": "8px"},
+                                style=ICON_STYLES,
                             ),
                             "交易记录",
                         ],
@@ -260,14 +318,14 @@ def render_transaction_page() -> html.Div:
                 fac.AntdCol(
                     render_transaction_table(initial_transactions),
                     span=24,
-                    style={"padding": "8px"},
+                    style={"padding": f"{PAGE_PADDING}px"},
                 ),
             ),
             # 对话框组件
             render_transaction_modal(),
             render_delete_confirm_modal(),
         ],
-        style={"padding": "24px"},
+        style={"padding": f"{PAGE_PADDING}px"},
     )
 
 
@@ -305,20 +363,42 @@ def render_transaction_page() -> html.Div:
     prevent_initial_call=True,
 )
 def handle_transaction_actions(
-    add_clicks,
-    button_clicks,
-    modal_ok_counts,
-    delete_ok_counts,
-    clicked_custom,
-    store_data,
-    portfolio_path,
-    fund_code,
-    transaction_type,
-    amount,
-    trade_time,
-    editing_id,
-):
-    """统一处理所有交易相关的操作"""
+    add_clicks: Optional[int],
+    button_clicks: Optional[int],
+    modal_ok_counts: Optional[int],
+    delete_ok_counts: Optional[int],
+    clicked_custom: Optional[Dict[str, Any]],
+    store_data: List[TransactionData],
+    portfolio_path: Optional[List[str]],
+    fund_code: Optional[str],
+    transaction_type: Optional[str],
+    amount: Optional[float],
+    trade_time: Optional[str],
+    editing_id: Optional[str],
+) -> Tuple[
+    bool,
+    str,
+    List[CascaderOption],
+    Optional[List[str]],
+    str,
+    Optional[str],
+    Optional[float],
+    Optional[str],
+    bool,
+    str,
+    List[TransactionData],
+]:
+    """统一处理所有交易相关的操作
+
+    处理:
+    1. 新建交易
+    2. 编辑交易
+    3. 保存交易
+    4. 删除交易
+
+    Returns:
+        包含各个组件状态的元组
+    """
     ctx = dash.callback_context
     if not ctx.triggered:
         raise PreventUpdate
@@ -340,166 +420,143 @@ def handle_transaction_actions(
         dash.no_update,  # store data
     )
 
-    # 处理新建交易按钮点击
-    if trigger_id == "add-transaction-btn.nClicks":
-        accounts = get_accounts()  # 获取所有账户
-        cascader_options = []
-
-        # 构建级联选择器的选项
-        for account in accounts:
-            portfolios = get_portfolios(account["id"])
-            portfolio_children = [
-                {
-                    "label": p["name"],
-                    "value": p["id"],
-                }
-                for p in portfolios
-            ]
-            cascader_options.append(
-                {
-                    "label": account["name"],
-                    "value": account["id"],
-                    "children": portfolio_children,
-                }
+    try:
+        # 处理新建交易按钮点击
+        if trigger_id == "add-transaction-btn.nClicks":
+            cascader_options = build_cascader_options()
+            return (
+                True,
+                "新建交易",
+                cascader_options,
+                None,
+                "",
+                None,
+                None,
+                None,
+                False,
+                "",
+                dash.no_update,
             )
 
-        return (
-            True,  # modal visible
-            "新建交易",  # modal title
-            cascader_options,  # cascader options
-            None,  # cascader value
-            "",  # fund code
-            None,  # transaction type
-            None,  # amount
-            None,  # trade time
-            False,  # delete modal visible
-            "",  # editing id
-            dash.no_update,  # store data
-        )
+        # 处理编辑按钮点击
+        elif trigger_id == "transaction-list.nClicksButton":
+            if not clicked_custom:
+                return default_return
 
-    # 处理格按钮点击 - 编辑模式
-    elif trigger_id == "transaction-list.nClicksButton":
-        if not clicked_custom:
-            return default_return
+            action = clicked_custom.get("action")
+            transaction_id = clicked_custom.get("id")
+            transaction = next(
+                (t for t in store_data if t["id"] == transaction_id), None
+            )
 
-        action = clicked_custom.get("action")
-        transaction_id = clicked_custom.get("id")
-        transaction = next((t for t in store_data if t["id"] == transaction_id), None)
+            if not transaction:
+                return default_return
 
-        if not transaction:
-            return default_return
+            if action == "edit":
+                cascader_options = build_cascader_options()
+                # 找到当前交易记录对应的组合路径
+                for account in cascader_options:
+                    for portfolio in account["children"]:
+                        if portfolio["value"] == transaction["portfolio_id"]:
+                            cascader_value = [account["value"], portfolio["value"]]
+                            return (
+                                True,  # modal visible
+                                "编辑交易记录",  # modal title
+                                cascader_options,  # cascader options
+                                cascader_value,  # cascader value
+                                transaction["fund_code"],  # fund code
+                                transaction["type"],  # transaction type
+                                float(
+                                    transaction["amount"]
+                                    .replace("¥", "")
+                                    .replace(",", "")
+                                ),  # amount
+                                transaction["trade_time"],  # trade time
+                                False,  # delete modal visible
+                                transaction_id,  # editing id
+                                dash.no_update,  # store data
+                            )
 
-        if action == "edit":
-            # 构建级联选择器的选项和当前值
-            accounts = get_accounts()
-            cascader_options = []
-            cascader_value = None
+        # 处理保存交易
+        elif trigger_id == "transaction-modal.okCounts":
+            if not all(
+                [portfolio_path, fund_code, transaction_type, amount, trade_time]
+            ):
+                return default_return
 
-            for account in accounts:
-                portfolios = get_portfolios(account["id"])
-                portfolio_children = []
+            portfolio_id = portfolio_path[-1] if portfolio_path else None
+            if not portfolio_id:
+                return default_return
 
-                for p in portfolios:
-                    portfolio_children.append(
-                        {
-                            "label": p["name"],
-                            "value": p["id"],
-                        }
-                    )
-                    # 找到当前交易记录对应的组合，设置级联值
-                    if p["id"] == transaction["portfolio_id"]:
-                        cascader_value = [account["id"], p["id"]]
+            # 修改日期时间处理逻辑
+            try:
+                # 如果输入的是日期格式 (YYYY-MM-DD)
+                if isinstance(trade_time, str) and len(trade_time) == 10:
+                    trade_date = datetime.strptime(trade_time, "%Y-%m-%d")
+                    trade_datetime = datetime.combine(trade_date, datetime.min.time())
+                # 如果输入的是日期时间格式 (YYYY-MM-DD HH:MM:SS)
+                else:
+                    trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
+            except ValueError as e:
+                print(f"日期格式转换错误: {e}")
+                return default_return
 
-                cascader_options.append(
-                    {
-                        "label": account["name"],
-                        "value": account["id"],
-                        "children": portfolio_children,
-                    }
+            success = False
+            if editing_id:
+                success = update_transaction(
+                    transaction_id=editing_id,
+                    portfolio_id=portfolio_id,
+                    fund_code=fund_code,
+                    transaction_type=transaction_type,
+                    amount=amount,
+                    trade_time=trade_datetime,
+                )
+            else:
+                success = add_transaction(
+                    portfolio_id=portfolio_id,
+                    fund_code=fund_code,
+                    transaction_type=transaction_type,
+                    amount=amount,
+                    trade_time=trade_datetime,
                 )
 
-            return (
-                True,  # modal visible
-                "编辑交易记录",  # modal title
-                cascader_options,  # cascader options
-                cascader_value,  # cascader value
-                transaction["fund_code"],  # fund code
-                transaction["type"],  # transaction type
-                float(
-                    transaction["amount"].replace("¥", "").replace(",", "")
-                ),  # amount
-                transaction["trade_time"],  # trade time
-                False,  # delete modal visible
-                transaction_id,  # editing id
-                dash.no_update,  # store data
-            )
+            if success:
+                return (
+                    False,
+                    dash.no_update,
+                    [],
+                    None,
+                    "",
+                    None,
+                    None,
+                    None,
+                    False,
+                    "",
+                    get_transactions(),
+                )
 
-    # 处理模态框确认 - 创建或更新交易记录
-    elif trigger_id == "transaction-modal.okCounts":
-        if not all([portfolio_path, fund_code, transaction_type, amount, trade_time]):
-            return default_return
+        # 处理删除确认
+        elif trigger_id == "delete-confirm-modal.okCounts":
+            if not editing_id:
+                return default_return
 
-        # 从级联路径中获取组合ID（最后一个值）
-        portfolio_id = portfolio_path[-1] if portfolio_path else None
-        if not portfolio_id:
-            return default_return
+            if delete_transaction(editing_id):
+                return (
+                    False,
+                    dash.no_update,
+                    [],
+                    None,
+                    "",
+                    None,
+                    None,
+                    None,
+                    False,
+                    "",
+                    get_transactions(),
+                )
 
-        # 转换交易时间字串为datetime对象
-        trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
-
-        success = False
-        if editing_id:
-            success = update_transaction(
-                transaction_id=editing_id,
-                portfolio_id=portfolio_id,
-                fund_code=fund_code,
-                transaction_type=transaction_type,
-                amount=amount,
-                trade_time=trade_datetime,
-            )
-        else:
-            success = add_transaction(
-                portfolio_id=portfolio_id,
-                fund_code=fund_code,
-                transaction_type=transaction_type,
-                amount=amount,
-                trade_time=trade_datetime,
-            )
-
-        if success:
-            return (
-                False,  # modal visible
-                dash.no_update,  # modal title
-                [],  # cascader options
-                None,  # cascader value
-                "",  # fund code
-                None,  # transaction type
-                None,  # amount
-                None,  # trade time
-                False,  # delete modal visible
-                "",  # editing id
-                get_transactions(),  # store data
-            )
-
-    # 处理删除确认
-    elif trigger_id == "delete-confirm-modal.okCounts":
-        if not editing_id:
-            return default_return
-
-        if delete_transaction(editing_id):
-            return (
-                False,  # modal visible
-                dash.no_update,  # modal title
-                [],  # cascader options
-                None,  # cascader value
-                "",  # fund code
-                None,  # transaction type
-                None,  # amount
-                None,  # trade time
-                False,  # delete modal visible
-                "",  # editing id
-                get_transactions(),  # store data
-            )
+    except Exception as e:
+        print(f"处理交易操作失败: {e}")  # 添加错误日志
 
     return default_return
 
@@ -509,6 +566,15 @@ def handle_transaction_actions(
     Input("transaction-store", "data"),
     prevent_initial_call=True,
 )
-def update_transaction_table(store_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Store数据更新时，更新交易记录表格"""
+def update_transaction_table(
+    store_data: List[TransactionData],
+) -> List[TransactionData]:
+    """Store数据更新时，更新交易记录表格
+
+    Args:
+        store_data: 最新的交易数据列表
+
+    Returns:
+        更新后的表格数据
+    """
     return store_data

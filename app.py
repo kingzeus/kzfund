@@ -15,6 +15,7 @@ from config import (
     SERVER_CONFIG,
     THEME_CONFIG,
 )
+from pages.task import render_task_page
 from pages.transaction import render_transaction_page
 from data_source import init_data_source
 
@@ -54,10 +55,7 @@ CARD_SHADOW = THEME_CONFIG["card_shadow"]
 # 定义页面布局
 app.layout = html.Div(
     [
-        # 本地数据源存储
-        dcc.Store(
-            id="store-local-data-source", storage_type="local", data=DATA_SOURCE_DEFAULT
-        ),
+
         # 顶部导航栏
         create_header(),
         # 主要内容区域
@@ -122,6 +120,8 @@ def update_page_content(current_key: str) -> Any:
         return render_account_page()
     elif current_key == "transaction":
         return render_transaction_page()
+    elif current_key == "task":
+        return render_task_page()
     else:
         # 其他页面返回空白内容
         return html.Div()

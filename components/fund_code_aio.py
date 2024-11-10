@@ -3,6 +3,7 @@ from dash import html, dcc, callback, Output, Input, State, MATCH, no_update
 import feffery_antd_components as fac
 import uuid
 
+from config import DATA_SOURCE_DEFAULT
 from data_source.proxy import DataSourceProxy
 
 
@@ -36,15 +37,16 @@ class FundCodeAIO(html.Div):
 
     @callback(
         Output(ids.select(MATCH), "options"),
-        State("store-local-data-source", "data"),
         Input(ids.select(MATCH), "debounceSearchValue"),
     )
-    def update_options(data_source, debounceSearchValue):
+    def update_options(debounceSearchValue):
         if not debounceSearchValue:
             return no_update
 
         try:
-            return DataSourceProxy(data_source).get_quick_tips(debounceSearchValue)
+            return DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
+                debounceSearchValue
+            )
         except Exception as e:
             print(f"获取基金代码失败: {e}")
             return []

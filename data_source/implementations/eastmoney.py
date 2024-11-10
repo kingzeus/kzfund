@@ -82,29 +82,20 @@ class EastMoneyDataSource(IDataSource):
     def get_fund_info(self, fund_code: str) -> Dict[str, Any]:
         """获取基金基本信息"""
         try:
-            url = f"{self.base_url}/FundMApi/FundBaseTypeInformation.ashx"
+            url = f"https://fundgz.1234567.com.cn/js/{fund_code}.js"
             params = {
-                "FCODE": fund_code,
-                "deviceid": "123",  # 随机设备ID
-                "plat": "Web",
-                "product": "EFund",
-                "version": "2.0.0",
+                "rt": get_timestamp(),
             }
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
-            data = response.json()
+            text = response.text
 
-            if "Datas" in data:
-                fund_data = data["Datas"]
-                return {
-                    "code": fund_code,
-                    "name": fund_data.get("SHORTNAME", ""),
-                    "type": fund_data.get("FTYPE", ""),
-                    "company": fund_data.get("JJGS", ""),
-                    "nav": float(fund_data.get("NAV", 0)),
-                    "nav_date": fund_data.get("PDATE", ""),
-                    "description": fund_data.get("COMMENTS", ""),
-                }
+            data = self._parse_jsonp_simple(text)
+            return {
+                "code": fund_code,
+                "name": data.get("name", ""),
+            }
+
             raise ValueError(f"未找到基金: {fund_code}")
         except Exception as e:
             raise ValueError(f"获取基金信息失败: {str(e)}")
@@ -117,7 +108,7 @@ class EastMoneyDataSource(IDataSource):
     ) -> List[Dict[str, Any]]:
         """获取基金历史净值"""
         try:
-            url = f"{self.base_url}/LCAPI/FundNetValue/GetFundNetValueList"
+            url = f"https://fundsuggest.eastmoney.com/LCAPI/FundNetValue/GetFundNetValueList"
             params = {
                 "fundCode": fund_code,
                 "pageIndex": 1,

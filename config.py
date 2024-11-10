@@ -5,6 +5,7 @@
 from typing import Dict, Any
 import os
 
+
 # 基本配置
 APP_NAME = "基金持仓分析系统"
 VERSION = "0.1.0"
@@ -43,3 +44,19 @@ THEME_CONFIG: Dict[str, Any] = {
 # 数据源配置
 # 默认数据源 东方财富
 DATA_SOURCE_DEFAULT = "eastmoney"
+
+# 任务调度器配置
+SCHEDULER_CONFIG = {
+    # Flask-APScheduler 配置
+    "SCHEDULER_API_ENABLED": True,  # 启用调度器API
+    "SCHEDULER_API_PREFIX": "/scheduler",  # API前缀
+    "SCHEDULER_TIMEZONE": "Asia/Shanghai",  # 时区
+    # 任务存储配置
+    "SCHEDULER_JOB_DEFAULTS": {
+        "coalesce": False,  # 是否合并延迟的任务
+        "max_instances": 1,  # 同一个任务的最大实例数
+        "misfire_grace_time": 60,  # 任务错过执行时间的容错时间（秒）
+    },
+    # 自定义配置
+    "DEFAULT_TIMEOUT": 3600,  # 默认任务超时时间（秒）
+}

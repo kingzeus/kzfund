@@ -1,16 +1,28 @@
 from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
+
+from scheduler.jobs import JobManager
 from .base import Database, db_connection
 from .account import Account, Portfolio
 from .fund import FundPosition, FundTransaction, FundNav, Fund
+from .task import TaskHistory
 from peewee import fn, JOIN
+
 
 def init_database():
     """初始化数据库"""
     with db_connection():
         Database().get_db().create_tables(
-            [Account, Portfolio, FundPosition, FundTransaction, FundNav, Fund]
+            [
+                Account,
+                Portfolio,
+                FundPosition,
+                FundTransaction,
+                FundNav,
+                Fund,
+                TaskHistory,
+            ]
         )
 
 # 账户相关操作
@@ -393,7 +405,11 @@ def add_transaction(
             fund = Fund.get_or_none(Fund.code == fund_code)
             if not fund:
                 # 如果基金不存在，可以从外部API获取基金信息并创建
-                # TODO: 实现从外部API获取基金信息的功能
+                task_id = JobManager().add_task(
+                    "fund_info",
+                    fund_code=fund_code,
+                )
+                print(f"已添加获取基金信息任务: {task_id}")
                 return False
 
             # 创建交易记录

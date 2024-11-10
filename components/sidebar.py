@@ -103,6 +103,14 @@ def create_sidebar() -> html.Div:
                         },
                     },
                     {
+                        "component": "Item",
+                        "props": {
+                            "key": "task",
+                            "title": "任务管理",
+                            "icon": "antd-schedule",
+                        },
+                    },
+                    {
                         "component": "ItemLink",
                         "props": {
                             "key": "api-doc",
