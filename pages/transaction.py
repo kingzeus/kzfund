@@ -4,6 +4,7 @@ import dash
 from dash import html, dcc, Input, Output, State, callback
 import feffery_antd_components as fac
 from dash.exceptions import PreventUpdate
+import logging
 
 from models.database import (
     get_accounts,
@@ -498,7 +499,7 @@ def handle_transaction_actions(
                 else:
                     trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
             except ValueError as e:
-                print(f"日期格式转换错误: {e}")
+                logger.error(f"日期格式转换错误: {str(e)}", exc_info=True)
                 return default_return
 
             success = False
@@ -556,9 +557,8 @@ def handle_transaction_actions(
                 )
 
     except Exception as e:
-        print(f"处理交易操作失败: {e}")  # 添加错误日志
-
-    return default_return
+        logger.error(f"处理交易操作失败: {str(e)}", exc_info=True)
+        return default_return
 
 
 @callback(

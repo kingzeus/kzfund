@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
+import logging
 
 from scheduler.jobs import JobManager
 from .base import Database, db_connection
@@ -8,6 +9,9 @@ from .account import Account, Portfolio
 from .fund import FundPosition, FundTransaction, FundNav, Fund
 from .task import TaskHistory
 from peewee import fn, JOIN
+
+
+logger = logging.getLogger(__name__)
 
 
 def init_database():
@@ -92,7 +96,7 @@ def update_account(account_id: str, name: str, description: str = None) -> bool:
             account.save()
             return True
     except Exception as e:
-        print(f"更新账户失败: {e}")
+        logger.error(f"更新账户失败: {e}")
         return False
 
 def delete_account(account_id: str) -> bool:
@@ -110,7 +114,7 @@ def delete_account(account_id: str) -> bool:
             account.delete_instance()
             return True
     except Exception as e:
-        print(f"删除账户失败: {e}")
+        logger.error(f"删除账户失败: {e}")
         return False
 
 # 投资组合相关操作
@@ -212,7 +216,7 @@ def delete_portfolio(portfolio_id: str) -> bool:
             portfolio.delete_instance(recursive=True)
             return True
     except Exception as e:
-        print(f"删除组合失败: {e}")
+        logger.error(f"删除组合失败: {e}")
         return False
 
 # 基金持仓相关操作
@@ -380,12 +384,12 @@ def get_transactions() -> List[Dict[str, Any]]:
                     }
                     result.append(transaction_dict)
                 except Exception as e:
-                    print(f"Error processing transaction {trans.id}: {e}")
+                    logger.error(f"Error processing transaction {trans.id}: {e}")
 
             return result
 
         except Exception as e:
-            print(f"获取交易记录失败: {e}")
+            logger.error(f"获取交易记录失败: {e}")
             return []
 
 def add_transaction(
@@ -409,7 +413,7 @@ def add_transaction(
                     "fund_info",
                     fund_code=fund_code,
                 )
-                print(f"已添加获取基金信息任务: {task_id}")
+                logger.info(f"已添加获取基金信息任务: {task_id}")
                 return False
 
             # 创建交易记录
@@ -437,7 +441,7 @@ def add_transaction(
 
             return True
     except Exception as e:
-        print(f"添加交易记录失败: {e}")
+        logger.error(f"添加交易记录失败: {e}")
         return False
 
 
@@ -476,7 +480,7 @@ def update_transaction(
 
             return True
     except Exception as e:
-        print(f"更新交易记录失败: {e}")
+        logger.error(f"更新交易记录失败: {e}")
         return False
 
 
@@ -497,7 +501,7 @@ def delete_transaction(transaction_id: str) -> bool:
 
             return True
     except Exception as e:
-        print(f"删除交易记录失败: {e}")
+        logger.error(f"删除交易记录失败: {e}")
         return False
 
 
@@ -561,7 +565,7 @@ def update_position_after_transaction(
                     purchase_date=datetime.now(),
                 )
     except Exception as e:
-        print(f"更新持仓失败: {e}")
+        logger.error(f"更新持仓失败: {e}")
 
 
 def recalculate_position(portfolio_id: str, fund_code: str) -> None:
@@ -622,23 +626,23 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                     purchase_date=datetime.now(),
                 )
     except Exception as e:
-        print(f"重新计算持仓失败: {e}")
+        logger.error(f"重新计算持仓失败: {e}")
 
 def check_database_content():
     """检查数据库内容"""
     with db_connection():
         # 检查交易记录表
         trans_count = FundTransaction.select().count()
-        print(f"交易记录数量: {trans_count}")
+        logger.info(f"交易记录数量: {trans_count}")
 
         # 检查组合表
         portfolio_count = Portfolio.select().count()
-        print(f"组合数量: {portfolio_count}")
+        logger.info(f"组合数量: {portfolio_count}")
 
         # 如果有交易记录，打印第一条记录的详细信息
         if trans_count > 0:
             first_trans = FundTransaction.select().first()
-            print(
+            logger.info(
                 "第一条交易记录:",
                 {
                     "id": first_trans.id,

@@ -1,6 +1,7 @@
 from typing import Callable, Dict, Any, List
 from datetime import datetime
 import uuid
+import logging
 from flask_apscheduler import APScheduler
 from models.task import TaskHistory
 from config import SCHEDULER_CONFIG
@@ -9,6 +10,9 @@ from scheduler.tasks import TaskFactory
 
 # 创建调度器实例
 scheduler = APScheduler()
+
+logger = logging.getLogger(__name__)
+
 
 # ============= 常量定义 =============
 class TaskStatus:
@@ -35,6 +39,7 @@ class JobManager:
     def __init__(self):
         """初始化任务管理器"""
         self.scheduler = scheduler
+        logger.debug("初始化任务管理器")
 
     def init_app(self, app):
         """初始化 Flask 应用
@@ -47,6 +52,7 @@ class JobManager:
         app.config.update(SCHEDULER_CONFIG)
         self.scheduler.init_app(app)
         self.scheduler.start()
+        logger.info("任务调度器初始化成功")
 
     def _create_job_id(self) -> str:
         """生成任务ID
@@ -73,6 +79,7 @@ class JobManager:
             task_history.status = TaskStatus.RUNNING
             task_history.start_time = datetime.now()
             task_history.save()
+            logger.info(f"开始执行任务: {task_type} (ID: {task_id})")
 
             # 执行任务
             result = TaskFactory().execute_task(task_type, task_id, **kwargs)
@@ -81,11 +88,13 @@ class JobManager:
             task_history.status = TaskStatus.COMPLETED
             task_history.result = str(result)
             task_history.progress = 100
+            logger.info(f"任务执行完成: {task_type} (ID: {task_id})")
 
         except Exception as e:
             # 更新任务状态为失败
             task_history.status = TaskStatus.FAILED
             task_history.error = str(e)
+            logger.error(f"任务执行失败: {task_type} (ID: {task_id})", exc_info=True)
             raise
         finally:
             task_history.end_time = datetime.now()
@@ -108,12 +117,16 @@ class JobManager:
             ValueError: 当必需参数缺失时
         """
         # 验证任务参数
-
         if task_type == "fund_info" and "fund_code" not in kwargs:
-            raise ValueError("fund_info任务需要提供fund_code参数")
+            error_msg = "fund_info任务需要提供fund_code参数"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         task_id = self._create_job_id()
         task_config = TaskFactory().get_task_types().get(task_type, {})
+
+        logger.info(f"添加新任务: {task_type} (ID: {task_id})")
+        logger.debug(f"任务参数: {kwargs}")
 
         # 创建任务历史记录
         TaskHistory.create(
@@ -156,28 +169,23 @@ class JobManager:
             TaskHistory.update(status=TaskStatus.PAUSED).where(
                 TaskHistory.task_id == task_id
             ).execute()
+            logger.info(f"任务已暂停: {task_id}")
             return True
         except Exception as e:
-            print(f"暂停任务失败: {e}")  # 添加错误日志
+            logger.error(f"暂停任务失败: {task_id}", exc_info=True)
             return False
 
     def resume_task(self, task_id: str) -> bool:
-        """恢复任务
-
-        Args:
-            task_id: 任务ID
-
-        Returns:
-            操作是否成功
-        """
+        """恢复任务"""
         try:
             self.scheduler.resume_job(task_id)
             TaskHistory.update(status=TaskStatus.PENDING).where(
                 TaskHistory.task_id == task_id
             ).execute()
+            logger.info(f"任务已恢复: {task_id}")
             return True
         except Exception as e:
-            print(f"恢复任务失败: {e}")  # 添加错误日志
+            logger.error(f"恢复任务失败: {task_id}", exc_info=True)
             return False
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:

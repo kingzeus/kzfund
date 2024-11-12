@@ -6,12 +6,16 @@ import feffery_antd_components as fac
 from dash.exceptions import PreventUpdate
 import json
 import uuid
+import logging
 
 from scheduler.jobs import JobManager, TaskStatus
 from scheduler.tasks import TaskFactory
 
 from utils.datetime import format_datetime
 from components.fund_code_aio import FundCodeAIO
+
+
+logger = logging.getLogger(__name__)
 
 
 # ============= 类型定义 =============
@@ -574,6 +578,7 @@ def update_task_list(store_data, action_clicks, current_data):
         trigger = ctx.triggered[0]["prop_id"].split(".")[0]
 
         if trigger == "task-store":
+            logger.debug("从store更新任务列表")
             # 处理数据
             return [
                 {
@@ -638,6 +643,7 @@ def update_task_list(store_data, action_clicks, current_data):
                 action = button_id["action"]
 
                 if action in ["pause", "resume"]:
+                    logger.info(f"执行任务{action}操作: {task_id}")
                     if action == "pause":
                         JobManager().pause_task(task_id)
                     else:
@@ -645,6 +651,7 @@ def update_task_list(store_data, action_clicks, current_data):
 
                     # 获取最新任务列表并处理
                     tasks = JobManager().get_task_history()
+                    logger.debug(f"更新任务列表，共{len(tasks)}个任务")
                     return [
                         {
                             **task,
@@ -704,13 +711,14 @@ def update_task_list(store_data, action_clicks, current_data):
                         for task in tasks
                     ]
 
-            except (json.JSONDecodeError, KeyError):
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"处理任务操作失败: {str(e)}", exc_info=True)
                 pass
 
         return dash.no_update
 
     except Exception as e:
-        print(f"更新任务列表失败: {e}")  # 添加错误日志
+        logger.error(f"更新任务列表失败: {str(e)}", exc_info=True)
         return dash.no_update  # 统一错误处理返回
 
 

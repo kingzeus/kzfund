@@ -1,8 +1,12 @@
 from peewee import Model, SqliteDatabase, DateTimeField
 from datetime import datetime
+import logging
 from config import DATABASE_CONFIG
 from contextlib import contextmanager
 from utils.singleton import Singleton
+
+
+logger = logging.getLogger(__name__)
 
 
 @Singleton
@@ -26,27 +30,34 @@ class Database:
 
         self.db_path = new_db_path
         self.db = SqliteDatabase(self.db_path)
-        # print(f"初始化数据库连接: {self.db_path}")
+        logger.debug(f"初始化数据库连接: {self.db_path}")
 
     def close(self):
         if self.db is not None:
             if not self.db.is_closed():
-                # print("关闭数据库连接")
+                logger.debug("关闭数据库连接")
                 self.db.close()
                 self.db_path = None
                 self.db = None
 
     def get_db(self):
         if self.db is None:
-            raise Exception("数据库未初始化")
+            error_msg = "数据库未初始化"
+            logger.error(error_msg)
+            raise Exception(error_msg)
         return self.db
 
 
 def init_db(db_path: str = None):
     """初始化数据库连接"""
-    Database().open(db_path)
-    BaseModel._meta.database = Database().get_db()
-    return Database().get_db()
+    try:
+        Database().open(db_path)
+        BaseModel._meta.database = Database().get_db()
+        logger.info(f"数据库初始化成功: {db_path or DATABASE_CONFIG['path']}")
+        return Database().get_db()
+    except Exception as e:
+        logger.error(f"数据库初始化失败: {str(e)}", exc_info=True)
+        raise
 
 
 class BaseModel(Model):
@@ -66,12 +77,17 @@ class BaseModel(Model):
 @contextmanager
 def db_connection(db_path: str = None):
     """数据库连接上下文管理器"""
-    Database().open(db_path)
-    Database().connect()
     try:
+        Database().open(db_path)
+        Database().connect()
+        logger.debug("打开数据库连接")
         yield Database().get_db()
+    except Exception as e:
+        logger.error(f"数据库操作失败: {str(e)}", exc_info=True)
+        raise
     finally:
         Database().close()
+        logger.debug("关闭数据库连接")
 
 
 # 初始化默认数据库连接

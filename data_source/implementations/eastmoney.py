@@ -1,6 +1,7 @@
 import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import logging
 import requests
 import random
 import string
@@ -8,6 +9,9 @@ import urllib.parse
 
 from utils.datetime import get_timestamp
 from ..interface import IDataSource
+
+
+logger = logging.getLogger(__name__)
 
 
 class EastMoneyDataSource(IDataSource):
@@ -26,6 +30,7 @@ class EastMoneyDataSource(IDataSource):
             "Referer": "https://fund.eastmoney.com/",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         }
+        logger.debug("初始化东方财富数据源")
 
     def _generate_random_string(self, length=20):
         # 定义字符集
@@ -56,12 +61,16 @@ class EastMoneyDataSource(IDataSource):
                 "key": urllib.parse.quote(search_text),
                 "_": get_timestamp(),
             }
+            logger.debug(f"请求基金搜索建议: {url}, params: {params}")
+
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
 
             text = response.text
             if not text.startswith(params["callback"]):
-                raise ValueError("获取基金搜索建议失败")
+                error_msg = "获取基金搜索建议失败"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
             data = self._parse_jsonp_simple(text)
 
@@ -74,9 +83,10 @@ class EastMoneyDataSource(IDataSource):
                             "value": item["CODE"],
                         }
                     )
+            logger.debug(f"获取到 {len(results)} 个搜索建议")
             return results
         except Exception as e:
-            print(f"获取基金搜索建议失败: {str(e)}")
+            logger.error(f"获取基金搜索建议失败: {str(e)}", exc_info=True)
             return []
 
     def get_fund_info(self, fund_code: str) -> Dict[str, Any]:
@@ -86,18 +96,24 @@ class EastMoneyDataSource(IDataSource):
             params = {
                 "rt": get_timestamp(),
             }
+            logger.debug(f"请求基金信息: {url}, params: {params}")
+
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
             text = response.text
 
             data = self._parse_jsonp_simple(text)
+            if not data:
+                error_msg = f"未找到基金: {fund_code}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
             return {
                 "code": fund_code,
                 "name": data.get("name", ""),
             }
-
-            raise ValueError(f"未找到基金: {fund_code}")
         except Exception as e:
+            logger.error(f"获取基金信息失败: {str(e)}", exc_info=True)
             raise ValueError(f"获取基金信息失败: {str(e)}")
 
     def get_fund_nav_history(
@@ -120,6 +136,8 @@ class EastMoneyDataSource(IDataSource):
             if end_date:
                 params["endDate"] = end_date.strftime("%Y-%m-%d")
 
+            logger.debug(f"请求基金历史净值: {url}, params: {params}")
+
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
             data = response.json()
@@ -136,6 +154,8 @@ class EastMoneyDataSource(IDataSource):
                             / 100,  # 转换为小数
                         }
                     )
+            logger.debug(f"获取到 {len(results)} 条历史净值记录")
             return results
         except Exception as e:
+            logger.error(f"获取基金历史净值失败: {str(e)}", exc_info=True)
             raise ValueError(f"获取基金历史净值失败: {str(e)}")

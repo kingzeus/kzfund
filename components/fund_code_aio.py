@@ -2,9 +2,13 @@ import time
 from dash import html, dcc, callback, Output, Input, State, MATCH, no_update
 import feffery_antd_components as fac
 import uuid
+import logging
 
 from config import DATA_SOURCE_DEFAULT
 from data_source.proxy import DataSourceProxy
+
+
+logger = logging.getLogger(__name__)
 
 
 class FundCodeAIO(html.Div):
@@ -32,7 +36,8 @@ class FundCodeAIO(html.Div):
         select_props["options"] = []
         select_props["optionFilterMode"] = "remote-match"
         select_props["style"] = {"width": "100%"}
-        print(select_props)
+
+        logger.debug(f"初始化基金代码选择器: {select_props}")
         super().__init__([fac.AntdSelect(id=self.ids.select(aio_id), **select_props)])
 
     @callback(
@@ -44,9 +49,12 @@ class FundCodeAIO(html.Div):
             return no_update
 
         try:
-            return DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
+            logger.debug(f"获取基金代码提示: {debounceSearchValue}")
+            options = DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
                 debounceSearchValue
             )
+            logger.debug(f"获取到 {len(options)} 个提示选项")
+            return options
         except Exception as e:
-            print(f"获取基金代码失败: {e}")
+            logger.error(f"获取基金代码失败: {str(e)}", exc_info=True)
             return []

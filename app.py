@@ -1,5 +1,7 @@
 from typing import Any
 import dash
+import logging.config
+import os
 from dash import html, callback, Input, Output, dcc
 import feffery_antd_components as fac
 from components.header import create_header
@@ -14,19 +16,52 @@ from config import (
     DEBUG,
     SERVER_CONFIG,
     THEME_CONFIG,
+    LOG_CONFIG,
+    ROOT_DIR,
 )
 from pages.task import render_task_page
 from pages.transaction import render_transaction_page
 from data_source import init_data_source
 
 
+def init_log() -> logging.Logger:
+    """初始化日志系统
+
+    Returns:
+        logging.Logger: 根日志记录器
+
+    Raises:
+        Exception: 日志系统初始化失败时抛出异常
+    """
+    # 确保日志目录存在
+    log_dir = os.path.join(ROOT_DIR, "logs")
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        print(f"创建日志目录: {log_dir}")
+
+    # 初始化日志配置
+    try:
+        logging.config.dictConfig(LOG_CONFIG)
+        logger = logging.getLogger(__name__)
+        logger.info("日志系统初始化成功")
+        return logger
+    except Exception as e:
+        print(f"日志系统初始化失败: {e}")
+        raise
+
+
 def init_application():
     """应用初始化"""
+    # 初始化日志系统
+    logger = init_log()
+
     # 初始化数据库
     init_database()
+    logger.info("数据库初始化成功")
 
     # 初始化数据源
     init_data_source()
+    logger.info("数据源初始化成功")
 
 # 初始化Dash应用
 app = dash.Dash(
@@ -39,10 +74,11 @@ app = dash.Dash(
 )
 
 
-server = register_blueprint(app.server)
 
 # 初始化数据库和数据源
 init_application()
+
+server = register_blueprint(app.server)
 
 # 使用主题配置
 PRIMARY_COLOR = THEME_CONFIG["primary_color"]
