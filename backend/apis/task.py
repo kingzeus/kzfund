@@ -5,9 +5,11 @@ import logging
 from datetime import datetime
 from flask_restx import Resource, Namespace, fields
 from flask import request
-from scheduler.jobs import JobManager
+from scheduler.job_manager import JobManager
 import uuid
-from .common import response, create_response_model, create_list_response_model
+
+from utils import response
+from .common import create_response_model, create_list_response_model
 from scheduler.tasks import TaskFactory
 
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ class TaskList(Resource):
         data = api.payload
         task_type = data["type"]
 
-        if task_type not in TASK_TYPES:
+        if task_type not in TaskFactory().get_task_types():
             return response(message="未知的任务类型", code=400)
 
         # 创建任务

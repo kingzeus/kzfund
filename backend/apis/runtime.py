@@ -5,7 +5,8 @@ import logging
 from datetime import datetime
 from flask_restx import Resource, Namespace, fields
 from config import VERSION
-from .common import response, create_response_model
+from utils import response
+from .common import create_response_model
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 import logging
 
-from scheduler.jobs import JobManager
+from scheduler.job_manager import JobManager
 from .base import Database, db_connection
 from .account import Account, Portfolio
 from .fund import FundPosition, FundTransaction, FundNav, Fund

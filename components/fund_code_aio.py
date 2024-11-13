@@ -50,11 +50,20 @@ class FundCodeAIO(html.Div):
 
         try:
             logger.debug(f"获取基金代码提示: {debounceSearchValue}")
-            options = DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
+            response = DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
                 debounceSearchValue
             )
+
+            # 检查响应状态
+            if response["code"] != 200:
+                logger.error(f"获取基金代码失败: {response['message']}")
+                return []
+
+            # 从响应中提取数据
+            options = response["data"]
             logger.debug(f"获取到 {len(options)} 个提示选项")
             return options
+
         except Exception as e:
             logger.error(f"获取基金代码失败: {str(e)}", exc_info=True)
             return []

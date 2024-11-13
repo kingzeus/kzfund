@@ -13,8 +13,16 @@ class BaseTask(ABC):
         self.progress = 0
 
     def update_progress(self, progress: int):
-        """更新进度"""
+        """更新进度
+
+        Args:
+            progress: 进度值(0-100)
+        """
         self.progress = progress
+        # 更新进度缓存
+        from scheduler.job_manager import JobManager
+
+        JobManager().update_task_progress(self.task_id, progress)
         logger.info(f"Task {self.task_id} progress: {progress}%")
 
     @classmethod

@@ -1,9 +1,8 @@
+from .fund_detail import FundDetailTask
 from .example import ExampleTask
 from .data_sync import DataSyncTask
-from .portfolio import PortfolioUpdateTask
 from .fund_info import FundInfoTask
-from .base import BaseTask
-from .factory import TaskFactory
+from .task_factory import TaskFactory
 
 
 def init_tasks():
@@ -13,3 +12,4 @@ def init_tasks():
     factory.register(DataSyncTask)
     # factory.register(PortfolioUpdateTask)
     factory.register(FundInfoTask)
+    factory.register(FundDetailTask)

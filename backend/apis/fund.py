@@ -6,7 +6,8 @@ from models.database import (
     delete_fund_position,
     get_fund_transactions,
 )
-from .common import response, create_response_model, create_list_response_model
+from utils import response
+from .common import create_response_model, create_list_response_model
 
 api = Namespace("funds", description="基金相关操作")
 

@@ -37,7 +37,7 @@ LOG_CONFIG = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "default",
-            "level": "DEBUG" if DEBUG else "INFO",
+            "level": "INFO",
         },
         # 常规日志文件处理器
         "file": {
@@ -97,7 +97,7 @@ SERVER_CONFIG = {
 # 数据库配置
 DATABASE_CONFIG = {
     "path": os.path.join(
-        ROOT_DIR, "database", "fund_analysis.v2.db"
+        ROOT_DIR, "database", "fund_analysis.v3.db"
     )  # SQLite数据库文件路径
 }
 

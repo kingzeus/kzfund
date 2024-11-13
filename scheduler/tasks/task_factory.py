@@ -80,7 +80,6 @@ class TaskFactory:
 
     def get_task_types(self) -> Dict[str, Dict[str, Any]]:
         """获取所有任务类型的配置"""
-        logger.debug("获取所有任务类型配置")
         return {
             task_type: task_class.get_config()
             for task_type, task_class in self._tasks.items()

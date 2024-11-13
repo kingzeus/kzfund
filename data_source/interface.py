@@ -42,6 +42,20 @@ class IDataSource(ABC):
         pass
 
     @abstractmethod
+    def get_fund_detail(self, fund_code: str) -> Dict[str, Any]:
+        """
+        获取基金详细信息
+        Args:
+            fund_code: 基金代码
+        Returns:
+            Dict: {
+                "code": "基金代码",
+                "name": "基金名称",
+            }
+        """
+        pass
+
+    @abstractmethod
     def get_fund_nav_history(
         self,
         fund_code: str,

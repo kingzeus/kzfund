@@ -6,7 +6,8 @@ from models.database import (
     update_account,
     delete_account,
 )
-from .common import response, create_response_model, create_list_response_model
+from utils import response
+from .common import create_response_model, create_list_response_model
 
 api = Namespace("accounts", description="账户相关操作")
 

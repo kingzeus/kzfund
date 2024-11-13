@@ -6,7 +6,8 @@ from models.database import (
     update_portfolio,
     delete_portfolio,
 )
-from .common import response, create_response_model, create_list_response_model
+from utils import response
+from .common import create_response_model, create_list_response_model
 
 api = Namespace("portfolios", description="投资组合相关操作")
 

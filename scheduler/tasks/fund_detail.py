@@ -9,19 +9,19 @@ from models.fund import Fund
 logger = logging.getLogger(__name__)
 
 
-class FundInfoTask(BaseTask):
-    """基金信息更新任务"""
+class FundDetailTask(BaseTask):
+    """基金详情更新任务"""
 
     @classmethod
     def get_type(cls) -> str:
-        return "fund_info"
+        return "fund_detail"
 
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         return {
-            "name": "基金信息更新",
-            "description": "更新基金基本信息",
-            "timeout": 300,
+            "name": "基金详情更新",
+            "description": "更新基金详情信息",
+            "timeout": 30,
             "priority": 2,
             "params": [
                 {
@@ -36,10 +36,10 @@ class FundInfoTask(BaseTask):
 
     @classmethod
     def get_description(cls) -> str:
-        return "更新基金基本信息"
+        return "更新基金详情信息"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始更新基金信息 {self.task_id}")
+        logger.info(f"[{datetime.now()}] 开始更新基金详情 {self.task_id}")
 
         # 获取参数
         fund_code = kwargs.get("fund_code")
@@ -52,10 +52,10 @@ class FundInfoTask(BaseTask):
 
             # 更新进度
             self.update_progress(20)
-            logger.info(f"正在获取基金 {fund_code} 的信息...")
+            logger.info(f"正在获取基金 {fund_code} 的详情...")
 
             # 获取基金信息
-            fund_info = data_source.get_fund_info(fund_code)
+            fund_info = data_source.get_fund_detail(fund_code)
 
             # 检查必要字段是否存在，设置默认值
             fund_data = {

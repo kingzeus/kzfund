@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restx import Api
 
-from scheduler.jobs import JobManager
+from scheduler.job_manager import JobManager
 from scheduler.tasks import init_tasks
 from .apis.account import api as account_ns
 from .apis.portfolio import api as portfolio_ns
