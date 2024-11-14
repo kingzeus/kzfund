@@ -20,3 +20,6 @@ class TaskHistory(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         return model_to_dict(self)
+
+    class Meta:
+        table_name = "task_history"

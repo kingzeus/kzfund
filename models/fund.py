@@ -1,18 +1,52 @@
-from peewee import CharField, DecimalField, ForeignKeyField, DateTimeField, CompositeKey
+from peewee import (
+    CharField,
+    DecimalField,
+    ForeignKeyField,
+    DateTimeField,
+    DateField,
+    TextField,
+    CompositeKey,
+)
 from .base import BaseModel
+from datetime import datetime
 from .account import Portfolio
 
 class Fund(BaseModel):
     """基金基本信息模型"""
 
-    code = CharField(max_length=10, primary_key=True)
-    name = CharField(max_length=100)
+    code = CharField(max_length=12, primary_key=True)
+    name = CharField(max_length=100)  # 基金简称
+    full_name = CharField(max_length=255)  # 基金全称
     type = CharField(max_length=20)  # 基金类型
-    company = CharField(max_length=100)  # 基金公司
-    description = CharField(max_length=500, null=True)  # 基金描述
+    issue_date = DateField()  # 发行日期
+    establishment_date = DateField()  # 成立日期
+    establishment_size = DecimalField(
+        max_digits=20, decimal_places=4
+    )  # 成立规模(单位：亿份)
+    company = CharField(max_length=100)  # 基金管理公司
+    custodian = CharField(max_length=100)  # 基金托管人
+    fund_manager = CharField(max_length=100)  # 基金经理人
+    management_fee = DecimalField(max_digits=10, decimal_places=4)  # 管理费率
+    custodian_fee = DecimalField(max_digits=10, decimal_places=4)  # 托管费率
+    sales_service_fee = DecimalField(max_digits=10, decimal_places=4)  # 销售服务费率
+    tracking = CharField(max_length=100)  # 跟踪标的
+    performance_benchmark = CharField(max_length=100)  # 业绩比较基准
+
+    investment_scope = TextField()  # 投资范围
+    investment_target = TextField()  # 投资目标
+    investment_philosophy = TextField()  # 投资理念
+    investment_strategy = TextField()  # 投资策略
+    dividend_policy = TextField()  # 分红政策
+    risk_return_characteristics = TextField()  # 风险收益特征
+
+    data_source = CharField(max_length=20)  # 数据来源
+    data_source_version = CharField(max_length=20)  # 数据来源版本
+
+    created_at = DateTimeField(default=datetime.now)  # 创建时间
+    updated_at = DateTimeField(default=datetime.now)  # 更新时间
 
     class Meta:
-        table_name = "funds"
+        table_name = "fund"
 
 
 class FundPosition(BaseModel):

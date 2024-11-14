@@ -9,16 +9,16 @@ class Account(BaseModel):
     description = CharField(null=True)
 
     class Meta:
-        table_name = "accounts"
+        table_name = "account"
 
 class Portfolio(BaseModel):
     """投资组合模型"""
 
     id = CharField(primary_key=True)
-    account = ForeignKeyField(Account, backref="portfolios")
+    account = ForeignKeyField(Account, backref="portfolio")
     name = CharField(null=False)
     description = CharField(null=True)
     is_default = BooleanField(default=False)
 
     class Meta:
-        table_name = "portfolios"
+        table_name = "portfolio"
