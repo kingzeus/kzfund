@@ -2,23 +2,24 @@ from typing import Any
 import dash
 import logging.config
 import os
-from dash import html, callback, Input, Output, dcc
+from dash import html, callback, Input, Output
 import feffery_antd_components as fac
 from components.header import create_header
 from components.sidebar import create_sidebar
+
 from pages.account import render_account_page
 from pages.home import render_home_page
 from backend import register_blueprint
 from models.database import init_database
 from config import (
     APP_NAME,
-    DATA_SOURCE_DEFAULT,
     DEBUG,
     SERVER_CONFIG,
     THEME_CONFIG,
     LOG_CONFIG,
     ROOT_DIR,
 )
+
 from pages.task import render_task_page
 from pages.transaction import render_transaction_page
 from data_source import init_data_source

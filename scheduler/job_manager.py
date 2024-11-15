@@ -176,12 +176,26 @@ class JobManager:
             logger.error(f"恢复任务失败: {task_id}", exc_info=True)
             return False
 
-    def get_task_history(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """获取最近的任务历史记录"""
-        query = (
-            TaskHistory.select().order_by(TaskHistory.created_at.desc()).limit(limit)
-        )
-        return [task.to_dict() for task in query]
+    def get_task_history(self, limit: int = 100) -> List[TaskHistory]:
+        """获取最近的任务历史记录
+
+        Args:
+            limit: 返回的最大记录数,默认100条
+
+        Returns:
+            任务历史记录列表,每条记录为TaskHistory实例
+        """
+        try:
+            query = (
+                TaskHistory.select()
+                .order_by(TaskHistory.created_at.desc())
+                .limit(limit)
+            )
+
+            return list(query)
+        except Exception as e:
+            logger.error(f"获取任务历史记录失败: {e}")
+            return []
 
     def update_task_progress(self, task_id: str, progress: int):
         """更新任务进度到缓存"""

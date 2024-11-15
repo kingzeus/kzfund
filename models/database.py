@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 import logging
 
+from utils.datetime import format_datetime
 from scheduler.job_manager import JobManager
 from .base import Database, db_connection
 from .account import Account, Portfolio
@@ -10,9 +11,7 @@ from .fund import FundPosition, FundTransaction, FundNav, Fund
 from .task import TaskHistory
 from peewee import fn, JOIN
 
-
 logger = logging.getLogger(__name__)
-
 
 def init_database():
     """初始化数据库"""
@@ -380,7 +379,6 @@ def get_transactions() -> List[Dict[str, Any]]:
                         "nav": float(trans.nav),
                         "fee": float(trans.fee),
                         "trade_time": format_datetime(trans.transaction_date),
-                        "operation": create_operation_buttons(str(trans.id)),
                     }
                     result.append(transaction_dict)
                 except Exception as e:
