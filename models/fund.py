@@ -42,8 +42,6 @@ class Fund(BaseModel):
     data_source = CharField(max_length=20)  # 数据来源
     data_source_version = CharField(max_length=20)  # 数据来源版本
 
-    created_at = DateTimeField(default=datetime.now)  # 创建时间
-    updated_at = DateTimeField(default=datetime.now)  # 更新时间
 
     class Meta:
         table_name = "fund"

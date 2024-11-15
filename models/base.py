@@ -63,8 +63,8 @@ def init_db(db_path: str = None):
 class BaseModel(Model):
     """基础模型类"""
 
-    created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
+    created_at = DateTimeField(default=datetime.now)  # 创建时间
+    updated_at = DateTimeField(default=datetime.now)  # 更新时间
 
     class Meta:
         database = None  # 将在初始化时设置

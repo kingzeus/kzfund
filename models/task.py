@@ -1,7 +1,5 @@
-from typing import Dict, Any
 from datetime import datetime
-from peewee import *
-from playhouse.shortcuts import model_to_dict
+from peewee import CharField, IntegerField, TextField, DateTimeField
 from .base import BaseModel
 
 
@@ -16,10 +14,6 @@ class TaskHistory(BaseModel):
     start_time = DateTimeField(null=True)
     end_time = DateTimeField(null=True)
     timeout = IntegerField(default=3600)  # 超时时间（秒）
-    created_at = DateTimeField(default=datetime.now)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return model_to_dict(self)
 
     class Meta:
         table_name = "task_history"

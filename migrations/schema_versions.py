@@ -303,6 +303,7 @@ SCHEMA_VERSIONS = {
                     "end_time": "DATETIME",
                     "timeout": "INTEGER NOT NULL DEFAULT 3600",
                     "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
                 },
                 "indexes": ["name", "status", "created_at"],
             },
@@ -401,17 +402,6 @@ SCHEMA_VERSIONS = {
                 "foreign_keys": {"account_id": "account(id)"},
                 "indexes": ["account_id"],
             },
-            # "funds": {
-            #     "fields": {
-            #         "code": "VARCHAR(12) NOT NULL PRIMARY KEY",
-            #         "name": "VARCHAR(100) NOT NULL",
-            #         "type": "VARCHAR(20) NOT NULL",
-            #         "company": "VARCHAR(100) NOT NULL",
-            #         "description": "VARCHAR(500)",
-            #         "created_at": "DATETIME NOT NULL",
-            #         "updated_at": "DATETIME NOT NULL",
-            #     }
-            # },
             "fund": {
                 "fields": {
                     "code": "VARCHAR(12) NOT NULL PRIMARY KEY",
@@ -509,6 +499,7 @@ SCHEMA_VERSIONS = {
                     "end_time": "DATETIME",
                     "timeout": "INTEGER NOT NULL DEFAULT 3600",
                     "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
                 },
                 "indexes": ["name", "status", "created_at"],
             },
