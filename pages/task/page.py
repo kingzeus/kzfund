@@ -26,6 +26,7 @@ from .modal import render_task_modal
 from .detail_modal import render_task_detail_modal
 from .utils import ICON_STYLES, PAGE_PADDING
 
+
 def render_task_page() -> html.Div:
     """渲染任务管理页面
 
@@ -76,7 +77,7 @@ def render_task_page() -> html.Div:
                             fac.AntdSpin(
                                 render_task_table(initial_tasks),
                                 id="task-table-spin",
-                                spinning=False  # 初始状态不显示加载
+                                spinning=False,  # 初始状态不显示加载
                             ),
                         ],
                         span=24,

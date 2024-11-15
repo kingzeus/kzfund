@@ -106,9 +106,9 @@ class FundInfoTask(BaseTask):
                 "fund_name": fund_data["name"],
                 "created": created,
                 "nav": str(fund.nav) if fund.nav else None,
-                "nav_date": fund.nav_date.strftime("%Y-%m-%d")
-                if fund.nav_date
-                else None,
+                "nav_date": (
+                    fund.nav_date.strftime("%Y-%m-%d") if fund.nav_date else None
+                ),
             }
 
         except Exception as e:

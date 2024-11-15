@@ -64,6 +64,7 @@ def init_application():
     init_data_source()
     logger.info("数据源初始化成功")
 
+
 # 初始化Dash应用
 app = dash.Dash(
     __name__,
@@ -73,7 +74,6 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
     assets_folder="assets",
 )
-
 
 
 # 初始化数据库和数据源
@@ -92,7 +92,6 @@ CARD_SHADOW = THEME_CONFIG["card_shadow"]
 # 定义页面布局
 app.layout = html.Div(
     [
-
         # 顶部导航栏
         create_header(),
         # 主要内容区域
@@ -162,6 +161,7 @@ def update_page_content(current_key: str) -> Any:
     else:
         # 其他页面返回空白内容
         return html.Div()
+
 
 if __name__ == "__main__":
     app.run(

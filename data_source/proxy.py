@@ -7,7 +7,6 @@ from utils.response import response
 from .data_source_factory import DataSourceFactory
 
 
-
 logger = logging.getLogger(__name__)
 T = TypeVar("T")  # 用于泛型返回类型
 

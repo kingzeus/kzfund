@@ -47,9 +47,11 @@ def get_account_table_data() -> List[Dict[str, Any]]:
                     "name": p["name"],
                     "description": p.get("description", ""),
                     "create_time": format_datetime(p["create_time"]),
-                    "market_value": f"¥ {p['total_market_value']:,.2f}"
-                    if p["total_market_value"]
-                    else "¥ 0.00",
+                    "market_value": (
+                        f"¥ {p['total_market_value']:,.2f}"
+                        if p["total_market_value"]
+                        else "¥ 0.00"
+                    ),
                     "fund_count": p["fund_count"] or 0,
                     "operation": operation_buttons,
                 }

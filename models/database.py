@@ -13,6 +13,7 @@ from peewee import fn, JOIN
 
 logger = logging.getLogger(__name__)
 
+
 def init_database():
     """初始化数据库"""
     with db_connection():
@@ -27,6 +28,7 @@ def init_database():
                 TaskHistory,
             ]
         )
+
 
 # 账户相关操作
 def get_accounts() -> List[Dict[str, Any]]:
@@ -47,6 +49,7 @@ def get_accounts() -> List[Dict[str, Any]]:
             }
             for account in accounts
         ]
+
 
 def add_account(name: str, description: Optional[str] = None) -> str:
     """添加账户并创建默认投资组合"""
@@ -70,6 +73,7 @@ def add_account(name: str, description: Optional[str] = None) -> str:
 
         return account_id
 
+
 def get_account(account_id: str) -> Optional[Dict[str, Any]]:
     """获取账户详情"""
     with db_connection():
@@ -85,6 +89,7 @@ def get_account(account_id: str) -> Optional[Dict[str, Any]]:
         except Account.DoesNotExist:
             return None
 
+
 def update_account(account_id: str, name: str, description: str = None) -> bool:
     """更新账户信息"""
     try:
@@ -97,6 +102,7 @@ def update_account(account_id: str, name: str, description: str = None) -> bool:
     except Exception as e:
         logger.error(f"更新账户失败: {e}")
         return False
+
 
 def delete_account(account_id: str) -> bool:
     """删除账户"""
@@ -115,6 +121,7 @@ def delete_account(account_id: str) -> bool:
     except Exception as e:
         logger.error(f"删除账户失败: {e}")
         return False
+
 
 # 投资组合相关操作
 def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
@@ -151,6 +158,7 @@ def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
             for p in portfolios
         ]
 
+
 def add_portfolio(
     account_id: str,
     name: str,
@@ -169,6 +177,7 @@ def add_portfolio(
         )
         return portfolio_id
 
+
 def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
     """获取投资组合详情"""
     with db_connection():
@@ -186,6 +195,7 @@ def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
         except Portfolio.DoesNotExist:
             return None
 
+
 def update_portfolio(
     portfolio_id: str, data: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
@@ -200,6 +210,7 @@ def update_portfolio(
             return get_portfolio(portfolio_id)
         except Portfolio.DoesNotExist:
             return None
+
 
 def delete_portfolio(portfolio_id: str) -> bool:
     """删除投资组合"""
@@ -217,6 +228,7 @@ def delete_portfolio(portfolio_id: str) -> bool:
     except Exception as e:
         logger.error(f"删除组合失败: {e}")
         return False
+
 
 # 基金持仓相关操作
 def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
@@ -243,6 +255,7 @@ def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
             }
             for pos in positions
         ]
+
 
 def add_fund_position(data: Dict[str, Any]) -> str:
     """添加基金持仓"""
@@ -289,6 +302,7 @@ def update_fund_position(
         except FundPosition.DoesNotExist:
             return None
 
+
 def delete_fund_position(position_id: str) -> bool:
     """删除基金持仓"""
     with db_connection():
@@ -298,6 +312,7 @@ def delete_fund_position(position_id: str) -> bool:
             return True
         except FundPosition.DoesNotExist:
             return False
+
 
 def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
     """获取基金交易记录"""
@@ -326,6 +341,7 @@ def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
             for trans in transactions
         ]
 
+
 def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
     with db_connection():
@@ -343,6 +359,7 @@ def get_statistics() -> Dict[str, int]:
             "portfolio_count": portfolio_count,
             "position_count": position_count,
         }
+
 
 def get_transactions() -> List[Dict[str, Any]]:
     """获取所有交易记录"""
@@ -389,6 +406,7 @@ def get_transactions() -> List[Dict[str, Any]]:
         except Exception as e:
             logger.error(f"获取交易记录失败: {e}")
             return []
+
 
 def add_transaction(
     portfolio_id: str,
@@ -625,6 +643,7 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                 )
     except Exception as e:
         logger.error(f"重新计算持仓失败: {e}")
+
 
 def check_database_content():
     """检查数据库内容"""

@@ -1,6 +1,7 @@
 from peewee import CharField, ForeignKeyField, BooleanField
 from .base import BaseModel
 
+
 class Account(BaseModel):
     """账户模型"""
 
@@ -10,6 +11,7 @@ class Account(BaseModel):
 
     class Meta:
         table_name = "account"
+
 
 class Portfolio(BaseModel):
     """投资组合模型"""

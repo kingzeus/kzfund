@@ -28,6 +28,7 @@ runtime_base = api.model(
 # 使用通用函数创建响应模型
 runtime_response = create_response_model(api, "Runtime", runtime_base)
 
+
 @api.route("/status")
 class RuntimeStatus(Resource):
     @api.doc("获取运行时状态")

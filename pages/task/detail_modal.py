@@ -12,6 +12,7 @@ import feffery_antd_components as fac
 
 from .utils import get_task_detail_items
 
+
 def render_task_detail_modal() -> fac.AntdModal:
     """渲染任务详情对话框"""
     return fac.AntdModal(
@@ -32,6 +33,7 @@ def render_task_detail_modal() -> fac.AntdModal:
             )
         ],
     )
+
 
 @callback(
     [

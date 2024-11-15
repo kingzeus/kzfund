@@ -11,6 +11,7 @@ from .base import BaseModel
 from datetime import datetime
 from .account import Portfolio
 
+
 class Fund(BaseModel):
     """基金基本信息模型"""
 
@@ -42,7 +43,6 @@ class Fund(BaseModel):
     data_source = CharField(max_length=20)  # 数据来源
     data_source_version = CharField(max_length=20)  # 数据来源版本
 
-
     class Meta:
         table_name = "fund"
 
@@ -63,6 +63,7 @@ class FundPosition(BaseModel):
     class Meta:
         table_name = "fund_positions"
 
+
 class FundTransaction(BaseModel):
     """基金交易记录模型"""
 
@@ -78,6 +79,7 @@ class FundTransaction(BaseModel):
 
     class Meta:
         table_name = "fund_transactions"
+
 
 class FundNav(BaseModel):
     """基金净值历史"""

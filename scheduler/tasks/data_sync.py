@@ -81,7 +81,7 @@ class DataSyncTask(BaseTask):
             "message": "Data sync completed",
             "task_id": self.task_id,
             "sync_type": sync_type,
-            "date_range": f"{start_date}-{end_date}"
-            if start_date and end_date
-            else "all",
+            "date_range": (
+                f"{start_date}-{end_date}" if start_date and end_date else "all"
+            ),
         }

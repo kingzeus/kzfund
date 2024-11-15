@@ -19,6 +19,7 @@ from components.fund_code_aio import FundCodeAIO
 
 logger = logging.getLogger(__name__)
 
+
 def render_task_modal() -> fac.AntdModal:
     """渲染任务创建对话框"""
     return fac.AntdModal(
@@ -91,7 +92,10 @@ def render_task_modal() -> fac.AntdModal:
         ],
     )
 
-def generate_param_form_item(param: Dict[str, Any], use_pattern_id: bool = True) -> Optional[fac.AntdFormItem]:
+
+def generate_param_form_item(
+    param: Dict[str, Any], use_pattern_id: bool = True
+) -> Optional[fac.AntdFormItem]:
     """生成参数表单项
 
     Args:
@@ -107,34 +111,42 @@ def generate_param_form_item(param: Dict[str, Any], use_pattern_id: bool = True)
     else:
         if param["type"] == "string":
             input_component = fac.AntdInput(
-                id={"type": "task-param", "param": param["key"]}
-                if use_pattern_id
-                else f"param-{param['key']}",
+                id=(
+                    {"type": "task-param", "param": param["key"]}
+                    if use_pattern_id
+                    else f"param-{param['key']}"
+                ),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
         elif param["type"] == "number":
             input_component = fac.AntdInputNumber(
-                id={"type": "task-param", "param": param["key"]}
-                if use_pattern_id
-                else f"param-{param['key']}",
+                id=(
+                    {"type": "task-param", "param": param["key"]}
+                    if use_pattern_id
+                    else f"param-{param['key']}"
+                ),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
         elif param["type"] == "select":
             input_component = fac.AntdSelect(
-                id={"type": "task-param", "param": param["key"]}
-                if use_pattern_id
-                else f"param-{param['key']}",
+                id=(
+                    {"type": "task-param", "param": param["key"]}
+                    if use_pattern_id
+                    else f"param-{param['key']}"
+                ),
                 options=param.get("options", []),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
         elif param["type"] == "date":
             input_component = fac.AntdDatePicker(
-                id={"type": "task-param", "param": param["key"]}
-                if use_pattern_id
-                else f"param-{param['key']}",
+                id=(
+                    {"type": "task-param", "param": param["key"]}
+                    if use_pattern_id
+                    else f"param-{param['key']}"
+                ),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
@@ -148,6 +160,7 @@ def generate_param_form_item(param: Dict[str, Any], use_pattern_id: bool = True)
         tooltip=param.get("description", ""),
         children=input_component,
     )
+
 
 def generate_param_items(task_type: str, use_pattern_id: bool = True) -> List[Any]:
     """生成任务参数表单项列表
@@ -169,6 +182,7 @@ def generate_param_items(task_type: str, use_pattern_id: bool = True) -> List[An
             param_items.append(form_item)
 
     return param_items
+
 
 @callback(
     [
@@ -209,6 +223,7 @@ def show_task_modal(n_clicks, task_type):
         return dash.no_update, param_items, dash.no_update
 
     return dash.no_update, dash.no_update, dash.no_update
+
 
 @callback(
     [

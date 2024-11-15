@@ -33,6 +33,7 @@ PAGE_PADDING = 24
 TABLE_STYLES = {"marginTop": "8px", "width": "100%"}
 ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
 
+
 # ============= 工具函数 =============
 def process_task_data(task: Dict[str, Any]) -> Dict[str, Any]:
     """处理任务数据,添加UI所需的字段
@@ -56,6 +57,7 @@ def process_task_data(task: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "actions": create_operation_buttons(task),
     }
+
 
 def create_operation_buttons(task: Dict[str, Any]) -> fac.AntdSpace:
     """创建操作按钮
@@ -83,22 +85,25 @@ def create_operation_buttons(task: Dict[str, Any]) -> fac.AntdSpace:
         buttons.append(
             fac.AntdButton(
                 fac.AntdIcon(
-                    icon="antd-pause-circle"
-                    if task["status"] == TaskStatus.RUNNING
-                    else "antd-play-circle"
+                    icon=(
+                        "antd-pause-circle"
+                        if task["status"] == TaskStatus.RUNNING
+                        else "antd-play-circle"
+                    )
                 ),
                 type="link",
                 id={
                     "type": "task-action",
                     "index": task["task_id"],
-                    "action": "pause"
-                    if task["status"] == TaskStatus.RUNNING
-                    else "resume",
+                    "action": (
+                        "pause" if task["status"] == TaskStatus.RUNNING else "resume"
+                    ),
                 },
             )
         )
 
     return fac.AntdSpace(buttons)
+
 
 def get_task_detail_items(task: Dict[str, Any]) -> List[Dict[str, Any]]:
     """生成任务详情项
@@ -127,6 +132,7 @@ def get_task_detail_items(task: Dict[str, Any]) -> List[Dict[str, Any]]:
         {"label": "执行结果", "value": task.get("result", "-")},
         {"label": "错误信息", "value": task.get("error", "-")},
     ]
+
 
 def create_status_tag(status: str) -> Dict[str, str]:
     """创建状态标签配置

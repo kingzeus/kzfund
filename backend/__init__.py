@@ -11,7 +11,6 @@ from .apis.task import api as task_ns
 from config import API_CONFIG
 
 
-
 def register_blueprint(app):
     # 初始化任务类型
     init_tasks()

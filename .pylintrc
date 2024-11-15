@@ -1,0 +1,39 @@
+[MASTER]
+# 递归查找Python模块
+recursive=yes
+
+# 忽略的文件和目录
+ignore=.git,__pycache__,.pytest_cache,.mypy_cache,venv,.venv,env,migrations
+
+# 使用多进程来加速检查
+jobs=0
+
+[MESSAGES CONTROL]
+# 禁用一些不太重要的警告
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name
+        C0303,  # trailing-whitespace
+        W0311,  # bad-indentation
+        W0603,  # global-statement
+        R0903,  # too-few-public-methods
+        R0913,  # too-many-arguments
+        R0914   # too-many-locals
+
+[FORMAT]
+# 最大行长度
+max-line-length=120
+
+# 缩进宽度
+indent-after-paren=4
+
+[BASIC]
+# 允许的命名风格
+good-names=i,j,k,ex,Run,_,id,df
+
+[SIMILARITIES]
+# 最小相似行数
+min-similarity-lines=4
+
+[TYPECHECK]
+# 当警告产生时忽略的模块
+ignored-modules=numpy,tensorflow,torch,cv2

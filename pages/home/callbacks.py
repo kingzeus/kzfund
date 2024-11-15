@@ -25,6 +25,7 @@ CHART_LAYOUT = {
     "plot_bgcolor": "rgba(0,0,0,0)",
 }
 
+
 @callback(
     [
         Output("total-assets", "children"),

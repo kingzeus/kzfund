@@ -71,6 +71,15 @@ install_dependencies() {
             read -p "按回车键继续..."
             return 1
         fi
+
+        # 安装代码检查工具
+        echo -e "${YELLOW}安装代码检查工具...${NC}"
+        if ! pip install black pylint; then
+            echo -e "${RED}安装代码检查工具失败${NC}"
+            read -p "按回车键继续..."
+            return 1
+        fi
+
         echo -e "${GREEN}依赖安装成功${NC}"
     else
         echo -e "${RED}错误: 未找到requirements.txt文件${NC}"
@@ -100,30 +109,41 @@ init_database() {
 
 # 运行代码格式检查
 run_code_check() {
-    echo -e "${YELLOW}运行代码格式检查...${NC}"
+    echo -e "${YELLOW}运行代码检查...${NC}"
     local has_error=0
+    local python_files=$(find . -type f -name "*.py" ! -path "*/\.*" ! -path "*/migrations/*" ! -path "*/venv/*" ! -path "*/env/*")
 
-    if ! black app.py; then
-        echo -e "${RED}black 格式化失败${NC}"
-        has_error=1
+    # 运行black检查代码格式
+    echo "运行black检查代码格式..."
+    if ! black --check $python_files; then
+        echo -e "${YELLOW}代码格式需要调整，正在格式化...${NC}"
+        if ! black $python_files; then
+            echo -e "${RED}black 格式化失败${NC}"
+            has_error=1
+        else
+            echo -e "${GREEN}代码格式化完成${NC}"
+        fi
+    else
+        echo -e "${GREEN}代码格式检查通过${NC}"
     fi
 
-    if ! flake8 app.py; then
-        echo -e "${RED}flake8 检查失败${NC}"
+    # 运行pylint检查代码质量
+    echo "运行pylint检查代码质量..."
+    if ! pylint $python_files; then
+        echo -e "${RED}pylint 代码质量检查发现问题${NC}"
+        echo -e "${YELLOW}请查看上方详细错误信息${NC}"
         has_error=1
-    fi
-
-    if ! mypy app.py; then
-        echo -e "${RED}mypy 类型检查失败${NC}"
-        has_error=1
+    else
+        echo -e "${GREEN}代码质量检查通过${NC}"
     fi
 
     if [ $has_error -eq 1 ]; then
-        read -p "代码检查发现错误，按回车键继续..."
+        echo -e "${RED}代码检查发现问题，请根据上方提示进行修复${NC}"
+        read -p "按回车键继续..."
         return 1
     fi
 
-    echo -e "${GREEN}代码检查完成${NC}"
+    echo -e "${GREEN}所有代码检查完成，未发现问题${NC}"
     return 0
 }
 

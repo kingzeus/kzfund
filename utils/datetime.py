@@ -31,6 +31,7 @@ def format_datetime(
 
     return default
 
+
 def format_date(
     dt: Union[str, date, None],
     format: str = "%Y-%m-%d",

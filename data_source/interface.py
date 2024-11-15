@@ -78,7 +78,6 @@ class IDataSource(ABC):
         """
         pass
 
-
     @classmethod
     @abstractmethod
     def get_version(cls) -> str:

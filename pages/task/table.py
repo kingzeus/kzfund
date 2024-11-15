@@ -19,6 +19,7 @@ from .utils import TABLE_STYLES, process_task_data
 
 logger = logging.getLogger(__name__)
 
+
 def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
     """渲染任务表格
 
@@ -96,6 +97,7 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
         style={"width": "100%"},
     )
 
+
 @callback(
     Output("task-list", "data"),
     Input("task-store", "data"),
@@ -104,6 +106,7 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
 def update_task_list(store_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """更新任务列表"""
     return [process_task_data(task) for task in store_data]
+
 
 @callback(
     Output("task-store", "data", allow_duplicate=True),
@@ -138,6 +141,7 @@ def handle_task_action(action_clicks, current_data):
 
     return dash.no_update
 
+
 @callback(
     Output("task-refresh-interval", "disabled"),
     [Input("task-store", "data")],
@@ -149,6 +153,7 @@ def toggle_refresh_interval(tasks_data: List[Dict[str, Any]]) -> bool:
         for task in tasks_data
     )
     return not has_running_tasks
+
 
 @callback(
     [
@@ -170,7 +175,8 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
         unfinished_task_ids = [
             task["task_id"]
             for task in current_tasks
-            if task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED]
+            if task["status"]
+            in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED]
         ]
 
         if not unfinished_task_ids:
@@ -229,6 +235,7 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
         # 发生错误时，显示错误提示
         fac.AntdMessage.error(f"刷新任务列表失败: {str(e)}")
         return dash.no_update, False, False
+
 
 @callback(
     Output("task-table-spin", "spinning"),
