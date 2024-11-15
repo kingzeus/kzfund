@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Union, Optional
 
 
@@ -31,7 +31,52 @@ def format_datetime(
 
     return default
 
+def format_date(
+    dt: Union[str, date, None],
+    format: str = "%Y-%m-%d",
+    input_format: Optional[str] = None,
+    default: str = "未知日期",
+) -> str:
+    """
+    统一的日期格式化函数
+
+    Args:
+        dt: 要格式化的日期，可以是date对象、ISO格式字符串或指定格式的日期字符串
+        format: 输出格式，默认为 "%Y-%m-%d"
+        input_format: 输入日期字符串的格式，如果提供则使用strptime解析
+        default: 当无法格式化时返回的默认值
+
+    Returns:
+        格式化后的时间字符串
+    """
+    if not dt:
+        return default
+
+    try:
+        if isinstance(dt, str):
+            if input_format:
+                dt = datetime.strptime(dt, input_format).date()
+            else:
+                dt = date.fromisoformat(dt)
+        if isinstance(dt, date):
+            return dt.strftime(format)
+    except (ValueError, TypeError):
+        pass
+
+    return default
+
 
 def get_timestamp() -> int:
-    """获取当前时间戳"""
+    """获取当前时间戳
+
+    返回当前时间的Unix时间戳（从1970年1月1日UTC零点开始的秒数）。
+    时间戳为整数，精确到秒。
+
+    Returns:
+        int: 当前时间的Unix时间戳
+
+    Examples:
+        >>> get_timestamp()
+        1709251200  # 2024-03-01 00:00:00 UTC
+    """
     return int(datetime.now().timestamp())

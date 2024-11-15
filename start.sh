@@ -138,6 +138,15 @@ start_app() {
     return 0
 }
 
+# 启动测试
+start_test() {
+    echo -e "${YELLOW}启动测试代码...${NC}"
+    if ! python test.py; then
+        return 1
+    fi
+    return 0
+}
+
 # 显示菜单
 show_menu() {
     clear
@@ -148,6 +157,8 @@ show_menu() {
     echo "3) 运行代码检查"
     echo "4) 启动应用"
     echo "5) 完整安装(1-4步骤)"
+    echo "------------"
+    echo "9) 测试"
     echo "0) 退出"
     echo "------------------------"
 }
@@ -201,6 +212,9 @@ while true; do
             ;;
         5)
             do_full_install
+            ;;
+        9)
+            start_test
             ;;
         0)
             echo -e "${GREEN}再见！${NC}"
