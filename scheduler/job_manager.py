@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, List
 from datetime import datetime
 import uuid
 import logging
@@ -63,7 +63,7 @@ class JobManager:
             task_history.status = TaskStatus.RUNNING
             task_history.start_time = datetime.now()
             task_history.save()
-            logger.info(f"开始执行任务: {task_type} (ID: {task_id})")
+            logger.info("开始执行任务: %s (ID: %s)", task_type, task_id)
 
             # 执行具体任务
             result = TaskFactory().execute_task(task_type, task_id, **kwargs)
@@ -71,13 +71,13 @@ class JobManager:
             # 任务成功完成
             task_history.status = TaskStatus.COMPLETED
             task_history.result = str(result)
-            logger.info(f"任务执行完成: {task_type} (ID: {task_id})")
+            logger.info("任务执行完成: %s (ID: %s)", task_type, task_id)
 
         except Exception as e:
             # 任务执行失败
             task_history.status = TaskStatus.FAILED
             task_history.error = str(e)
-            logger.error(f"任务执行失败: {task_type} (ID: {task_id})", exc_info=True)
+            logger.error("任务执行失败: %s (ID: %s)", task_type, task_id, exc_info=True)
             raise
 
         finally:
@@ -94,12 +94,13 @@ class JobManager:
                 task_history.end_time = datetime.now()
                 task_history.save()
                 logger.debug(
-                    f"任务最终状态: {task_id} -> "
-                    f"status={task_history.status}, "
-                    f"progress={task_history.progress}%"
+                    "任务最终状态: %s -> status=%s, progress=%s%%",
+                    task_id,
+                    task_history.status,
+                    task_history.progress,
                 )
             except Exception as e:
-                logger.error(f"保存任务最终状态失败: {str(e)}")
+                logger.error("保存任务最终状态失败: %s", str(e))
 
     def add_task(self, task_type: str, **kwargs) -> str:
         """添加新任务
@@ -117,7 +118,7 @@ class JobManager:
         # 验证任务参数
         is_valid, error_message = TaskFactory().validate_task_params(task_type, kwargs)
         if not is_valid:
-            logger.error(f"任务参数验证失败: {error_message}")
+            logger.error("任务参数验证失败: %s", error_message)
             raise ValueError(error_message)
 
         task_id = self._create_job_id()
@@ -157,10 +158,10 @@ class JobManager:
             TaskHistory.update(status=TaskStatus.PAUSED).where(
                 TaskHistory.task_id == task_id
             ).execute()
-            logger.info(f"任务已暂停: {task_id}")
+            logger.info("任务已暂停: %s", task_id)
             return True
         except Exception as e:
-            logger.error(f"暂停任务失败: {task_id}", exc_info=True)
+            logger.error("暂停任务失败: %s:%s", task_id, str(e), exc_info=True)
             return False
 
     def resume_task(self, task_id: str) -> bool:
@@ -170,10 +171,10 @@ class JobManager:
             TaskHistory.update(status=TaskStatus.PENDING).where(
                 TaskHistory.task_id == task_id
             ).execute()
-            logger.info(f"任务已恢复: {task_id}")
+            logger.info("任务已恢复: %s", task_id)
             return True
         except Exception as e:
-            logger.error(f"恢复任务失败: {task_id}", exc_info=True)
+            logger.error("恢复任务失败: %s: %s", task_id, str(e), exc_info=True)
             return False
 
     def get_task_history(self, limit: int = 100) -> List[TaskHistory]:
@@ -194,13 +195,13 @@ class JobManager:
 
             return list(query)
         except Exception as e:
-            logger.error(f"获取任务历史记录失败: {e}")
+            logger.error("获取任务历史记录失败: %s", e)
             return []
 
     def update_task_progress(self, task_id: str, progress: int):
         """更新任务进度到缓存"""
         self._progress_cache[task_id] = progress
-        logger.debug(f"更新任务进度缓存: {task_id} -> {progress}%")
+        logger.debug("更新任务进度缓存: %s -> %d%%", task_id, progress)
 
     def get_tasks_progress(self, task_ids: List[str]) -> Dict[str, int]:
         """获取指定任务的最新进度
@@ -226,6 +227,6 @@ class JobManager:
                 ).where(TaskHistory.task_id.in_(missing_task_ids))
                 progress_dict.update({task.task_id: task.progress for task in query})
             except Exception as e:
-                logger.error(f"从数据库获取任务进度失败: {str(e)}")
+                logger.error("从数据库获取任务进度失败: %s", str(e))
 
         return progress_dict

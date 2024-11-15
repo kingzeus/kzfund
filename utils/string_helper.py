@@ -1,3 +1,8 @@
+import json
+import string
+import random
+
+
 def extract_number_with_unit(
     text: str, convert_unit: bool = True, unit_type: str = "default"
 ) -> float:
@@ -49,10 +54,34 @@ def extract_number_with_unit(
         # 处理单位转换
         if unit == "亿":
             return number * 100000000 if convert_unit else number
-        elif unit == "万":
+        if unit == "万":
             return number * 10000 if convert_unit else number
-        else:
-            return number
+        return number
 
     except (ValueError, IndexError, AttributeError):
         return 0.0
+
+
+def generate_random_string(length=20, chars=string.digits):
+    """
+    生成指定长度的随机字符串
+    :param length: 长度
+    :param chars: 字符集
+    :return: 随机字符串
+    """
+    return "".join(random.choice(chars) for _ in range(length))
+
+
+def get_json_from_jsonp_simple(jsonp_str):
+    """
+    从jsonp格式文本中解析json对象
+    快速方法，仅支持：jsonp({"key": "value"})
+    """
+    # 找到第一个'('和最后一个')'
+    start = jsonp_str.find("(") + 1
+    end = jsonp_str.rfind(")")
+
+    if 0 < start < end:
+        json_str = jsonp_str[start:end]
+        return json.loads(json_str)
+    return None

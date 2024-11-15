@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 from typing import Dict, Any
 import logging
@@ -39,7 +38,7 @@ class FundDetailTask(BaseTask):
         return "更新基金详情信息"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始更新基金详情 {self.task_id}")
+        logger.info("[%s] 开始更新基金详情 %s", datetime.now(), self.task_id)
 
         # 获取参数
         fund_code = kwargs.get("fund_code")
@@ -51,7 +50,7 @@ class FundDetailTask(BaseTask):
             data_source = DataSourceProxy()
             # 更新进度
             self.update_progress(20)
-            logger.info(f"正在获取基金 {fund_code} 的详情...")
+            logger.info("正在获取基金 %s 的详情...", fund_code)
             # 获取基金信息
             fund_info_response = data_source.get_fund_detail(fund_code)
             self.update_progress(70)
@@ -101,12 +100,12 @@ class FundDetailTask(BaseTask):
                 fund.save()
 
             self.update_progress(100)
-            logger.info(f"基金 {fund_code} 信息更新完成")
+            logger.info("基金 %s 信息更新完成", fund_code)
 
             return fund_data
 
         except Exception as e:
             logger.error(
-                f"更新基金信息失败: {str(e)}", exc_info=True
+                "更新基金信息失败: %s", str(e), exc_info=True
             )  # 添加完整的错误堆栈
             raise

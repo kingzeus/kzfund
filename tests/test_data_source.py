@@ -1,7 +1,7 @@
 import unittest
-from datetime import date, datetime
-from data_source.implementations.eastmoney import EastMoneyDataSource
 import json
+from datetime import date
+from data_source.implementations.eastmoney import EastMoneyDataSource
 
 
 class TestDataSource(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestDataSource(unittest.TestCase):
         # 准备详细的错误信息
         error_msg = [
             f"\n字段验证失败: {field}",
-            f"期望: 非空值",
+            "期望: 非空值",
             f"实际: {value!r}",
             "\n完整数据:",
             json.dumps(data, indent=2, ensure_ascii=False, default=str),
@@ -45,7 +45,7 @@ class TestDataSource(unittest.TestCase):
         """
         error_msg = [
             f"\n日期字段验证失败: {field_name}",
-            f"期望: date对象",
+            "期望: date对象",
             f"实际: {type(value)} = {value!r}",
         ]
 
@@ -64,7 +64,7 @@ class TestDataSource(unittest.TestCase):
             float_value = float(str(value).rstrip("%"))
             error_msg = [
                 f"\n百分比字段验证失败: {field_name}",
-                f"期望: 有效的百分比值",
+                "期望: 有效的百分比值",
                 f"实际: {value!r}",
                 f"转换后: {float_value}",
             ]
@@ -135,7 +135,6 @@ class TestDataSource(unittest.TestCase):
 
     def tearDown(self):
         """测试后的清理工作"""
-        pass
 
 
 if __name__ == "__main__":

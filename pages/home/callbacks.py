@@ -5,13 +5,12 @@
 - 图表数据更新: 更新资产配置和收益走势图表
 """
 
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple
 from dash import Input, Output, callback
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 import logging
 
-from models.database import get_statistics
 from .utils import format_money, format_percent
 
 # 添加日志配置
@@ -67,7 +66,7 @@ def update_statistics(data: Dict[str, Any]) -> Tuple[str, str, str, str, str]:
             format_money(data.get("daily_return", 0)),
         )
     except Exception as e:
-        logger.error(f"更新统计数据失败: {str(e)}")
+        logger.error("更新统计数据失败: %s", str(e))
         raise PreventUpdate
 
 

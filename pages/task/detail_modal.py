@@ -5,7 +5,6 @@
 - 处理详情查看操作
 """
 
-import dash
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 import feffery_antd_components as fac

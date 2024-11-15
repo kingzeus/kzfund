@@ -11,7 +11,7 @@ from typing import Dict, Any
 from dash import html
 import feffery_antd_components as fac
 
-from .utils import CARD_STYLES, CARD_HEAD_STYLES, format_money, format_percent
+from .utils import CARD_STYLES, CARD_HEAD_STYLES
 
 # ============= 样式常量 =============
 VALUE_STYLES = {

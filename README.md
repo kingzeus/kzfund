@@ -16,8 +16,13 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-green.svg">
   <img alt="Python" src="https://img.shields.io/badge/python-3.8+-blue.svg">
-</p>
 
+</p>
+<p align="center">
+<img alt="Windows" src="https://img.shields.io/badge/-Windows-blue?logo=windows&logoColor=white">
+<img alt="MacOS" src="https://img.shields.io/badge/-macOS-black?&logo=apple&logoColor=white">
+<img alt="Linux" src="https://img.shields.io/badge/-Linux-yellow?logo=linux&logoColor=white">
+</p>
 ## 📖 项目介绍
 
 基金持仓分析系统是一个基于 Dash 构建的基金投资组合可视化分析工具。本项目旨在帮助投资者更好地管理和分析其基金投资组合。

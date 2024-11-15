@@ -11,9 +11,8 @@ from dash import callback, Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash
 
-from utils.datetime import format_datetime
 from components.fund_code_aio import FundCodeAIO
-from .utils import create_operation_buttons, build_cascader_options
+from .utils import build_cascader_options
 from models.database import get_portfolio
 
 # 表格样式常量

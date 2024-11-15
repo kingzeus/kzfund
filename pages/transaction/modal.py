@@ -238,8 +238,7 @@ def handle_transaction_save(
 
         if success:
             return get_transactions(), False
-        else:
-            logger.error("保存交易记录失败")
+        logger.error("保存交易记录失败")
 
     except Exception as e:
         logger.error(f"处理交易保存失败: {str(e)}", exc_info=True)

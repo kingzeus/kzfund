@@ -4,6 +4,7 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 检查并创建必要的目录
@@ -114,7 +115,7 @@ run_code_check() {
     local python_files=$(find . -type f -name "*.py" ! -path "*/\.*" ! -path "*/migrations/*" ! -path "*/venv/*" ! -path "*/env/*")
 
     # 运行black检查代码格式
-    echo "运行black检查代码格式..."
+    echo -e "\n${YELLOW}[1/2] 运行black检查代码格式...${NC}"
     if ! black --check $python_files; then
         echo -e "${YELLOW}代码格式需要调整，正在格式化...${NC}"
         if ! black $python_files; then
@@ -128,22 +129,168 @@ run_code_check() {
     fi
 
     # 运行pylint检查代码质量
-    echo "运行pylint检查代码质量..."
-    if ! pylint $python_files; then
-        echo -e "${RED}pylint 代码质量检查发现问题${NC}"
-        echo -e "${YELLOW}请查看上方详细错误信息${NC}"
+    echo -e "\n${YELLOW}[2/2] 运行pylint检查代码质量...${NC}"
+
+    # 创建临时文件存储pylint输出
+    local temp_file=$(mktemp)
+    local prev_rate=""
+    local curr_rate=""
+    local total_files=0
+    local total_errors=0
+    local total_warnings=0
+    local total_conventions=0
+    local total_refactors=0
+
+    # 统计Python文件总数
+    total_files=$(echo "$python_files" | wc -w)
+
+    if ! pylint $python_files > "$temp_file" 2>&1; then
+        echo -e "\n${RED}发现以下问题:${NC}"
+
+        # 统计各类问题数量
+        while IFS= read -r line; do
+            if [[ $line =~ :[0-9]+:[0-9]+:[[:space:]][E] ]]; then
+                ((total_errors++))
+            elif [[ $line =~ :[0-9]+:[0-9]+:[[:space:]][W] ]]; then
+                ((total_warnings++))
+            elif [[ $line =~ :[0-9]+:[0-9]+:[[:space:]][C] ]]; then
+                ((total_conventions++))
+            elif [[ $line =~ :[0-9]+:[0-9]+:[[:space:]][R] ]]; then
+                ((total_refactors++))
+            fi
+        done < "$temp_file"
+
+        # 提取评分信息
+        curr_rate=$(grep "Your code has been rated at" "$temp_file" | tail -n1)
+
+        # 显示详细错误信息
+        echo -e "\n${YELLOW}=== 详细错误信息 ===${NC}"
+        while IFS= read -r line; do
+            if [[ $line =~ ^\*+[[:space:]]Module[[:space:]] ]]; then
+                # 提取模块名
+                module_name=$(echo "$line" | sed 's/\*\+ Module //')
+                echo -e "\n文件: ${module_name}"
+            elif [[ $line =~ ^[[:space:]]*[A-Za-z0-9/_.-]+:[0-9]+:[0-9]+:[[:space:]] ]]; then
+                # 格式化错误信息
+                error_line=$(echo "$line" | sed -E 's/^[[:space:]]*([^:]+):([0-9]+):([0-9]+): ([A-Z][0-9]+): (.+)/  ✗ \1:\2:\3: \4: \5/')
+                # 根据错误类型添加颜色
+                if [[ $line =~ :[[:space:]][E][0-9] ]]; then
+                    echo -e "${RED}$error_line${NC}"
+                elif [[ $line =~ :[[:space:]][W][0-9] ]]; then
+                    echo -e "${YELLOW}$error_line${NC}"
+                elif [[ $line =~ :[[:space:]][R][0-9] ]]; then
+                    echo -e "${BLUE}$error_line${NC}"
+                else
+                    echo -e "${GREEN}$error_line${NC}"
+                fi
+            fi
+        done < "$temp_file"
+
+        # 显示错误和警告汇总
+        echo -e "\n${YELLOW}=== 错误和警告汇总 ===${NC}"
+        # 创建临时文件存储汇总信息
+        local summary_file=$(mktemp)
+        grep -E "^[[:space:]]*[A-Za-z0-9/_.-]+:[0-9]+:[0-9]+:[[:space:]][EWCR][0-9]+" "$temp_file" | \
+            sed -E 's/.*:[0-9]+:[0-9]+: ([A-Z][0-9]+): .*/\1/' | \
+            sort | uniq -c | sort -nr > "$summary_file"
+
+        if [ -s "$summary_file" ]; then
+            while IFS= read -r line; do
+                count=$(echo "$line" | awk '{print $1}')
+                code=$(echo "$line" | awk '{print $2}')
+                msg=$(grep -m 1 ": $code: " "$temp_file" | sed -E 's/.*: [A-Z][0-9]+: (.*)/\1/')
+
+                # 根据错误代码类型添加颜色
+                if [[ $code =~ ^E ]]; then
+                    echo -e "${RED}$count 个 $code: $msg${NC}"
+                elif [[ $code =~ ^W ]]; then
+                    echo -e "${YELLOW}$count 个 $code: $msg${NC}"
+                elif [[ $code =~ ^R ]]; then
+                    echo -e "${BLUE}$count 个 $code: $msg${NC}"
+                else
+                    echo -e "${GREEN}$count 个 $code: $msg${NC}"
+                fi
+            done < "$summary_file"
+        else
+            echo -e "${GREEN}未发现错误和警告${NC}"
+        fi
+
+        # 清理临时文件
+        rm -f "$summary_file"
+
+        # 显示统计信息
+        echo -e "\n${YELLOW}=== 问题统计 ===${NC}"
+        printf "检查文件数: %8d\n" "${total_files}"
+        printf "${RED}错误(E): %8d${NC}\n" "${total_errors}"
+        printf "${YELLOW}警告(W): %8d${NC}\n" "${total_warnings}"
+        printf "${GREEN}规范(C): %8d${NC}\n" "${total_conventions}"
+        printf "${BLUE}重构(R): %8d${NC}\n" "${total_refactors}"
+        printf "问题总数: %8d\n" "$((total_errors + total_warnings + total_conventions + total_refactors))"
+
+        # 显示代码质量评分
+        echo -e "\n${YELLOW}=== 代码质量评分 ===${NC}"
+        if [ -n "$curr_rate" ]; then
+            # 解析评分信息
+            current=$(echo "$curr_rate" | sed -E 's/.*rated at ([0-9]+\.[0-9]+).*/\1/')
+            previous=$(echo "$curr_rate" | sed -E 's/.*previous run: ([0-9]+\.[0-9]+).*/\1/')
+            change=$(echo "$curr_rate" | sed -E 's/.*[0-9]+\.[0-9]+\/10 \((.*)\)/\1/' | grep -o '[+-][0-9.]\+')
+
+            # 显示评分信息
+            if [ -n "$previous" ] && [ -n "$change" ]; then
+                if [[ "$change" == +* ]]; then
+                    echo -e "${GREEN}当前评分: $current/10${NC}"
+                    echo -e "${GREEN}评分提升: $change (上次: $previous/10)${NC}"
+                elif [[ "$change" == -* ]]; then
+                    echo -e "${RED}当前评分: $current/10${NC}"
+                    echo -e "${RED}评分下降: $change (上次: $previous/10)${NC}"
+                else
+                    echo -e "${YELLOW}当前评分: $current/10${NC}"
+                    echo -e "${YELLOW}评分未变 (上次: $previous/10)${NC}"
+                fi
+            else
+                echo -e "${YELLOW}当前评分: $current/10${NC}"
+                echo -e "${YELLOW}首次检查，无历史评分${NC}"
+            fi
+
+            # 根据评分显示状态
+            if (( $(echo "$current >= 9.0" | bc -l) )); then
+                echo -e "\n${GREEN}✨ 代码质量优秀！继续保持${NC}"
+            elif (( $(echo "$current >= 8.0" | bc -l) )); then
+                echo -e "\n${GREEN}👍 代码质量良好${NC}"
+            elif (( $(echo "$current >= 7.0" | bc -l) )); then
+                echo -e "\n${YELLOW}⚠️ 代码质量一般，建议改进${NC}"
+            else
+                echo -e "\n${RED}⚠️ 代码质量需要改进${NC}"
+                echo -e "\n${YELLOW}改进建议:${NC}"
+                echo -e "1. 优先修复 ${RED}错误(E)${NC} 级别问题"
+                echo -e "2. 处理重要的 ${YELLOW}警告(W)${NC} 问题"
+                echo -e "3. 考虑优化 ${GREEN}规范(C)${NC} 建议"
+                echo -e "4. 关注需要 ${BLUE}重构(R)${NC} 的代码"
+            fi
+        else
+            echo -e "${RED}无法解析评分信息${NC}"
+        fi
+
+        # 保存当前评分
+        echo "$curr_rate" > .pylint_rate
+
         has_error=1
+        echo -e "\n${YELLOW}提示: 使用 pylint --help-msg=<msg-id> 查看具体错误说明${NC}"
     else
         echo -e "${GREEN}代码质量检查通过${NC}"
+        # 清除之前的评分记录
+        rm -f .pylint_rate
     fi
 
+    # 清理临时文件
+    rm -f "$temp_file"
+
     if [ $has_error -eq 1 ]; then
-        echo -e "${RED}代码检查发现问题，请根据上方提示进行修复${NC}"
-        read -p "按回车键继续..."
+        echo -e "\n${RED}代码检查发现问题，请根据上方提示进行修复${NC}"
         return 1
     fi
 
-    echo -e "${GREEN}所有代码检查完成，未发现问题${NC}"
+    echo -e "\n${GREEN}所有代码检查完成，未发现问题${NC}"
     return 0
 }
 

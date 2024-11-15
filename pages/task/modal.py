@@ -151,7 +151,7 @@ def generate_param_form_item(
                 style={"width": "100%"},
             )
         else:
-            logger.warning(f"未知的参数类型: {param['type']}")
+            logger.warning("未知的参数类型: %s", param["type"])
             return None
 
     return fac.AntdFormItem(
@@ -270,10 +270,10 @@ def handle_task_create(
             value = param_values[param_index]
             param_index += 1
 
-        logger.debug(f"处理参数: {param['key']} = {value}")
+        logger.debug("处理参数: %s = %s", param["key"], value)
 
         if param.get("required", False) and not value:
-            logger.warning(f"缺少必需参数: {param['name']}")
+            logger.warning("缺少必需参数: %s", param["name"])
             raise PreventUpdate
 
         task_params[param["key"]] = value
@@ -283,9 +283,9 @@ def handle_task_create(
         JobManager().add_task(
             task_type=task_type, priority=priority, timeout=timeout, **task_params
         )
-        logger.info(f"创建任务成功: {task_type}")
+        logger.info("创建任务成功: %s", task_type)
     except Exception as e:
-        logger.error(f"创建任务失败: {str(e)}", exc_info=True)
+        logger.error("创建任务失败: %s", str(e), exc_info=True)
         raise PreventUpdate
 
     # 更新任务列表并关闭对话框

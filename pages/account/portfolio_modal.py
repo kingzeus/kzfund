@@ -1,10 +1,9 @@
-from typing import Tuple, Optional, List, Dict, Any
-import dash
+from typing import Tuple, Optional
 from dash import dcc, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 import feffery_antd_components as fac
 
-from models.database import add_portfolio, update_portfolio, get_portfolio
+from models.database import add_portfolio, update_portfolio
 from .table import get_account_table_data
 from .utils import validate_name
 

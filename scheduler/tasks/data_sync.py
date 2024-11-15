@@ -54,7 +54,7 @@ class DataSyncTask(BaseTask):
         return "data_sync"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始同步数据 {self.task_id}")
+        logger.info("[%s] 开始同步数据 %s", datetime.now(), self.task_id)
 
         # 获取同步参数
         sync_type = kwargs.get("sync_type", "all")

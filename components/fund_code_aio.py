@@ -25,33 +25,35 @@ class FundCodeAIO(html.Div):
         self,
         aio_id=None,
         placeholder: str = None,
-        debounceWait: int = None,
+        debounce_wait: int = None,
     ):
         if aio_id is None:
             aio_id = str(uuid.uuid4())
 
-        select_props = {}
-        select_props["placeholder"] = placeholder or "请输入基金代码"
-        select_props["debounceWait"] = debounceWait or 200
-        select_props["options"] = []
-        select_props["optionFilterMode"] = "remote-match"
-        select_props["style"] = {"width": "100%"}
+        select_props = {
+            "placeholder": placeholder or "请输入基金代码",
+            "debounceWait": debounce_wait or 200,
+            "options": [],
+            "optionFilterMode": "remote-match",
+            "style": {"width": "100%"},
+        }
 
         logger.debug(f"初始化基金代码选择器: {select_props}")
         super().__init__([fac.AntdSelect(id=self.ids.select(aio_id), **select_props)])
 
+    @staticmethod
     @callback(
         Output(ids.select(MATCH), "options"),
-        Input(ids.select(MATCH), "debounceSearchValue"),
+        Input(ids.select(MATCH), "debounce_search_value"),
     )
-    def update_options(debounceSearchValue):
-        if not debounceSearchValue:
+    def update_options(debounce_search_value):
+        if not debounce_search_value:
             return no_update
 
         try:
-            logger.debug(f"获取基金代码提示: {debounceSearchValue}")
+            logger.debug(f"获取基金代码提示: {debounce_search_value}")
             response = DataSourceProxy(DATA_SOURCE_DEFAULT).get_quick_tips(
-                debounceSearchValue
+                debounce_search_value
             )
 
             # 检查响应状态

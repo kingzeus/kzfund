@@ -34,7 +34,7 @@ def format_datetime(
 
 def format_date(
     dt: Union[str, date, None],
-    format: str = "%Y-%m-%d",
+    output_format: str = "%Y-%m-%d",
     input_format: Optional[str] = None,
     default: str = "未知日期",
 ) -> str:
@@ -43,7 +43,7 @@ def format_date(
 
     Args:
         dt: 要格式化的日期，可以是date对象、ISO格式字符串或指定格式的日期字符串
-        format: 输出格式，默认为 "%Y-%m-%d"
+        output_format: 输出格式，默认为 "%Y-%m-%d"
         input_format: 输入日期字符串的格式，如果提供则使用strptime解析
         default: 当无法格式化时返回的默认值
 
@@ -60,7 +60,7 @@ def format_date(
             else:
                 dt = date.fromisoformat(dt.strip())
         if isinstance(dt, date):
-            return dt.strftime(format)
+            return dt.strftime(output_format)
     except (ValueError, TypeError):
         pass
 

@@ -1,9 +1,9 @@
 import unittest
 import uuid
+import json
 from data_source.data_source_factory import DataSourceFactory
 from data_source.implementations.eastmoney import EastMoneyDataSource
 from scheduler.tasks.fund_detail import FundDetailTask
-import json
 
 
 class TestFundDetailTasks(unittest.TestCase):
@@ -103,7 +103,6 @@ class TestFundDetailTasks(unittest.TestCase):
 
     def tearDown(self):
         """测试后的清理工作"""
-        pass
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@
 
 from typing import List, Dict, Any
 import feffery_antd_components as fac
-from dash import callback, Input, Output, State, dcc, ALL
+from dash import callback, Input, Output, State, ALL
 from dash.exceptions import PreventUpdate
 import dash
 import json
@@ -126,7 +126,7 @@ def handle_task_action(action_clicks, current_data):
         action = button_id["action"]
 
         if action in ["pause", "resume"]:
-            logger.info(f"执行任务{action}操作: {task_id}")
+            logger.info("执行任务%s操作: %s", action, task_id)
             if action == "pause":
                 JobManager().pause_task(task_id)
             else:
@@ -137,7 +137,7 @@ def handle_task_action(action_clicks, current_data):
             return tasks
 
     except Exception as e:
-        logger.error(f"处理任务操作失败: {str(e)}")
+        logger.error("处理任务操作失败: %s", str(e))
 
     return dash.no_update
 
@@ -225,13 +225,14 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
                             task["progress"] = new_progress
 
         logger.debug(
-            f"{'完整' if should_full_refresh else '进度'}刷新任务列表，"
-            f"更新了 {len(latest_progress)} 个任务的进度"
+            "%s刷新任务列表，更新了 %d 个任务的进度",
+            "完整" if should_full_refresh else "进度",
+            len(latest_progress),
         )
         return updated_tasks, False, False
 
     except Exception as e:
-        logger.error(f"刷新任务列表失败: {str(e)}")
+        logger.error("刷新任务列表失败: %s", str(e))
         # 发生错误时，显示错误提示
         fac.AntdMessage.error(f"刷新任务列表失败: {str(e)}")
         return dash.no_update, False, False

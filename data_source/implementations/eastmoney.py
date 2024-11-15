@@ -1,15 +1,17 @@
-import json
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 import logging
-import requests
-import random
-import string
 import urllib.parse
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from utils.datetime import format_date, get_timestamp
-from utils.string_helper import extract_number_with_unit
-from ..interface import IDataSource
+import requests
+
+from data_source.interface import IDataSource
+from utils.datetime_helper import format_date, get_timestamp
+from utils.string_helper import (
+    extract_number_with_unit,
+    generate_random_string,
+    get_json_from_jsonp_simple,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -45,36 +47,17 @@ class EastMoneyDataSource(IDataSource):
         }
         logger.debug("初始化东方财富数据源")
 
-    def _generate_random_string(self, length=20):
-        # 定义字符集
-        chars = string.digits
-        # 生成随机字符串
-        return "".join(random.choice(chars) for _ in range(length))
-
-    def _parse_jsonp_simple(self, jsonp_str):
-        """
-        简单的JSONP解析方法
-        """
-        # 找到第一个'('和最后一个')'
-        start = jsonp_str.find("(") + 1
-        end = jsonp_str.rfind(")")
-
-        if start > 0 and end > start:
-            json_str = jsonp_str[start:end]
-            return json.loads(json_str)
-        return None
-
     def get_quick_tips(self, search_text: str) -> List[Dict[str, str]]:
         """获取基金搜索建议"""
         try:
             url = "https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx"
             params = {
-                "callback": f"jQuery{self._generate_random_string()}_{get_timestamp()}",
+                "callback": f"jQuery{generate_random_string()}_{get_timestamp()}",
                 "m": "1",
                 "key": urllib.parse.quote(search_text),
                 "_": get_timestamp(),
             }
-            logger.debug(f"请求基金搜索建议: {url}, params: {params}")
+            logger.debug("请求基金搜索建议: %s, params: %s", url, params)
 
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
@@ -85,7 +68,7 @@ class EastMoneyDataSource(IDataSource):
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
-            data = self._parse_jsonp_simple(text)
+            data = get_json_from_jsonp_simple(text)
 
             results = []
             if "Datas" in data:
@@ -96,10 +79,10 @@ class EastMoneyDataSource(IDataSource):
                             "value": item["CODE"],
                         }
                     )
-            logger.debug(f"获取到 {len(results)} 个搜索建议")
+            logger.debug("获取到 %d 个搜索建议", len(results))
             return results
         except Exception as e:
-            logger.error(f"获取基金搜索建议失败: {str(e)}", exc_info=True)
+            logger.error("获取基金搜索建议失败: %s", str(e), exc_info=True)
             return []
 
     def get_fund_info(self, fund_code: str) -> Dict[str, Any]:
@@ -109,13 +92,13 @@ class EastMoneyDataSource(IDataSource):
             params = {
                 "rt": get_timestamp(),
             }
-            logger.debug(f"请求基金信息: {url}, params: {params}")
+            logger.debug("请求基金信息: %s, params: %s", url, params)
 
             response = requests.get(url, params=params, headers=self.headers)
             response.raise_for_status()
             text = response.text
 
-            data = self._parse_jsonp_simple(text)
+            data = get_json_from_jsonp_simple(text)
             if not data:
                 error_msg = f"未找到基金: {fund_code}"
                 logger.error(error_msg)
@@ -131,7 +114,7 @@ class EastMoneyDataSource(IDataSource):
                 "valuation_growth": data.get("gszzl", 0),  # 估值增长率
             }
         except Exception as e:
-            logger.error(f"获取基金信息失败: {str(e)}", exc_info=True)
+            logger.error("获取基金信息失败: %s", str(e), exc_info=True)
             raise ValueError(f"获取基金信息失败: {str(e)}")
 
     def get_fund_detail(self, fund_code: str) -> Dict[str, Any]:
@@ -172,7 +155,7 @@ class EastMoneyDataSource(IDataSource):
                     key = cells[i].get_text(strip=True)
                     value = cells[i + 1].get_text(strip=True)
                     fund_data[key] = value
-                    logger.debug(f"解析到基金详情: {key} = {value}")
+                    logger.debug("解析到基金详情: %s = %s", key, value)
 
             # 将原始数据映射到标准化的字段名
             return {
@@ -211,7 +194,7 @@ class EastMoneyDataSource(IDataSource):
             }
 
         except Exception as e:
-            logger.error(f"获取基金详情失败: {str(e)}", exc_info=True)
+            logger.error("获取基金详情失败: %s", str(e), exc_info=True)
             raise ValueError(f"获取基金详情失败: {str(e)}")
 
     def get_fund_nav_history(

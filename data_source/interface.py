@@ -20,7 +20,6 @@ class IDataSource(ABC):
         Returns:
             List[Dict]: [{"label": "基金名称", "value": "基金代码"}]
         """
-        pass
 
     @abstractmethod
     def get_fund_info(self, fund_code: str) -> Dict[str, Any]:
@@ -39,7 +38,6 @@ class IDataSource(ABC):
                 "description": "基金描述"
             }
         """
-        pass
 
     @abstractmethod
     def get_fund_detail(self, fund_code: str) -> Dict[str, Any]:
@@ -53,7 +51,6 @@ class IDataSource(ABC):
                 "name": "基金名称",
             }
         """
-        pass
 
     @abstractmethod
     def get_fund_nav_history(
@@ -76,16 +73,13 @@ class IDataSource(ABC):
                 "daily_return": "日收益率"
             }]
         """
-        pass
 
     @classmethod
     @abstractmethod
     def get_version(cls) -> str:
         """数据源接口版本"""
-        pass
 
     @classmethod
     @abstractmethod
     def get_name(cls) -> str:
         """数据源名称"""
-        pass

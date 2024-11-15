@@ -1,4 +1,6 @@
 from flask_restx import Namespace, Resource, fields
+
+from backend.apis.common import create_list_response_model, create_response_model
 from models.database import (
     get_fund_positions,
     add_fund_position,
@@ -7,7 +9,7 @@ from models.database import (
     get_fund_transactions,
 )
 from utils import response
-from .common import create_response_model, create_list_response_model
+
 
 api = Namespace("funds", description="基金相关操作")
 

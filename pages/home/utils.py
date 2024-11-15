@@ -88,7 +88,8 @@ def get_value_color(value: float) -> str:
         return "#52c41a"  # 绿色
     elif value < 0:
         return "#f5222d"  # 红色
-    return "#8c8c8c"  # 灰色
+    else:
+        return "#8c8c8c"  # 灰色
 
 
 def safe_get(data: Dict[str, Any], key: str, default: Any = 0) -> Any:
