@@ -49,23 +49,46 @@ class FundDetailTask(BaseTask):
         try:
             # 初始化数据源
             data_source = DataSourceProxy()
-
             # 更新进度
             self.update_progress(20)
             logger.info(f"正在获取基金 {fund_code} 的详情...")
-
             # 获取基金信息
-            fund_info = data_source.get_fund_detail(fund_code)
+            fund_info_response = data_source.get_fund_detail(fund_code)
+            self.update_progress(70)
+            if fund_info_response["code"] != 200:
+                raise ValueError(fund_info_response["message"])
+            fund_info = fund_info_response["data"]
 
             # 检查必要字段是否存在，设置默认值
             fund_data = {
+                "code": fund_info.get("code"),
                 "name": fund_info.get("name", "未知名称"),
-                "type": fund_info.get("type", "未知类型"),  # 添加默认值
+                "full_name": fund_info.get("full_name", "未知全称"),
+                "type": fund_info.get("type", "未知类型"),
+                "issue_date": fund_info.get("issue_date"),
+                "establishment_date": fund_info.get("establishment_date"),
+                "establishment_size": fund_info.get("establishment_size", 0),
                 "company": fund_info.get("company", "未知公司"),
-                "description": fund_info.get("description", ""),
+                "custodian": fund_info.get("custodian", "未知托管人"),
+                "fund_manager": fund_info.get("fund_manager", "未知基金经理"),
+                "management_fee": fund_info.get("management_fee", 0),
+                "custodian_fee": fund_info.get("custodian_fee", 0),
+                "sales_service_fee": fund_info.get("sales_service_fee", 0),
+                "tracking": fund_info.get("tracking", ""),
+                "performance_benchmark": fund_info.get("performance_benchmark", ""),
+                "investment_scope": fund_info.get("investment_scope", ""),
+                "investment_target": fund_info.get("investment_target", ""),
+                "investment_philosophy": fund_info.get("investment_philosophy", ""),
+                "investment_strategy": fund_info.get("investment_strategy", ""),
+                "dividend_policy": fund_info.get("dividend_policy", ""),
+                "risk_return_characteristics": fund_info.get(
+                    "risk_return_characteristics", ""
+                ),
+                "data_source": fund_info.get("data_source"),
+                "data_source_version": fund_info.get("data_source_version"),
             }
 
-            self.update_progress(50)
+            self.update_progress(80)
             logger.info("正在更新数据库...")
 
             # 更新或创建基金记录
@@ -77,39 +100,10 @@ class FundDetailTask(BaseTask):
                     setattr(fund, key, value)
                 fund.save()
 
-            self.update_progress(80)
-            logger.info("正在获取最新净值...")
-
-            # # 获取最新净值
-            # nav_history = data_source.get_fund_nav_history(
-            #     fund_code,
-            #     start_date=datetime.now().replace(
-            #         hour=0, minute=0, second=0, microsecond=0
-            #     ),
-            # )
-
-            # if nav_history:
-            #     latest_nav = nav_history[0]
-            #     fund.nav = latest_nav.get("nav")
-            #     nav_date = latest_nav.get("date")
-            #     if nav_date:
-            #         fund.nav_date = datetime.strptime(nav_date, "%Y-%m-%d")
-            #     fund.save()
-
             self.update_progress(100)
             logger.info(f"基金 {fund_code} 信息更新完成")
 
-            return {
-                "message": "Fund info update completed",
-                "task_id": self.task_id,
-                "fund_code": fund_code,
-                "fund_name": fund_data["name"],
-                "created": created,
-                "nav": str(fund.nav) if fund.nav else None,
-                "nav_date": fund.nav_date.strftime("%Y-%m-%d")
-                if fund.nav_date
-                else None,
-            }
+            return fund_data
 
         except Exception as e:
             logger.error(

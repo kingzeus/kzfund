@@ -7,7 +7,8 @@ import random
 import string
 import urllib.parse
 
-from utils.datetime import get_timestamp
+from utils.datetime import format_date, get_timestamp
+from utils.string_helper import extract_number_with_unit
 from ..interface import IDataSource
 
 
@@ -15,7 +16,19 @@ logger = logging.getLogger(__name__)
 
 
 class EastMoneyDataSource(IDataSource):
-    """东方财富数据源实现"""
+    """
+    东方财富数据源实现
+    版本 1.0.0:
+    - 获取基金搜索建议
+    - 获取基金基本信息
+    - 获取基金详情
+
+
+
+
+
+
+    """
 
     @classmethod
     def get_name(cls) -> str:
@@ -122,9 +135,84 @@ class EastMoneyDataSource(IDataSource):
             raise ValueError(f"获取基金信息失败: {str(e)}")
 
     def get_fund_detail(self, fund_code: str) -> Dict[str, Any]:
-        """获取基金详情"""
+        """获取基金详情
 
-        raise NotImplementedError
+        Args:
+            fund_code: 基金代码
+
+        Returns:
+            包含基金详细信息的字典，包括:
+            - fund_type: 基金类型
+            - fund_scale: 基金规模
+            - establishment_date: 成立日期
+            等
+        """
+        try:
+            url = f"https://fundf10.eastmoney.com/jbgk_{fund_code}.html"
+
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+
+            # 使用 BeautifulSoup 解析 HTML
+            from bs4 import BeautifulSoup
+
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # 获取表格数据
+            table = soup.select_one("table.info")
+            if not table:
+                raise ValueError("未找到基金详情表格")
+
+            fund_data = {}
+            for row in table.select("tr"):
+                # 获取该行所有的th和td元素
+                cells = row.select("th, td")
+                # 每两个单元格作为一组key-value
+                for i in range(0, len(cells) - 1, 2):
+                    key = cells[i].get_text(strip=True)
+                    value = cells[i + 1].get_text(strip=True)
+                    fund_data[key] = value
+                    logger.debug(f"解析到基金详情: {key} = {value}")
+
+            # 将原始数据映射到标准化的字段名
+            return {
+                "code": fund_code,
+                "name": fund_data.get("基金简称"),
+                "full_name": fund_data.get("基金全称"),
+                "type": fund_data.get("基金类型"),
+                "issue_date": format_date(
+                    fund_data.get("发行日期"), input_format="%Y年%m月%d日"
+                ),
+                "establishment_date": format_date(
+                    fund_data.get("成立日期/规模", "").split("/")[0],
+                    input_format="%Y年%m月%d日",
+                ),
+                "establishment_size": extract_number_with_unit(
+                    fund_data.get("成立日期/规模", "").split("/")[1], False
+                ),
+                "company": fund_data.get("基金管理人"),
+                "custodian": fund_data.get("基金托管人"),
+                "fund_manager": fund_data.get("基金经理人"),
+                "management_fee": extract_number_with_unit(
+                    fund_data.get("管理费率"), False, "percentage"
+                ),
+                "custodian_fee": extract_number_with_unit(
+                    fund_data.get("托管费率"), False, "percentage"
+                ),
+                "sales_service_fee": extract_number_with_unit(
+                    fund_data.get("销售服务费率", ""), False, "percentage"
+                ),
+                "tracking": fund_data.get("跟踪标的"),
+                "performance_benchmark": fund_data.get("业绩比较基准"),
+                "data_source": self.get_name(),
+                "data_source_version": self.get_version(),
+                # "investment_target": fund_data.get("投资目标", ""),
+                # "investment_scope": fund_data.get("投资范围", ""),
+            }
+
+        except Exception as e:
+            logger.error(f"获取基金详情失败: {str(e)}", exc_info=True)
+            raise ValueError(f"获取基金详情失败: {str(e)}")
 
     def get_fund_nav_history(
         self,

@@ -55,9 +55,9 @@ def format_date(
     try:
         if isinstance(dt, str):
             if input_format:
-                dt = datetime.strptime(dt, input_format).date()
+                dt = datetime.strptime(dt.strip(), input_format).date()
             else:
-                dt = date.fromisoformat(dt)
+                dt = date.fromisoformat(dt.strip())
         if isinstance(dt, date):
             return dt.strftime(format)
     except (ValueError, TypeError):
