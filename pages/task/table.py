@@ -15,7 +15,7 @@ import feffery_antd_components as fac
 from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from pages.task.utils import TABLE_STYLES, process_task_data
+from pages.task.utils import PAGE_PADDING, TABLE_STYLES, prepare_task_for_display
 from scheduler.job_manager import JobManager, TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
     """渲染任务表格
 
     Args:
-        initial_data: 初始任务数据列表
+        initial_data: 初始任务数据列表，字典格式
 
     Returns:
         任务表格卡片组件
@@ -83,7 +83,7 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
                         "width": "15%",
                     },
                 ],
-                data=[process_task_data(task) for task in initial_data],
+                data=[prepare_task_for_display(task) for task in initial_data],
                 bordered=True,
                 size="small",
                 pagination={
@@ -106,7 +106,7 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
 )
 def update_task_list(store_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """更新任务列表"""
-    return [process_task_data(task) for task in store_data]
+    return [prepare_task_for_display(task) for task in store_data]
 
 
 @callback(

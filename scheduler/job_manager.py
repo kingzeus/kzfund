@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, List
 
 from flask_apscheduler import APScheduler
+from peewee import DatabaseError, DoesNotExist, IntegrityError
 
 from config import SCHEDULER_CONFIG
 from models.task import TaskHistory
@@ -23,6 +24,14 @@ class TaskStatus:
     COMPLETED = "completed"  # 执行完成
     FAILED = "failed"  # 执行失败
     PAUSED = "paused"  # 已暂停
+
+
+class TaskExecutionError(Exception):
+    """任务执行异常"""
+
+
+class TaskUpdateError(Exception):
+    """任务状态更新异常"""
 
 
 @Singleton
@@ -61,21 +70,31 @@ class JobManager:
         """
         try:
             # 更新任务状态为运行中
-            task_history = TaskHistory.get(TaskHistory.task_id == task_id)
+            try:
+                task_history = TaskHistory.get(TaskHistory.task_id == task_id)
+            except DoesNotExist as exc:
+                logger.error("任务不存在: %s", task_id)
+                raise TaskExecutionError(f"任务不存在: {task_id}") from exc
+
             task_history.status = TaskStatus.RUNNING
             task_history.start_time = datetime.now()
             task_history.save()
             logger.info("开始执行任务: %s (ID: %s)", task_type, task_id)
 
             # 执行具体任务
-            result = TaskFactory().execute_task(task_type, task_id, **kwargs)
+            try:
+                result = TaskFactory().execute_task(task_type, task_id, **kwargs)
+            except (ValueError, TypeError) as e:
+                raise TaskExecutionError(f"任务参数错误: {str(e)}") from e
+            except Exception as e:
+                raise TaskExecutionError(f"任务执行失败: {str(e)}") from e
 
             # 任务成功完成
             task_history.status = TaskStatus.COMPLETED
             task_history.result = str(result)
             logger.info("任务执行完成: %s (ID: %s)", task_type, task_id)
 
-        except Exception as e:
+        except TaskExecutionError as e:
             # 任务执行失败
             task_history.status = TaskStatus.FAILED
             task_history.error = str(e)
@@ -101,8 +120,9 @@ class JobManager:
                     task_history.status,
                     task_history.progress,
                 )
-            except Exception as e:
+            except (DatabaseError, IntegrityError) as e:
                 logger.error("保存任务最终状态失败: %s", str(e))
+                raise TaskUpdateError(f"保存任务状态失败: {str(e)}") from e
 
     def add_task(self, task_type: str, **kwargs) -> str:
         """添加新任务
@@ -160,7 +180,7 @@ class JobManager:
             ).execute()
             logger.info("任务已暂停: %s", task_id)
             return True
-        except Exception as e:
+        except (DatabaseError, IntegrityError) as e:
             logger.error("暂停任务失败: %s:%s", task_id, str(e), exc_info=True)
             return False
 
@@ -173,7 +193,7 @@ class JobManager:
             ).execute()
             logger.info("任务已恢复: %s", task_id)
             return True
-        except Exception as e:
+        except (DatabaseError, IntegrityError) as e:
             logger.error("恢复任务失败: %s: %s", task_id, str(e), exc_info=True)
             return False
 
@@ -187,10 +207,10 @@ class JobManager:
             任务历史记录列表,每条记录为TaskHistory实例
         """
         try:
-            query = TaskHistory.select().order_by(TaskHistory.created_at.desc()).limit(limit)
-
-            return list(query)
-        except Exception as e:
+            return list(
+                TaskHistory.select().order_by(TaskHistory.created_at.desc()).limit(limit).execute()
+            )
+        except DatabaseError as e:
             logger.error("获取任务历史记录失败: %s", e)
             return []
 
@@ -219,8 +239,8 @@ class JobManager:
                 query = TaskHistory.select(TaskHistory.task_id, TaskHistory.progress).where(
                     TaskHistory.task_id.in_(missing_task_ids)
                 )
-                progress_dict.update({task.task_id: task.progress for task in query})
-            except Exception as e:
+                progress_dict.update({task.task_id: task.progress for task in query.execute()})
+            except (DatabaseError, IntegrityError) as e:
                 logger.error("从数据库获取任务进度失败: %s", str(e))
 
         return progress_dict
@@ -236,9 +256,9 @@ class JobManager:
         """
         try:
             # 从数据库获取任务信息
-            task = TaskHistory.get_or_none(TaskHistory.task_id == task_id)
-
-            if not task:
+            try:
+                task = TaskHistory.get(TaskHistory.task_id == task_id)
+            except DoesNotExist:
                 logger.warning("任务不存在: %s", task_id)
                 return {"status": "not_found"}
 
@@ -265,6 +285,67 @@ class JobManager:
                 "created_at": task.created_at,
             }
 
-        except Exception as e:
+        except (DatabaseError, IntegrityError, DoesNotExist, TypeError, ValueError) as e:
             logger.error("获取任务信息失败: %s, 错误: %s", task_id, str(e), exc_info=True)
             return {"status": "not_found", "error": str(e)}
+
+    def get_task_progress(self, task_ids: List[str]) -> Dict[str, int]:
+        """获取多个任务的进度
+
+        Args:
+            task_ids: 任务ID列表
+
+        Returns:
+            Dict[str, int]: {task_id: progress} 进度字典
+        """
+        progress_dict = {}
+
+        # 先从缓存获取
+        for task_id in task_ids:
+            if task_id in self._progress_cache:
+                progress_dict[task_id] = self._progress_cache[task_id]
+
+        # 缓存未命中的从数据库查询
+        missing_task_ids = list(set(task_ids) - set(progress_dict.keys()))
+        if missing_task_ids:
+            try:
+                query = TaskHistory.select(TaskHistory.task_id, TaskHistory.progress).where(
+                    TaskHistory.task_id.in_(missing_task_ids)
+                )
+                progress_dict.update({task.task_id: task.progress for task in query.execute()})
+            except (DatabaseError, IntegrityError) as e:
+                logger.error("从数据库获取任务进度失败: %s", str(e))
+
+        return progress_dict
+
+    def get_task_status(self, task_id: str) -> Dict:
+        """获取任务状态详情
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            Dict: 包含任务详细信息的字典，如果任务不存在返回 {"status": "not_found"}
+        """
+        try:
+            # 从数据库获取任务信息
+            try:
+                task = TaskHistory.get(TaskHistory.task_id == task_id)
+            except DoesNotExist:
+                logger.warning("任务不存在: %s", task_id)
+                return {"status": "not_found"}
+
+            # 获取最新进度
+            progress = self._progress_cache.get(task_id, task.progress)
+
+            return {
+                "status": task.status,
+                "progress": progress,
+                "result": task.result,
+                "error": task.error,
+                "start_time": task.start_time,
+                "end_time": task.end_time,
+            }
+        except (DatabaseError, IntegrityError, TypeError, ValueError) as e:
+            logger.error("获取任务状态失败: %s", str(e))
+            return {"status": "error", "message": str(e)}

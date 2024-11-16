@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from typing import Dict, List, Optional
 
 from flask import request
 from flask_restx import Namespace, Resource, fields

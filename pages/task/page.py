@@ -17,13 +17,15 @@
    - 任务详情弹窗
 """
 
+from typing import Dict, List
+
 import feffery_antd_components as fac
 from dash import dcc, html
 
 from pages.task.detail_modal import render_task_detail_modal
 from pages.task.modal import render_task_modal
 from pages.task.table import render_task_table
-from pages.task.utils import ICON_STYLES, PAGE_PADDING
+from pages.task.utils import ICON_STYLES, PAGE_PADDING, convert_tasks_to_dict
 from scheduler.job_manager import JobManager
 
 
@@ -33,7 +35,8 @@ def render_task_page() -> html.Div:
     Returns:
         包含完整页面结构的Div组件
     """
-    initial_tasks = JobManager().get_task_history()
+    tasks = JobManager().get_task_history()
+    initial_tasks = convert_tasks_to_dict(tasks)
 
     return html.Div(
         [

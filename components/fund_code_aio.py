@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any, Dict, List
+from typing import Dict, List, Optional
 
 import feffery_antd_components as fac
 from dash import MATCH, Input, Output, callback, html, no_update
@@ -13,9 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 class FundCodeAIO(html.Div):
+    """基金代码选择器组件"""
+
     class ids:
+        """组件ID管理器"""
+
         @staticmethod
         def select(aio_id: str) -> Dict[str, str]:
+            """生成选择器ID
+
+            Args:
+                aio_id: 组件实例ID
+
+            Returns:
+                包含组件标识信息的字典
+            """
             return {
                 "component": "FundCodeAIO",
                 "subcomponent": "select",
@@ -26,10 +38,17 @@ class FundCodeAIO(html.Div):
 
     def __init__(
         self,
-        aio_id: str = None,
-        placeholder: str = None,
-        debounce_wait: int = None,
+        aio_id: Optional[str] = None,
+        placeholder: Optional[str] = None,
+        debounce_wait: Optional[int] = None,
     ):
+        """初始化基金代码选择器
+
+        Args:
+            aio_id: 组件实例ID，默认自动生成
+            placeholder: 占位符文本
+            debounce_wait: 防抖等待时间(ms)
+        """
         if aio_id is None:
             aio_id = str(uuid.uuid4())
 
@@ -47,9 +66,17 @@ class FundCodeAIO(html.Div):
     @staticmethod
     @callback(
         Output(ids.select(MATCH), "options"),
-        Input(ids.select(MATCH), "debounce_search_value"),
+        Input(ids.select(MATCH), "debounceSearchValue"),
     )
-    def update_options(debounce_search_value: str) -> List[Dict[str, Any]]:
+    def update_options(debounce_search_value: str) -> List[Dict]:
+        """更新选项列表
+
+        Args:
+            debounce_search_value: 搜索关键词
+
+        Returns:
+            基金代码选项列表
+        """
         if not debounce_search_value:
             return no_update
 

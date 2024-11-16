@@ -20,6 +20,7 @@ Usage:
 import os
 import sys
 import time
+import traceback
 import unittest
 from datetime import datetime
 from typing import Dict, List
@@ -143,13 +144,39 @@ class CustomTestRunner:
             for result in results:
                 print(result)
 
-    def _print_statistics(self, result: CustomTestResult, time_taken: float):
+    def _format_error_detail(self, err_tuple) -> str:
+        """格式化错误详情"""
+        err_type, err_value, err_traceback = err_tuple
+        # 获取格式化的追溯信息
+        formatted_traceback = "".join(
+            traceback.format_exception(err_type, err_value, err_traceback)
+        )
+        return formatted_traceback
+
+    def _print_error_details(self, test_outcome: CustomTestResult):
+        """打印错误和失败的详细信息"""
+        if test_outcome.failures or test_outcome.errors:
+            print(f"\n{self.divider}")
+            print(self._center_text(f"{Fore.RED}Detailed Error Information{Style.RESET_ALL}"))
+            print(self.divider)
+
+            for test_id, failure_info in test_outcome.failure_details.items():
+                print(f"\n{Fore.RED}❌ FAILURE in {test_id}{Style.RESET_ALL}")
+                print(self.short_divider)
+                print(self._format_error_detail(failure_info))
+
+            for test_id, error_info in test_outcome.error_details.items():
+                print(f"\n{Fore.RED}⚠️ ERROR in {test_id}{Style.RESET_ALL}")
+                print(self.short_divider)
+                print(self._format_error_detail(error_info))
+
+    def _print_statistics(self, test_outcome: CustomTestResult, time_taken: float):
         """打印统计信息"""
-        total_tests = result.testsRun
-        passed_tests = len(result.test_results["success"])
-        failed_tests = len(result.failures)
-        error_tests = len(result.errors)
-        skipped_tests = len(result.skipped)
+        total_tests = test_outcome.testsRun
+        passed_tests = len(test_outcome.test_results["success"])
+        failed_tests = len(test_outcome.failures)
+        error_tests = len(test_outcome.errors)
+        skipped_tests = len(test_outcome.skipped)
 
         success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
 
@@ -163,10 +190,12 @@ class CustomTestRunner:
         print(self._center_text(f"{status_color}{status}{Style.RESET_ALL}"))
 
         # 进度条
-        bar_width = 50
-        filled = int(success_rate / 100 * bar_width)
-        bar = "█" * filled + "░" * (bar_width - filled)
-        print(f"\nProgress: [{Fore.GREEN}{bar}{Style.RESET_ALL}] {success_rate:.1f}%\n")
+        progress_width = 50
+        filled = int(success_rate / 100 * progress_width)
+        progress_indicator = "█" * filled + "░" * (progress_width - filled)
+        print(
+            f"\nProgress: [{Fore.GREEN}{progress_indicator}{Style.RESET_ALL}] {success_rate:.1f}%\n"
+        )
 
         # 详细统计
         print(f"{'Total tests:':<20} {total_tests}")
@@ -180,41 +209,13 @@ class CustomTestRunner:
         print(f"{'Time taken:':<20} {time_taken:.2f}s")
         print(self.divider + "\n")
 
-    def _format_error_detail(self, err_tuple) -> str:
-        """格式化错误详情"""
-        import traceback
-
-        err_type, err_value, err_traceback = err_tuple
-        # 获取格式化的追溯信息
-        formatted_traceback = "".join(
-            traceback.format_exception(err_type, err_value, err_traceback)
-        )
-        return formatted_traceback
-
-    def _print_error_details(self, result: CustomTestResult):
-        """打印错误和失败的详细信息"""
-        if result.failures or result.errors:
-            print(f"\n{self.divider}")
-            print(self._center_text(f"{Fore.RED}Detailed Error Information{Style.RESET_ALL}"))
-            print(self.divider)
-
-            for test_id, failure in result.failure_details.items():
-                print(f"\n{Fore.RED}❌ FAILURE in {test_id}{Style.RESET_ALL}")
-                print(self.short_divider)
-                print(self._format_error_detail(failure))
-
-            for test_id, error in result.error_details.items():
-                print(f"\n{Fore.RED}⚠️ ERROR in {test_id}{Style.RESET_ALL}")
-                print(self.short_divider)
-                print(self._format_error_detail(error))
-
     def run(self, test) -> CustomTestResult:
         """运行测试套件"""
-        result = CustomTestResult()
+        test_outcome = CustomTestResult()
         self.start_time = time.time()
 
         self._print_session_header()
-        test(result)
+        test(test_outcome)
         time_taken = time.time() - self.start_time
 
         # 打印测试结果摘要
@@ -223,18 +224,18 @@ class CustomTestRunner:
         print(f"{self.divider}\n")
 
         # 按类别打印测试结果
-        self._print_result_section("Successes", result.test_results["success"])
-        self._print_result_section("Failures", result.test_results["failure"], Fore.RED)
-        self._print_result_section("Errors", result.test_results["error"], Fore.RED)
-        self._print_result_section("Skipped", result.test_results["skipped"], Fore.YELLOW)
+        self._print_result_section("Successes", test_outcome.test_results["success"])
+        self._print_result_section("Failures", test_outcome.test_results["failure"], Fore.RED)
+        self._print_result_section("Errors", test_outcome.test_results["error"], Fore.RED)
+        self._print_result_section("Skipped", test_outcome.test_results["skipped"], Fore.YELLOW)
 
         # 打印错误详情
-        self._print_error_details(result)
+        self._print_error_details(test_outcome)
 
         # 打印统计信息
-        self._print_statistics(result, time_taken)
+        self._print_statistics(test_outcome, time_taken)
 
-        return result
+        return test_outcome
 
 
 def run_tests() -> CustomTestResult:
@@ -250,6 +251,6 @@ def run_tests() -> CustomTestResult:
 
 
 if __name__ == "__main__":
-    result = run_tests()
+    test_outcome = run_tests()
     # 如果有测试失败，使用非零退出码
-    sys.exit(len(result.failures) + len(result.errors))
+    sys.exit(len(test_outcome.failures) + len(test_outcome.errors))
