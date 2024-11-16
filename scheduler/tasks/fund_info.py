@@ -112,7 +112,5 @@ class FundInfoTask(BaseTask):
             }
 
         except Exception as e:
-            logger.error(
-                f"更新基金信息失败: {str(e)}", exc_info=True
-            )  # 添加完整的错误堆栈
+            logger.error(f"更新基金信息失败: {str(e)}", exc_info=True)  # 添加完整的错误堆栈
             raise

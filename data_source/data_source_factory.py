@@ -14,9 +14,7 @@ class DataSourceFactory:
     @classmethod
     def register(cls, source_class: Type[IDataSource]) -> None:
         """注册新的数据源类型"""
-        logger.info(
-            "注册数据源: %s %s", source_class.get_name(), source_class.get_version()
-        )
+        logger.info("注册数据源: %s %s", source_class.get_name(), source_class.get_version())
         cls._sources[source_class.get_name()] = source_class
 
     @classmethod

@@ -1,5 +1,23 @@
-__pycache__
-.idea
-database
-logs
+
+# Poetry
+poetry.lock
+.venv/
+dist/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Project specific
+logs/
+database/
 .pylint_rate

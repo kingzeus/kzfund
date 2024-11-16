@@ -71,9 +71,7 @@ class TestDataSource(unittest.TestCase):
 
             self.assertIsInstance(float_value, float, "\n".join(error_msg))
         except (ValueError, TypeError) as e:
-            self.fail(
-                f"\n百分比转换失败: {field_name}\n" f"值: {value!r}\n" f"错误: {str(e)}"
-            )
+            self.fail(f"\n百分比转换失败: {field_name}\n" f"值: {value!r}\n" f"错误: {str(e)}")
 
     def test_get_fund_detail(self):
         """测试获取基金详情功能"""

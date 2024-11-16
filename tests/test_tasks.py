@@ -88,15 +88,9 @@ class TestFundDetailTasks(unittest.TestCase):
         self.assertIsNotNone(results["company"], "基金公司不能为空")
 
         # 验证数值字段
-        self.assertIsInstance(
-            results["establishment_size"], (int, float), "成立规模应为数值类型"
-        )
-        self.assertIsInstance(
-            results["management_fee"], (int, float), "管理费率应为数值类型"
-        )
-        self.assertIsInstance(
-            results["custodian_fee"], (int, float), "托管费率应为数值类型"
-        )
+        self.assertIsInstance(results["establishment_size"], (int, float), "成立规模应为数值类型")
+        self.assertIsInstance(results["management_fee"], (int, float), "管理费率应为数值类型")
+        self.assertIsInstance(results["custodian_fee"], (int, float), "托管费率应为数值类型")
         self.assertIsInstance(
             results["sales_service_fee"], (int, float), "销售服务费率应为数值类型"
         )

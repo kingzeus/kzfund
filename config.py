@@ -96,9 +96,7 @@ SERVER_CONFIG = {
 
 # 数据库配置
 DATABASE_CONFIG = {
-    "path": os.path.join(
-        ROOT_DIR, "database", "fund_analysis.v4.db"
-    )  # SQLite数据库文件路径
+    "path": os.path.join(ROOT_DIR, "database", "fund_analysis.v4.db")  # SQLite数据库文件路径
 }
 
 # API配置

@@ -57,38 +57,52 @@ activate_conda_env() {
     if ! conda activate fund; then
         echo -e "${RED}激活conda环境失败${NC}"
         read -p "按回车键继续..."
-        return 1
+        exit 1
     fi
     echo -e "${GREEN}conda环境激活成功${NC}"
     return 0
 }
-
-# 安装依赖
-install_dependencies() {
-    echo -e "${YELLOW}检查并安装依赖${NC}"
-    if [ -f "requirements.txt" ]; then
-        if ! pip install -r requirements.txt; then
-            echo -e "${RED}安装依赖失败${NC}"
-            read -p "按回车键继续..."
-            return 1
+# 检查poetry是否已安装
+check_poetry() {
+    if ! command -v poetry &> /dev/null; then
+        echo -e "${RED}错误: 未找到poetry，正在安装...${NC}"
+        # 获取当前conda环境信息
+        conda_env=$(conda info --envs | grep "*" | awk '{print $1}')
+        echo -e "${YELLOW}当前conda环境: ${conda_env}${NC}"
+        if ! conda install -y poetry; then
+            echo -e "${RED}安装poetry失败${NC}"
+            exit 1
         fi
-
-        # 安装代码检查工具
-        echo -e "${YELLOW}安装代码检查工具...${NC}"
-        if ! pip install black pylint; then
-            echo -e "${RED}安装代码检查工具失败${NC}"
-            read -p "按回车键继续..."
-            return 1
-        fi
-
-        echo -e "${GREEN}依赖安装成功${NC}"
-    else
-        echo -e "${RED}错误: 未找到requirements.txt文件${NC}"
-        read -p "按回车键继续..."
-        return 1
     fi
     return 0
 }
+
+# 创建并配置环境
+setup_env() {
+    echo -e "${YELLOW}配置开发环境...${NC}"
+    # 获取poetry版本
+    poetry_version=$(poetry --version | cut -d' ' -f3)
+    echo -e "${GREEN}当前poetry版本: $poetry_version${NC}"
+
+    # 配置poetry不使用虚拟环境
+    echo -e "${YELLOW}配置poetry...${NC}"
+    poetry config virtualenvs.create false
+
+    # 安装项目依赖
+    echo -e "${YELLOW}安装项目依赖...${NC}"
+    if ! poetry install; then
+        echo -e "${RED}安装依赖失败${NC}"
+        echo -e "按回车键返回主菜单..."
+        read
+        return 1
+    fi
+
+    echo -e "${GREEN}环境配置成功${NC}"
+    read -p "按回车键继续..."
+    return 0
+}
+
+
 
 # 初始化数据库
 init_database() {
@@ -271,7 +285,7 @@ run_code_check() {
             echo -e "${RED}无法解析评分信息${NC}"
         fi
 
-        # 保存当前评分
+        # 保存当前��分
         echo "$curr_rate" > .pylint_rate
 
         has_error=1
@@ -338,7 +352,8 @@ do_full_install() {
     check_conda || return 1
     setup_conda_env || return 1
     activate_conda_env || return 1
-    install_dependencies || return 1
+    check_poetry || return 1
+    setup_env || return 1
     init_database || return 1
     run_code_check || return 1
     start_app || return 1
@@ -354,34 +369,35 @@ while true; do
     case $choice in
         1)
             echo -e "${YELLOW}开始初始化环境...${NC}"
-            ensure_directories
-            check_conda
-            setup_conda_env
-            activate_conda_env
-            install_dependencies
+            ensure_directories || continue
+            check_conda || continue
+            setup_conda_env || continue
+            activate_conda_env || continue
+            check_poetry || continue
+            setup_env || continue
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}环境初始化完成！${NC}"
             fi
             ;;
         2)
             echo -e "${YELLOW}开始迁移数据库...${NC}"
-            init_database
+            init_database || continue
             ;;
         3)
             echo -e "${YELLOW}开始运行代码检查...${NC}"
-            run_code_check
+            run_code_check || continue
             ;;
         4)
             echo -e "${YELLOW}开始启动应用...${NC}"
-            ensure_directories
-            activate_conda_env
-            start_app
+            ensure_directories || continue
+            activate_conda_env || continue
+            start_app || continue
             ;;
         5)
-            do_full_install
+            do_full_install || continue
             ;;
         9)
-            start_test
+            start_test || continue
             ;;
         0)
             echo -e "${GREEN}再见！${NC}"
@@ -389,13 +405,13 @@ while true; do
             ;;
         *)
             echo -e "${RED}无效的选择，请重试${NC}"
-            read -p "按回车键继续..."
+            echo -e "按回车键返回主菜单..."
             ;;
     esac
 
     # 如果不是启动应用，则等待用户按回车继续
     if [ "$choice" != "4" ] && [ "$choice" != "5" ]; then
         echo
-        read -p "按回车键继续..."
+        echo -e "按回车键返回主菜单..."
     fi
 done

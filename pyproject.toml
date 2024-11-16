@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "fund-analysis"
+version = "0.1.0"
+description = "基金分析系统"
+authors = ["Fan Yefei <fyfcnc@hotmail.com>"]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+# Web框架
+dash = {version = "^2.18.1", extras = ["compress"]}
+"dash-bootstrap-components" = "^1.5.0"
+plotly = "^5.18.0"
+
+"feffery-antd-components" = "^0.3.8"
+"feffery-dash-utils" = "^0.1.4"
+"feffery-markdown-components" = "^0.3.0rc3"
+"feffery-utils-components" = "^0.2.0rc20"
+
+# 服务端
+Flask = "^3.0.3"
+"flask-restx" = "^1.3.0"
+
+# 网络
+requests = "^2.32.3"
+
+# 数据处理
+pandas = "^2.2.3"
+numpy = "^1.26.2"
+"beautifulsoup4" = "^4.12.3"
+"flask-apscheduler" = "^1.13.1"
+
+# 数据库
+peewee = "^3.17.0"
+
+[tool.poetry.group.dev.dependencies]
+# 开发工具
+black = "^23.11.0"                      # 代码格式化检查
+pylint = "^3.1.0"                       # 代码质量检查
+colorama = "^0.4.6"                     # 测试用
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

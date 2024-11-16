@@ -21,9 +21,7 @@ class Fund(BaseModel):
     type = CharField(max_length=20)  # 基金类型
     issue_date = DateField()  # 发行日期
     establishment_date = DateField()  # 成立日期
-    establishment_size = DecimalField(
-        max_digits=20, decimal_places=4
-    )  # 成立规模(单位：亿份)
+    establishment_size = DecimalField(max_digits=20, decimal_places=4)  # 成立规模(单位：亿份)
     company = CharField(max_length=100)  # 基金管理公司
     custodian = CharField(max_length=100)  # 基金托管人
     fund_manager = CharField(max_length=100)  # 基金经理人
