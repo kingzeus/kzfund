@@ -17,6 +17,7 @@ from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
 from models.database import add_transaction, get_transactions, update_transaction
+from models.fund import ModelFundTransaction
 
 from .utils import build_cascader_options
 
@@ -24,9 +25,15 @@ from .utils import build_cascader_options
 logger = logging.getLogger(__name__)
 
 # ============= 常量定义 =============
-TRANSACTION_TYPES = [
-    {"label": "买入", "value": "buy"},
-    {"label": "卖出", "value": "sell"},
+TRANSACTION_TYPE_OPTIONS = [
+    {
+        "label": ModelFundTransaction.TRANSACTION_TYPES[ModelFundTransaction.TYPE_BUY],
+        "value": ModelFundTransaction.TYPE_BUY,
+    },
+    {
+        "label": ModelFundTransaction.TRANSACTION_TYPES[ModelFundTransaction.TYPE_SELL],
+        "value": ModelFundTransaction.TYPE_SELL,
+    },
 ]
 
 FORM_LAYOUT = {"labelCol": {"span": 6}, "wrapperCol": {"span": 18}}
@@ -82,7 +89,7 @@ def render_transaction_modal() -> fac.AntdModal:
                         fac.AntdSelect(
                             id="transaction-type-select",
                             placeholder="请选择交易类型",
-                            options=TRANSACTION_TYPES,
+                            options=TRANSACTION_TYPE_OPTIONS,
                             style={"width": "100%"},
                         ),
                         label="交易类型",
@@ -185,20 +192,7 @@ def handle_transaction_save(
     trade_time: Optional[str],
     editing_id: Optional[str],
 ) -> Tuple[List[Dict[str, Any]], bool]:
-    """处理交易记录保存
-
-    Args:
-        ok_counts: 确认按钮点击次数
-        portfolio_path: 组合选择路径
-        fund_code: 基金代码
-        transaction_type: 交易类型
-        amount: 交易金额
-        trade_time: 交易时间
-        editing_id: 正在编辑的交易ID
-
-    Returns:
-        tuple: (更新后的数据, 弹窗可见性)
-    """
+    """处理交易记录保存"""
     # 验证必填字段
     if not ok_counts or not all([portfolio_path, fund_code, transaction_type, amount, trade_time]):
         raise PreventUpdate
@@ -210,11 +204,16 @@ def handle_transaction_save(
             raise PreventUpdate
 
         # 处理日期时间
-        if isinstance(trade_time, str) and len(trade_time) == 10:
-            trade_date = datetime.strptime(trade_time, "%Y-%m-%d")
-            trade_datetime = datetime.combine(trade_date, datetime.min.time())
-        else:
-            trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
+        trade_datetime = None
+        if isinstance(trade_time, str):
+            if len(trade_time) == 10:
+                trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d")
+            else:
+                trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
+
+        if not trade_datetime:
+            logger.error("无效的交易时间格式")
+            raise PreventUpdate
 
         # 保存交易记录
         success = False
@@ -241,6 +240,6 @@ def handle_transaction_save(
         logger.error("保存交易记录失败")
 
     except Exception as e:
-        logger.error(f"处理交易保存失败: {str(e)}", exc_info=True)
+        logger.error("处理交易保存失败: %s", str(e), exc_info=True)
 
     return dash.no_update, dash.no_update

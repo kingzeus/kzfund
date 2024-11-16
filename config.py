@@ -43,7 +43,7 @@ LOG_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "detailed",
             "filename": os.path.join(ROOT_DIR, "logs", "app.log"),
-            "maxBytes": 10485760,  # 10MB
+            "maxBytes": 1048576,  # 1MB
             "backupCount": 5,  # 保留5个备份文件
             "encoding": "utf-8",
             "level": "DEBUG" if DEBUG else "INFO",
@@ -53,7 +53,7 @@ LOG_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "detailed",
             "filename": os.path.join(ROOT_DIR, "logs", "error.log"),
-            "maxBytes": 10485760,  # 10MB
+            "maxBytes": 1048576,  # 1MB
             "backupCount": 5,
             "encoding": "utf-8",
             "level": "ERROR",
@@ -95,7 +95,8 @@ SERVER_CONFIG = {
 
 # 数据库配置
 DATABASE_CONFIG = {
-    "path": os.path.join(ROOT_DIR, "database", "fund_analysis.v4.db")  # SQLite数据库文件路径
+    # SQLite数据库文件路径
+    "path": os.path.join(ROOT_DIR, "database", "fund_analysis.v7.db")
 }
 
 # API配置

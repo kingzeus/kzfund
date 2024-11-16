@@ -76,6 +76,17 @@ class BaseModel(Model):
         self.updated_at = datetime.now()
         return super().save(*args, **kwargs)
 
+    def to_dict(self) -> dict:
+        """将模型实例转换为可JSON序列化的字典
+
+        Returns:
+            包含模型基本属性的字典
+        """
+        return {
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
 
 @contextmanager
 def db_connection(db_path: str = None):

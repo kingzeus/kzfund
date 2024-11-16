@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 from datetime import datetime
@@ -7,23 +8,13 @@ from flask_apscheduler import APScheduler
 from peewee import DatabaseError, DoesNotExist, IntegrityError
 
 from config import SCHEDULER_CONFIG
-from models.task import TaskHistory
-from scheduler.tasks import TaskFactory
+from models.task import ModelTask
+from scheduler.tasks import TaskFactory, TaskStatus
 from utils.singleton import Singleton
 
 # 创建调度器实例
 scheduler = APScheduler()
 logger = logging.getLogger(__name__)
-
-
-class TaskStatus:
-    """任务状态常量"""
-
-    PENDING = "pending"  # 等待执行
-    RUNNING = "running"  # 正在执行
-    COMPLETED = "completed"  # 执行完成
-    FAILED = "failed"  # 执行失败
-    PAUSED = "paused"  # 已暂停
 
 
 class TaskExecutionError(Exception):
@@ -71,7 +62,7 @@ class JobManager:
         try:
             # 更新任务状态为运行中
             try:
-                task_history = TaskHistory.get(TaskHistory.task_id == task_id)
+                task_history = ModelTask.get(ModelTask.task_id == task_id)
             except DoesNotExist as exc:
                 logger.error("任务不存在: %s", task_id)
                 raise TaskExecutionError(f"任务不存在: {task_id}") from exc
@@ -137,7 +128,7 @@ class JobManager:
         Raises:
             ValueError: 任务参数验证失败
         """
-        # ���证任务参数
+        # 验证任务参数
         is_valid, error_message = TaskFactory().validate_task_params(task_type, kwargs)
         if not is_valid:
             logger.error("任务参数验证失败: %s", error_message)
@@ -146,9 +137,15 @@ class JobManager:
         task_id = self._create_job_id()
         task_config = TaskFactory().get_task_types().get(task_type, {})
 
-        # 创建任务历史记录
-        TaskHistory.create(
+        # 过滤掉已单独保存的参数
+        input_params = kwargs.copy()
+        input_params.pop("priority", None)
+        input_params.pop("timeout", None)
+
+        # 创建任务记录
+        ModelTask.create(
             task_id=task_id,
+            type=task_type,  # 设置任务类型
             name=task_config.get("name", task_type),
             priority=kwargs.get("priority", task_config.get("priority", 0)),
             status=TaskStatus.PENDING,
@@ -156,6 +153,7 @@ class JobManager:
                 "timeout",
                 task_config.get("timeout", SCHEDULER_CONFIG["DEFAULT_TIMEOUT"]),
             ),
+            input_params=json.dumps(input_params),  # 将参数转换为JSON字符串
         )
 
         # 添加到调度器立即执行
@@ -175,8 +173,8 @@ class JobManager:
         """暂停指定任务"""
         try:
             self.scheduler.pause_job(task_id)
-            TaskHistory.update(status=TaskStatus.PAUSED).where(
-                TaskHistory.task_id == task_id
+            ModelTask.update(status=TaskStatus.PAUSED).where(
+                ModelTask.task_id == task_id
             ).execute()
             logger.info("任务已暂停: %s", task_id)
             return True
@@ -188,8 +186,8 @@ class JobManager:
         """恢复已暂停的任务"""
         try:
             self.scheduler.resume_job(task_id)
-            TaskHistory.update(status=TaskStatus.PENDING).where(
-                TaskHistory.task_id == task_id
+            ModelTask.update(status=TaskStatus.PENDING).where(
+                ModelTask.task_id == task_id
             ).execute()
             logger.info("任务已恢复: %s", task_id)
             return True
@@ -197,18 +195,18 @@ class JobManager:
             logger.error("恢复任务失败: %s: %s", task_id, str(e), exc_info=True)
             return False
 
-    def get_task_history(self, limit: int = 100) -> List[TaskHistory]:
+    def get_task_history(self, limit: int = 100) -> List[ModelTask]:
         """获取最近的任务历史记录
 
         Args:
             limit: 返回的最大记录数,默认100条
 
         Returns:
-            任务历史记录列表,每条记录为TaskHistory实例
+            任务历史记录列表,每条记录为ModelTask实例
         """
         try:
             return list(
-                TaskHistory.select().order_by(TaskHistory.created_at.desc()).limit(limit).execute()
+                ModelTask.select().order_by(ModelTask.created_at.desc()).limit(limit).execute()
             )
         except DatabaseError as e:
             logger.error("获取任务历史记录失败: %s", e)
@@ -236,8 +234,8 @@ class JobManager:
 
         if missing_task_ids:
             try:
-                query = TaskHistory.select(TaskHistory.task_id, TaskHistory.progress).where(
-                    TaskHistory.task_id.in_(missing_task_ids)
+                query = ModelTask.select(ModelTask.task_id, ModelTask.progress).where(
+                    ModelTask.task_id.in_(missing_task_ids)
                 )
                 progress_dict.update({task.task_id: task.progress for task in query.execute()})
             except (DatabaseError, IntegrityError) as e:
@@ -257,7 +255,7 @@ class JobManager:
         try:
             # 从数据库获取任务信息
             try:
-                task = TaskHistory.get(TaskHistory.task_id == task_id)
+                task = ModelTask.get(ModelTask.task_id == task_id)
             except DoesNotExist:
                 logger.warning("任务不存在: %s", task_id)
                 return {"status": "not_found"}
@@ -283,6 +281,7 @@ class JobManager:
                 "end_time": task.end_time,
                 "timeout": task.timeout,
                 "created_at": task.created_at,
+                "input_params": json.loads(task.input_params),
             }
 
         except (DatabaseError, IntegrityError, DoesNotExist, TypeError, ValueError) as e:
@@ -309,8 +308,8 @@ class JobManager:
         missing_task_ids = list(set(task_ids) - set(progress_dict.keys()))
         if missing_task_ids:
             try:
-                query = TaskHistory.select(TaskHistory.task_id, TaskHistory.progress).where(
-                    TaskHistory.task_id.in_(missing_task_ids)
+                query = ModelTask.select(ModelTask.task_id, ModelTask.progress).where(
+                    ModelTask.task_id.in_(missing_task_ids)
                 )
                 progress_dict.update({task.task_id: task.progress for task in query.execute()})
             except (DatabaseError, IntegrityError) as e:
@@ -330,7 +329,7 @@ class JobManager:
         try:
             # 从数据库获取任务信息
             try:
-                task = TaskHistory.get(TaskHistory.task_id == task_id)
+                task = ModelTask.get(ModelTask.task_id == task_id)
             except DoesNotExist:
                 logger.warning("任务不存在: %s", task_id)
                 return {"status": "not_found"}
@@ -345,6 +344,7 @@ class JobManager:
                 "error": task.error,
                 "start_time": task.start_time,
                 "end_time": task.end_time,
+                "input_params": json.loads(task.input_params),
             }
         except (DatabaseError, IntegrityError, TypeError, ValueError) as e:
             logger.error("获取任务状态失败: %s", str(e))

@@ -105,18 +105,24 @@ class SchemaManager:
                 print(f"版本 {version} 回滚完成")
 
     def _apply_version(self, version: int, db):
-        """应用指定版本的变更
-
-        执行顺序：
-        1. 表重命名
-        2. 创建新表
-        3. 修改现有表
-        4. 删除表
-        """
+        """应用指定版本的变更"""
         version_info = self.versions[version]
         print(f"升级到版本 {version}: {version_info['description']}")
 
         try:
+            # 确保changes字段存在
+            if "changes" not in version_info:
+                version_info["changes"] = {}
+
+            # 确保必需的子字段存在
+            changes = version_info["changes"]
+            if "new_tables" not in changes:
+                changes["new_tables"] = []
+            if "alter_tables" not in changes:
+                changes["alter_tables"] = {}
+            if "drop_tables" not in changes:
+                changes["drop_tables"] = []
+
             # 1. 处理表重命名
             self._handle_table_renames(version_info, db)
 
@@ -174,7 +180,10 @@ class SchemaManager:
 
     def _handle_table_drops(self, version_info: Dict[str, Any], db):
         """处理表删除"""
-        for table_name in version_info["changes"]["drop_tables"]:
+        # 获取drop_tables列表，如果不存在则使用空列表
+        drop_tables = version_info.get("changes", {}).get("drop_tables", [])
+
+        for table_name in drop_tables:
             print(f"\n删除表: {table_name}")
             self._drop_table(table_name, db)
 
@@ -245,14 +254,7 @@ class SchemaManager:
     def _rebuild_table(
         self, table_name: str, new_schema: Dict[str, Any], changes: Dict[str, Any], db
     ):
-        """重建表（用于SQLite不支持的ALTER TABLE操作）
-
-        Args:
-            table_name: 表名
-            new_schema: 新的表结构
-            changes: 变更信息
-            db: 数据库连接
-        """
+        """重建表（用于SQLite不支持的ALTER TABLE操作）"""
         print(f"重建表 {table_name}")
 
         try:
@@ -264,24 +266,79 @@ class SchemaManager:
             self._create_table(table_name, new_schema, db)
 
             # 3. 获取需要迁移的字段
-            common_fields = self._get_common_fields(
-                temp_table, new_schema["fields"], db
-            )
+            common_fields = self._get_common_fields(temp_table, new_schema["fields"], db)
 
-            # 4. 迁移数据
-            if common_fields:
-                fields_str = ", ".join(common_fields)
-                sql = f"INSERT INTO {table_name} ({fields_str}) SELECT {fields_str} FROM {temp_table}"
+            # 4. 处理字段映射
+            data_migration = changes.get("data_migration", {})
+            field_defaults = changes.get("field_defaults", {})
+            rename_columns = changes.get("rename_columns", {})
+
+            select_fields = []
+            insert_fields = []
+
+            # 处理所有新表字段
+            for new_field in new_schema["fields"].keys():
+                if new_field in data_migration:
+                    # 字段被重命名（通过data_migration）
+                    select_fields.append(data_migration[new_field])
+                    insert_fields.append(new_field)
+                elif new_field in rename_columns.values():
+                    # 字段被重命名（通过rename_columns）
+                    old_field = [k for k, v in rename_columns.items() if v == new_field][0]
+                    select_fields.append(old_field)
+                    insert_fields.append(new_field)
+                elif new_field in common_fields:
+                    # 字段名称未变
+                    select_fields.append(new_field)
+                    insert_fields.append(new_field)
+                elif new_field in field_defaults:
+                    # 新字段有默认值
+                    select_fields.append(f"'{field_defaults[new_field]}' as {new_field}")
+                    insert_fields.append(new_field)
+                else:
+                    # 检查是否为NOT NULL字段
+                    is_not_null = False
+                    for field_def in new_schema["fields"][new_field].split():
+                        if field_def.upper() == "NOT" and "NULL" in field_def.upper():
+                            is_not_null = True
+                            break
+
+                    if is_not_null:
+                        # 对于NOT NULL字段，需要提供默认值
+                        field_type = new_schema["fields"][new_field].split()[0].upper()
+                        if "VARCHAR" in field_type or "TEXT" in field_type:
+                            select_fields.append(f"'' as {new_field}")
+                        elif "INT" in field_type or "DECIMAL" in field_type:
+                            select_fields.append(f"0 as {new_field}")
+                        elif "DATE" in field_type:
+                            select_fields.append(f"CURRENT_DATE as {new_field}")
+                        elif "DATETIME" in field_type:
+                            select_fields.append(f"CURRENT_TIMESTAMP as {new_field}")
+                        else:
+                            select_fields.append(f"NULL as {new_field}")
+                        insert_fields.append(new_field)
+
+            # 5. 迁移数据
+            if select_fields and insert_fields:
+                insert_fields_str = ", ".join(insert_fields)
+                select_fields_str = ", ".join(select_fields)
+                sql = f"INSERT INTO {table_name} ({insert_fields_str}) SELECT {select_fields_str} FROM {temp_table}"
                 print(f"执行SQL: {sql}")
                 db.execute_sql(sql)
 
-            # 5. 删除临时表
+            # 6. 删除临时表
             db.execute_sql(f"DROP TABLE {temp_table}")
 
             print(f"表 {table_name} 重建完成")
 
         except Exception as e:
             print(f"重建表 {table_name} 失败: {e}")
+            # 回滚操作：删除新表，恢复旧表
+            try:
+                db.execute_sql(f"DROP TABLE IF EXISTS {table_name}")
+                db.execute_sql(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
+            except Exception as rollback_error:
+                print(f"回滚失败: {rollback_error}")
             raise e
 
     def _get_common_fields(

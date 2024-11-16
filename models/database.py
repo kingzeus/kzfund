@@ -8,10 +8,10 @@ from peewee import JOIN, fn
 from scheduler.job_manager import JobManager
 from utils.datetime_helper import format_datetime
 
-from .account import Account, Portfolio
+from .account import ModelAccount, ModelPortfolio
 from .base import Database, db_connection
-from .fund import Fund, FundNav, FundPosition, FundTransaction
-from .task import TaskHistory
+from .fund import ModelFund, ModelFundNav, ModelFundPosition, ModelFundTransaction
+from .task import ModelTask
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,13 @@ def init_database():
     with db_connection():
         Database().get_db().create_tables(
             [
-                Account,
-                Portfolio,
-                FundPosition,
-                FundTransaction,
-                FundNav,
-                Fund,
-                TaskHistory,
+                ModelAccount,
+                ModelPortfolio,
+                ModelFundPosition,
+                ModelFundTransaction,
+                ModelFundNav,
+                ModelFund,
+                ModelTask,
             ]
         )
 
@@ -36,7 +36,7 @@ def init_database():
 def get_accounts() -> List[Dict[str, Any]]:
     """获取所有账户"""
     with db_connection():
-        accounts = Account.select()
+        accounts = ModelAccount.select()
         # 如果没有数据，返回空列表
         if not accounts:
             return []
@@ -58,14 +58,14 @@ def add_account(name: str, description: Optional[str] = None) -> str:
     with db_connection():
         # 创建账户
         account_id = str(uuid.uuid4())
-        Account.create(
+        ModelAccount.create(
             id=account_id,
             name=name,
             description=description,
         )
 
         # 创建默认投资组合
-        Portfolio.create(
+        ModelPortfolio.create(
             id=str(uuid.uuid4()),
             account=account_id,
             name=f"{name}-默认组合",
@@ -80,7 +80,7 @@ def get_account(account_id: str) -> Optional[Dict[str, Any]]:
     """获取账户详情"""
     with db_connection():
         try:
-            account = Account.get_by_id(account_id)
+            account = ModelAccount.get_by_id(account_id)
             return {
                 "id": str(account.id),
                 "name": account.name,
@@ -88,7 +88,7 @@ def get_account(account_id: str) -> Optional[Dict[str, Any]]:
                 "create_time": account.created_at,
                 "update_time": account.updated_at,
             }
-        except Account.DoesNotExist:  # pylint: disable=E1101
+        except ModelAccount.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -96,7 +96,7 @@ def update_account(account_id: str, name: str, description: str = None) -> bool:
     """更新账户信息"""
     try:
         with db_connection():
-            account = Account.get_by_id(account_id)
+            account = ModelAccount.get_by_id(account_id)
             account.name = name
             account.description = description
             account.save()
@@ -111,11 +111,11 @@ def delete_account(account_id: str) -> bool:
     try:
         with db_connection():
             # 首先检查是否有关联的组合
-            portfolio_count = Portfolio.select().where(Portfolio.account == account_id).count()
+            portfolio_count = ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
             if portfolio_count > 0:
                 return False
 
-            account = Account.get_by_id(account_id)
+            account = ModelAccount.get_by_id(account_id)
             account.delete_instance()
             return True
     except Exception as e:
@@ -128,15 +128,15 @@ def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
     """获取账户下的所有投资组合"""
     with db_connection():
         portfolios = (
-            Portfolio.select(
-                Portfolio,
-                fn.COUNT(FundPosition.id).alias("fund_count"),
-                fn.COALESCE(fn.SUM(FundPosition.market_value), 0).alias("total_market_value"),
+            ModelPortfolio.select(
+                ModelPortfolio,
+                fn.COUNT(ModelFundPosition.id).alias("fund_count"),
+                fn.COALESCE(fn.SUM(ModelFundPosition.market_value), 0).alias("total_market_value"),
             )
-            .join(FundPosition, JOIN.LEFT_OUTER)
-            .where(Portfolio.account == account_id)
-            .group_by(Portfolio)
-            .order_by(Portfolio.created_at.asc())
+            .join(ModelFundPosition, JOIN.LEFT_OUTER)
+            .where(ModelPortfolio.account == account_id)
+            .group_by(ModelPortfolio)
+            .order_by(ModelPortfolio.created_at.asc())
         )
 
         if not portfolios:
@@ -166,7 +166,7 @@ def add_portfolio(
     """添加投资组合"""
     with db_connection():
         portfolio_id = str(uuid.uuid4())
-        Portfolio.create(
+        ModelPortfolio.create(
             id=portfolio_id,
             account=account_id,
             name=name,
@@ -180,7 +180,7 @@ def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
     """获取投资组合详情"""
     with db_connection():
         try:
-            portfolio = Portfolio.get_by_id(portfolio_id)
+            portfolio = ModelPortfolio.get_by_id(portfolio_id)
             return {
                 "id": str(portfolio.id),
                 "account_id": str(portfolio.account.id),
@@ -190,7 +190,7 @@ def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
                 "create_time": portfolio.created_at,
                 "update_time": portfolio.updated_at,
             }
-        except Portfolio.DoesNotExist:  # pylint: disable=E1101
+        except ModelPortfolio.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -198,13 +198,13 @@ def update_portfolio(portfolio_id: str, data: Dict[str, Any]) -> Optional[Dict[s
     """更新投资组合信息"""
     with db_connection():
         try:
-            portfolio = Portfolio.get_by_id(portfolio_id)
+            portfolio = ModelPortfolio.get_by_id(portfolio_id)
             portfolio.name = data.get("name", portfolio.name)
             portfolio.description = data.get("description", portfolio.description)
             portfolio.is_default = data.get("is_default", portfolio.is_default)
             portfolio.save()
             return get_portfolio(portfolio_id)
-        except Portfolio.DoesNotExist:  # pylint: disable=E1101
+        except ModelPortfolio.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -212,7 +212,7 @@ def delete_portfolio(portfolio_id: str) -> bool:
     """删除投资组合"""
     try:
         with db_connection():
-            portfolio = Portfolio.get_by_id(portfolio_id)
+            portfolio = ModelPortfolio.get_by_id(portfolio_id)
 
             # 检查是否为默认组合
             if portfolio.is_default:
@@ -230,7 +230,7 @@ def delete_portfolio(portfolio_id: str) -> bool:
 def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
     """获取组合的基金持仓"""
     with db_connection():
-        positions = FundPosition.select().where(FundPosition.portfolio == portfolio_id)
+        positions = ModelFundPosition.select().where(ModelFundPosition.portfolio == portfolio_id)
 
         if not positions:
             return []
@@ -260,7 +260,7 @@ def add_fund_position(data: Dict[str, Any]) -> str:
         market_value = float(data["shares"]) * float(data["nav"])
         return_rate = (market_value - float(data["cost"])) / float(data["cost"])
 
-        FundPosition.create(
+        ModelFundPosition.create(
             id=position_id,
             portfolio=data["portfolio_id"],
             code=data["code"],
@@ -280,7 +280,7 @@ def update_fund_position(position_id: str, data: Dict[str, Any]) -> Optional[Dic
     """更新基金持仓信息"""
     with db_connection():
         try:
-            position = FundPosition.get_by_id(position_id)
+            position = ModelFundPosition.get_by_id(position_id)
             for key, value in data.items():
                 if hasattr(position, key):
                     setattr(position, key, value)
@@ -293,7 +293,7 @@ def update_fund_position(position_id: str, data: Dict[str, Any]) -> Optional[Dic
             position.save()
 
             return get_fund_positions(str(position.portfolio.id))
-        except FundPosition.DoesNotExist:  # pylint: disable=E1101
+        except ModelFundPosition.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -301,10 +301,10 @@ def delete_fund_position(position_id: str) -> bool:
     """删除基金持仓"""
     with db_connection():
         try:
-            position = FundPosition.get_by_id(position_id)
+            position = ModelFundPosition.get_by_id(position_id)
             position.delete_instance()
             return True
-        except FundPosition.DoesNotExist:  # pylint: disable=E1101
+        except ModelFundPosition.DoesNotExist:  # pylint: disable=E1101
             return False
 
 
@@ -312,9 +312,9 @@ def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
     """获取基金交易记录"""
     with db_connection():
         transactions = (
-            FundTransaction.select()
-            .where(FundTransaction.portfolio == portfolio_id)
-            .order_by(FundTransaction.transaction_date.desc())
+            ModelFundTransaction.select()
+            .where(ModelFundTransaction.portfolio == portfolio_id)
+            .order_by(ModelFundTransaction.transaction_date.desc())
         )
 
         if not transactions:
@@ -340,13 +340,13 @@ def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
     with db_connection():
         # 获取账户总数
-        account_count = Account.select().count()  # pylint: disable=E1120
+        account_count = ModelAccount.select().count()  # pylint: disable=E1120
 
         # 获取组合总数
-        portfolio_count = Portfolio.select().count()  # pylint: disable=E1120
+        portfolio_count = ModelPortfolio.select().count()  # pylint: disable=E1120
 
         # 获取基金持仓总数
-        position_count = FundPosition.select().count()  # pylint: disable=E1120
+        position_count = ModelFundPosition.select().count()  # pylint: disable=E1120
 
         return {
             "account_count": account_count,
@@ -360,15 +360,15 @@ def get_transactions() -> List[Dict[str, Any]]:
     with db_connection():
         try:
             transactions = (
-                FundTransaction.select(
-                    FundTransaction,
-                    Portfolio.name.alias("portfolio_name"),
-                    Portfolio.id.alias("portfolio_id"),
-                    Fund.name.alias("fund_name"),
+                ModelFundTransaction.select(
+                    ModelFundTransaction,
+                    ModelPortfolio.name.alias("portfolio_name"),
+                    ModelPortfolio.id.alias("portfolio_id"),
+                    ModelFund.name.alias("fund_name"),
                 )
-                .join(Portfolio)
-                .join(Fund)
-                .order_by(FundTransaction.transaction_date.desc())
+                .join(ModelPortfolio)
+                .join(ModelFund)
+                .order_by(ModelFundTransaction.transaction_date.desc())
             )
 
             transactions_list = list(transactions)
@@ -412,42 +412,66 @@ def add_transaction(
     shares: Optional[float] = None,
     fee: Optional[float] = 0.0,
 ) -> bool:
-    """添加交易记录"""
+    """添加交易记录
+
+    Args:
+        portfolio_id: 投资组合ID
+        fund_code: 基金代码
+        transaction_type: 交易类型 (buy/sell)
+        amount: 交易金额
+        trade_time: 交易时间
+        nav: 基金净值，可选
+        shares: 份额，可选
+        fee: 手续费，可选
+
+    Returns:
+        bool: 是否添加成功
+    """
     try:
         with db_connection():
-            # 检查基金是否存在
-            fund = Fund.get_or_none(Fund.code == fund_code)
+            # 1. 检查基金是否存在
+            fund = ModelFund.get_or_none(ModelFund.code == fund_code)
             if not fund:
-                # 如果基金不存在，可以从外部API获取基金信息并创建
+                # 如果基金不存在，触发更新基金详情任务
                 task_id = JobManager().add_task(
                     "fund_info",
                     fund_code=fund_code,
                 )
                 logger.info("已添加获取基金信息任务: %s", task_id)
-                return False
 
-            # 创建交易记录
-            transaction = FundTransaction.create(
+            # 2. 如果没有提供份额和净值，则至少需要提供其中一个
+            if nav is None and shares is None:
+                raise ValueError("净值和份额不能同时为空")
+
+            # 3. 计算缺失的值
+            if nav is None and shares is not None:
+                nav = amount / shares
+            elif shares is None and nav is not None:
+                shares = amount / nav
+
+            # 4. 添加交易记录
+            transaction = ModelFundTransaction.create(
                 id=str(uuid.uuid4()),
                 portfolio=portfolio_id,
-                fund=fund_code,
+                fund_code=fund_code,  # 确保使用正确的字段名
                 type=transaction_type,
                 amount=amount,
-                shares=shares or 0.0,
-                nav=nav or 0.0,
-                fee=fee,
-                transaction_date=trade_time,
+                shares=shares,
+                nav=nav,
+                fee=fee or 0.0,
+                transaction_date=trade_time.date(),  # 只保存日期部分
             )
 
-            # 更新持仓信息
-            update_position_after_transaction(
-                portfolio_id=portfolio_id,
-                fund=fund,
-                transaction_type=transaction_type,
-                amount=amount,
-                shares=shares or 0.0,
-                nav=nav or 0.0,
-            )
+            # 5. 更新持仓信息
+            if transaction:
+                update_position_after_transaction(
+                    portfolio_id=portfolio_id,
+                    fund=fund or ModelFund(code=fund_code),  # 如果基金不存在，创建临时对象
+                    transaction_type=transaction_type,
+                    amount=amount,
+                    shares=shares,
+                    nav=nav,
+                )
 
             return True
     except Exception as e:
@@ -471,7 +495,7 @@ def update_transaction(
     try:
         with db_connection():
             # 获取原交易记录
-            old_transaction = FundTransaction.get_by_id(transaction_id)
+            old_transaction = ModelFundTransaction.get_by_id(transaction_id)
 
             # 更新交易记录
             old_transaction.portfolio = portfolio_id
@@ -499,7 +523,7 @@ def delete_transaction(transaction_id: str) -> bool:
     try:
         with db_connection():
             # 获取交易记录
-            transaction = FundTransaction.get_by_id(transaction_id)
+            transaction = ModelFundTransaction.get_by_id(transaction_id)
             portfolio_id = transaction.portfolio.id
             fund_code = transaction.code
 
@@ -517,7 +541,7 @@ def delete_transaction(transaction_id: str) -> bool:
 
 def update_position_after_transaction(
     portfolio_id: str,
-    fund: Fund,
+    fund: ModelFund,
     transaction_type: str,
     amount: float,
     shares: float,
@@ -527,8 +551,8 @@ def update_position_after_transaction(
     try:
         # 查找现有持仓
         position = (
-            FundPosition.select()
-            .where((FundPosition.portfolio == portfolio_id) & (FundPosition.code == fund.code))
+            ModelFundPosition.select()
+            .where((ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund.code))
             .first()
         )
 
@@ -556,7 +580,7 @@ def update_position_after_transaction(
         else:
             # 创建新持仓（仅限买入）
             if transaction_type == "buy":
-                FundPosition.create(
+                ModelFundPosition.create(
                     id=str(uuid.uuid4()),
                     portfolio=portfolio_id,
                     code=fund.code,
@@ -579,17 +603,17 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
         with db_connection():
             # 获取所有相关交易记录
             transactions = (
-                FundTransaction.select()
+                ModelFundTransaction.select()
                 .where(
-                    (FundTransaction.portfolio == portfolio_id)
-                    & (FundTransaction.code == fund_code)
+                    (ModelFundTransaction.portfolio == portfolio_id)
+                    & (ModelFundTransaction.code == fund_code)
                 )
-                .order_by(FundTransaction.transaction_date.asc())
+                .order_by(ModelFundTransaction.transaction_date.asc())
             )
 
             # 删除现有持仓
-            FundPosition.delete().where(
-                (FundPosition.portfolio == portfolio_id) & (FundPosition.code == fund_code)
+            ModelFundPosition.delete().where(
+                (ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund_code)
             ).execute()
 
             # 重新计算持仓
@@ -614,7 +638,7 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                 market_value = total_shares * latest_nav
                 return_rate = (market_value - total_cost) / total_cost if total_cost > 0 else 0
 
-                FundPosition.create(
+                ModelFundPosition.create(
                     id=str(uuid.uuid4()),
                     portfolio=portfolio_id,
                     code=fund_code,
@@ -635,25 +659,29 @@ def check_database_content():
     """检查数据库内容"""
     with db_connection():
         # 检查交易记录表
-        trans_count = FundTransaction.select().count()  # pylint: disable=E1120
+        trans_count = ModelFundTransaction.select().count()  # pylint: disable=E1120
         logger.info("交易记录数量: %s", trans_count)
 
         # 检查组合表
-        portfolio_count = Portfolio.select().count()  # pylint: disable=E1120
+        portfolio_count = ModelPortfolio.select().count()  # pylint: disable=E1120
         logger.info("组合数量: %s", portfolio_count)
 
         # 如果有交易记录，打印第一条记录的详细信息
         if trans_count > 0:
-            first_trans = FundTransaction.select().first()  # pylint: disable=E1120
+            first_trans = ModelFundTransaction.select().first()  # pylint: disable=E1120
             logger.info(
                 "第一条交易记录: %s",
                 str(
                     {
                         "id": first_trans.id,
-                        "portfolio_id": first_trans.portfolio_id,
+                        "portfolio": first_trans.portfolio.id,
                         "code": first_trans.code,
                         "type": first_trans.type,
                         "amount": first_trans.amount,
+                        "shares": first_trans.shares,
+                        "nav": first_trans.nav,
+                        "fee": first_trans.fee,
+                        "transaction_date": format_datetime(first_trans.transaction_date),
                     }
                 ),
             )

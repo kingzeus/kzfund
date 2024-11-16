@@ -8,87 +8,210 @@ from peewee import (
     TextField,
 )
 
-from .account import Portfolio
+from .account import ModelPortfolio
 from .base import BaseModel
 
 
-class Fund(BaseModel):
+class ModelFund(BaseModel):
     """基金基本信息模型"""
 
+    # 基金代码，唯一标识符
     code = CharField(max_length=12, primary_key=True)
-    name = CharField(max_length=100)  # 基金简称
-    full_name = CharField(max_length=255)  # 基金全称
-    type = CharField(max_length=20)  # 基金类型
-    issue_date = DateField()  # 发行日期
-    establishment_date = DateField()  # 成立日期
-    establishment_size = DecimalField(max_digits=20, decimal_places=4)  # 成立规模(单位：亿份)
-    company = CharField(max_length=100)  # 基金管理公司
-    custodian = CharField(max_length=100)  # 基金托管人
-    fund_manager = CharField(max_length=100)  # 基金经理人
-    management_fee = DecimalField(max_digits=10, decimal_places=4)  # 管理费率
-    custodian_fee = DecimalField(max_digits=10, decimal_places=4)  # 托管费率
-    sales_service_fee = DecimalField(max_digits=10, decimal_places=4)  # 销售服务费率
-    tracking = CharField(max_length=100)  # 跟踪标的
-    performance_benchmark = CharField(max_length=100)  # 业绩比较基准
+    # 基金简称
+    name = CharField(max_length=100)
+    # 基金全称
+    full_name = CharField(max_length=255)
+    # 基金类型
+    type = CharField(max_length=20)
+    # 发行日期
+    issue_date = DateField()
+    # 成立日期
+    establishment_date = DateField()
+    # 成立规模（单位：亿份）
+    establishment_size = DecimalField(max_digits=20, decimal_places=4)
+    # 基金管理公司
+    company = CharField(max_length=100)
+    # 基金托管人
+    custodian = CharField(max_length=100)
+    # 基金经理人
+    fund_manager = CharField(max_length=100)
+    # 管理费率
+    management_fee = DecimalField(max_digits=10, decimal_places=4)
+    # 托管费率
+    custodian_fee = DecimalField(max_digits=10, decimal_places=4)
+    # 销售服务费率
+    sales_service_fee = DecimalField(max_digits=10, decimal_places=4)
+    # 跟踪标的
+    tracking = CharField(max_length=100)
+    # 业绩比较基准
+    performance_benchmark = CharField(max_length=100)
 
-    investment_scope = TextField()  # 投资范围
-    investment_target = TextField()  # 投资目标
-    investment_philosophy = TextField()  # 投资理念
-    investment_strategy = TextField()  # 投资策略
-    dividend_policy = TextField()  # 分红政策
-    risk_return_characteristics = TextField()  # 风险收益特征
+    # 投资范围
+    investment_scope = TextField()
+    # 投资目标
+    investment_target = TextField()
+    # 投资理念
+    investment_philosophy = TextField()
+    # 投资策略
+    investment_strategy = TextField()
+    # 分红政策
+    dividend_policy = TextField()
+    # 风险收益特征
+    risk_return_characteristics = TextField()
 
-    data_source = CharField(max_length=20)  # 数据来源
-    data_source_version = CharField(max_length=20)  # 数据来源版本
+    # 数据来源
+    data_source = CharField(max_length=20)
+    # 数据来源版本
+    data_source_version = CharField(max_length=20)
 
     class Meta:
         table_name = "fund"
 
+    def to_dict(self) -> dict:
+        """将基金实例转换为可JSON序列化的字典"""
+        result = super().to_dict()
+        result.update({
+            "code": self.code,
+            "name": self.name,
+            "full_name": self.full_name,
+            "type": self.type,
+            "issue_date": self.issue_date.isoformat() if self.issue_date else None,
+            "establishment_date": self.establishment_date.isoformat() if self.establishment_date else None,
+            "establishment_size": float(self.establishment_size) if self.establishment_size else None,
+            "company": self.company,
+            "custodian": self.custodian,
+            "fund_manager": self.fund_manager,
+            "management_fee": float(self.management_fee) if self.management_fee else None,
+            "custodian_fee": float(self.custodian_fee) if self.custodian_fee else None,
+            "sales_service_fee": float(self.sales_service_fee) if self.sales_service_fee else None,
+            "tracking": self.tracking,
+            "performance_benchmark": self.performance_benchmark,
+            "investment_scope": self.investment_scope,
+            "investment_target": self.investment_target,
+            "investment_philosophy": self.investment_philosophy,
+            "investment_strategy": self.investment_strategy,
+            "dividend_policy": self.dividend_policy,
+            "risk_return_characteristics": self.risk_return_characteristics,
+            "data_source": self.data_source,
+            "data_source_version": self.data_source_version,
+        })
+        return result
 
-class FundPosition(BaseModel):
+
+class ModelFundPosition(BaseModel):
     """基金持仓模型"""
 
+    # 基金持仓的唯一标识符
     id = CharField(primary_key=True)
-    portfolio = ForeignKeyField(Portfolio, backref="positions")
-    fund = ForeignKeyField(Fund, backref="positions")  # 修改为关联Fund模型
+    # 关联的投资组合，通过反向引用可以获取组合的所有持仓
+    portfolio = ForeignKeyField(ModelPortfolio, backref="positions")
+    # 持仓的基金，通过反向引用可以获取基金的所有持仓记录
+    fund = ForeignKeyField(ModelFund, backref="positions")
+    # 持有的份额数量
     shares = DecimalField(max_digits=20, decimal_places=4)
+    # 基金单位净值
     nav = DecimalField(max_digits=10, decimal_places=4)
+    # 持仓市值（份额 * 净值）
     market_value = DecimalField(max_digits=20, decimal_places=2)
+    # 持仓成本
     cost = DecimalField(max_digits=20, decimal_places=2)
+    # 收益率（(市值 - 成本) / 成本）
     return_rate = DecimalField(max_digits=10, decimal_places=4)
+    # 购买日期
     purchase_date = DateTimeField()
 
     class Meta:
         table_name = "fund_positions"
 
+    def to_dict(self) -> dict:
+        """将基金持仓实例转换为可JSON序列化的字典"""
+        result = super().to_dict()
+        result.update({
+            "id": self.id,
+            "portfolio_id": self.portfolio.id,
+            "fund_code": self.fund.code,
+            "shares": float(self.shares) if self.shares else None,
+            "nav": float(self.nav) if self.nav else None,
+            "market_value": float(self.market_value) if self.market_value else None,
+            "cost": float(self.cost) if self.cost else None,
+            "return_rate": float(self.return_rate) if self.return_rate else None,
+            "purchase_date": self.purchase_date.isoformat() if self.purchase_date else None,
+        })
+        return result
 
-class FundTransaction(BaseModel):
+
+class ModelFundTransaction(BaseModel):
     """基金交易记录模型"""
 
+    # 交易类型常量
+    TYPE_BUY = "buy"
+    TYPE_SELL = "sell"
+
+    # 交易类型映射
+    TRANSACTION_TYPES = {TYPE_BUY: "买入", TYPE_SELL: "卖出"}
+
     id = CharField(primary_key=True)
-    portfolio = ForeignKeyField(Portfolio, backref="transactions")
-    fund = ForeignKeyField(Fund, backref="transactions")  # 修改为关联Fund模型
-    type = CharField(max_length=20)
-    shares = DecimalField(max_digits=20, decimal_places=4)
-    amount = DecimalField(max_digits=20, decimal_places=2)
-    nav = DecimalField(max_digits=10, decimal_places=4)
-    fee = DecimalField(max_digits=10, decimal_places=2)
-    transaction_date = DateTimeField()
+    portfolio = ForeignKeyField(ModelPortfolio, backref="transactions")
+    fund_code = CharField(null=False)
+    type = CharField(null=False)  # 交易类型: buy/sell
+    shares = DecimalField(decimal_places=4, max_digits=20, null=False)  # 份额
+    amount = DecimalField(decimal_places=2, max_digits=20, null=False)  # 金额
+    nav = DecimalField(decimal_places=4, max_digits=10, null=False)  # 净值
+    fee = DecimalField(decimal_places=2, max_digits=10, null=False)  # 手续费
+    transaction_date = DateField(null=False)  # 交易日期
 
     class Meta:
-        table_name = "fund_transactions"
+        table_name = "fund_transaction"
+
+    def to_dict(self) -> dict:
+        """将交易记录转换为字典"""
+        result = super().to_dict()
+        result.update(
+            {
+                "id": self.id,
+                "portfolio_id": self.portfolio.id,
+                "fund_code": self.fund_code,
+                "type": self.type,
+                "type_name": self.TRANSACTION_TYPES.get(self.type, "未知"),
+                "shares": float(self.shares),
+                "amount": float(self.amount),
+                "nav": float(self.nav),
+                "fee": float(self.fee),
+                "transaction_date": self.transaction_date.isoformat(),
+            }
+        )
+        return result
 
 
-class FundNav(BaseModel):
+class ModelFundNav(BaseModel):
     """基金净值历史"""
 
-    fund = ForeignKeyField(Fund, backref="nav_history")  # 修改为关联Fund模型
+    # 关联的基金，通过反向引用可以获取基金的所有净值历史
+    fund = ForeignKeyField(ModelFund, backref="nav_history")
+    # 净值日期
     nav_date = DateTimeField()
+    # 基金单位净值
     nav = DecimalField(max_digits=10, decimal_places=4)
+    # 累计净值
     acc_nav = DecimalField(max_digits=10, decimal_places=4)
+    # 日收益率
     daily_return = DecimalField(max_digits=10, decimal_places=4)
+    # 分红
     dividend = DecimalField(max_digits=10, decimal_places=4, null=True)
 
     class Meta:
         table_name = "fund_nav_history"
         primary_key = CompositeKey("fund", "nav_date")
+
+    def to_dict(self) -> dict:
+        """将基金净值历史实例转换为可JSON序列化的字典"""
+        result = super().to_dict()
+        result.update({
+            "fund_code": self.fund.code,
+            "nav_date": self.nav_date.isoformat() if self.nav_date else None,
+            "nav": float(self.nav) if self.nav else None,
+            "acc_nav": float(self.acc_nav) if self.acc_nav else None,
+            "daily_return": float(self.daily_return) if self.daily_return else None,
+            "dividend": float(self.dividend) if self.dividend else None,
+        })
+        return result

@@ -25,7 +25,7 @@ from dash import dcc, html
 from pages.task.detail_modal import render_task_detail_modal
 from pages.task.modal import render_task_modal
 from pages.task.table import render_task_table
-from pages.task.utils import ICON_STYLES, PAGE_PADDING, convert_tasks_to_dict
+from pages.task.utils import ICON_STYLES, PAGE_PADDING
 from scheduler.job_manager import JobManager
 
 
@@ -36,7 +36,7 @@ def render_task_page() -> html.Div:
         包含完整页面结构的Div组件
     """
     tasks = JobManager().get_task_history()
-    initial_tasks = convert_tasks_to_dict(tasks)
+    initial_tasks = [task.to_dict() for task in tasks]
 
     return html.Div(
         [

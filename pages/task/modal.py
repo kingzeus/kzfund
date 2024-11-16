@@ -188,6 +188,8 @@ def generate_param_items(task_type: str, use_pattern_id: bool = True) -> List[An
         Output("task-modal", "visible"),
         Output("task-params-container", "children", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
+        Output("priority-input", "value"),  # 添加优先级输出
+        Output("timeout-input", "value"),   # 添加超时时间输出
     ],
     [
         Input("add-task-btn", "nClicks"),
@@ -202,26 +204,29 @@ def show_task_modal(n_clicks, task_type):
         raise PreventUpdate
 
     trigger_id = ctx.triggered[0]["prop_id"]
+    task_factory = TaskFactory()
 
     # 获取第一个可用的任务类型作为默认值
-    default_task_type = next(iter(TaskFactory().get_task_types().keys()), None)
+    default_task_type = next(iter(task_factory.get_task_types().keys()), None)
 
     if trigger_id == "add-task-btn.nClicks":
         if n_clicks:
             # 打开弹窗时，置默认任务类型并生成对应的参数表单
             if default_task_type:
+                task_config = task_factory.get_task_types().get(default_task_type, {})
                 param_items = generate_param_items(default_task_type)
-                return True, param_items, default_task_type
-            return True, [], None
+                return True, param_items, default_task_type, task_config.get("priority"), task_config.get("timeout")
+            return True, [], None, None, None
 
     elif trigger_id == "task-type-select.value":
         if not task_type:
-            return dash.no_update, [], dash.no_update
+            return dash.no_update, [], dash.no_update, None, None
 
+        task_config = task_factory.get_task_types().get(task_type, {})
         param_items = generate_param_items(task_type)
-        return dash.no_update, param_items, dash.no_update
+        return dash.no_update, param_items, dash.no_update, task_config.get("priority"), task_config.get("timeout")
 
-    return dash.no_update, dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @callback(
@@ -229,8 +234,8 @@ def show_task_modal(n_clicks, task_type):
         Output("task-store", "data"),
         Output("task-modal", "visible", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
-        Output("priority-input", "value"),
-        Output("timeout-input", "value"),
+        Output("priority-input", "value", allow_duplicate=True),
+        Output("timeout-input", "value", allow_duplicate=True),
     ],
     Input("task-modal", "okCounts"),
     [
@@ -289,4 +294,5 @@ def handle_task_create(
 
     # 更新任务列表并关闭对话框
     tasks = JobManager().get_task_history()
-    return tasks, False, None, None, None
+    task_list = [task.to_dict() for task in tasks]
+    return task_list, False, None, None, None

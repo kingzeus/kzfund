@@ -1,4 +1,24 @@
-"""数据库表结构版本定义"""
+"""
+数据库表结构版本定义
+
+版本维护流程:
+1. 新增加版本号
+2. 增加版本描述
+3. 表结构变动
+    3.1 新增表 new_tables 中添加表名，表结构在 schema 中定义
+    3.2 删除表 drop_tables 中添加表名
+    3.3 修改表 alter_tables 中添加表名，以及对应的操作
+        #3.3.1 重命名 rename_to
+        3.3.2 修改字段 modify_columns
+        3.3.3 添加字段 add_columns
+        3.3.4 删除字段 drop_columns
+        3.3.5 重命名字段 rename_columns
+        3.3.6 添加外键 add_foreign_keys
+        3.3.7 修改外键 modify_foreign_keys
+        3.3.8 修改索引 modify_indexes
+    3.4 在 schema 下列出完整的最新的表结构，用于迁移完成之后的验证
+
+"""
 
 SCHEMA_VERSIONS = {
     1: {
@@ -358,28 +378,6 @@ SCHEMA_VERSIONS = {
             "drop_tables": [],
         },
         "schema": {
-            # "accounts": {
-            #     "fields": {
-            #         "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
-            #         "created_at": "DATETIME NOT NULL",
-            #         "updated_at": "DATETIME NOT NULL",
-            #         "name": "VARCHAR(255) NOT NULL",
-            #         "description": "VARCHAR(255)",
-            #     }
-            # },
-            # "portfolios": {
-            #     "fields": {
-            #         "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
-            #         "created_at": "DATETIME NOT NULL",
-            #         "updated_at": "DATETIME NOT NULL",
-            #         "account_id": "VARCHAR(255) NOT NULL",
-            #         "name": "VARCHAR(255) NOT NULL",
-            #         "description": "VARCHAR(255)",
-            #         "is_default": "INTEGER NOT NULL",
-            #     },
-            #     "foreign_keys": {"account_id": "accounts(id)"},
-            #     "indexes": ["account_id"],
-            # },
             "account": {
                 "fields": {
                     "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
@@ -500,6 +498,428 @@ SCHEMA_VERSIONS = {
                     "timeout": "INTEGER NOT NULL DEFAULT 3600",
                     "created_at": "DATETIME NOT NULL",
                     "updated_at": "DATETIME NOT NULL",
+                },
+                "indexes": ["name", "status", "created_at"],
+            },
+        },
+    },
+    5: {
+        "description": "重构任务表结构：重命名表名并增加字段",
+        "changes": {
+            "new_tables": [],
+            "alter_tables": {
+                "task_history": {
+                    "rename_to": "task",
+                    "add_columns": {"parent_task_id": "VARCHAR(36)", "input_params": "TEXT"},
+                }
+            },
+            "drop_tables": [],
+        },
+        "schema": {
+            "account": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                }
+            },
+            "portfolio": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "account_id": "VARCHAR(255) NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                    "is_default": "INTEGER NOT NULL",
+                },
+                "foreign_keys": {"account_id": "account(id)"},
+                "indexes": ["account_id"],
+            },
+            "fund": {
+                "fields": {
+                    "code": "VARCHAR(12) NOT NULL PRIMARY KEY",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "full_name": "VARCHAR(255)",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "issue_date": "DATE",
+                    "establishment_date": "DATE",
+                    "establishment_size": "DECIMAL(20, 4)",
+                    "company": "VARCHAR(100) NOT NULL",
+                    "custodian": "VARCHAR(100)",
+                    "fund_manager": "VARCHAR(100)",
+                    "management_fee": "DECIMAL(10, 4)",
+                    "custodian_fee": "DECIMAL(10, 4)",
+                    "sales_service_fee": "DECIMAL(10, 4)",
+                    "tracking": "VARCHAR(100)",
+                    "performance_benchmark": "VARCHAR(100)",
+                    "investment_scope": "TEXT",
+                    "investment_target": "TEXT",
+                    "investment_philosophy": "TEXT",
+                    "investment_strategy": "TEXT",
+                    "dividend_policy": "TEXT",
+                    "risk_return_characteristics": "TEXT",
+                    "data_source": "VARCHAR(20)",
+                    "data_source_version": "VARCHAR(20)",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                }
+            },
+            "fund_transactions": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "amount": "DECIMAL(20, 2) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "fee": "DECIMAL(10, 2) NOT NULL",
+                    "transaction_date": "DATETIME NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "code"],
+            },
+            "fund_positions": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "market_value": "DECIMAL(20, 2) NOT NULL",
+                    "cost": "DECIMAL(20, 2) NOT NULL",
+                    "return_rate": "DECIMAL(10, 4) NOT NULL",
+                    "purchase_date": "DATETIME NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "code"],
+            },
+            "fund_nav_history": {
+                "fields": {
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "nav_date": "DATETIME NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "acc_nav": "DECIMAL(10, 4) NOT NULL",
+                    "daily_return": "DECIMAL(10, 4) NOT NULL",
+                    "dividend": "DECIMAL(10, 4)",
+                },
+                "primary_key": ["code", "nav_date"],
+                "foreign_keys": {"code": "fund(code)"},
+                "indexes": ["code"],
+            },
+            "task": {
+                "fields": {
+                    "task_id": "VARCHAR(36) NOT NULL PRIMARY KEY",
+                    "parent_task_id": "VARCHAR(36)",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "priority": "INTEGER NOT NULL DEFAULT 0",
+                    "status": "VARCHAR(20) NOT NULL",
+                    "progress": "INTEGER NOT NULL DEFAULT 0",
+                    "input_params": "TEXT",
+                    "result": "TEXT",
+                    "error": "TEXT",
+                    "start_time": "DATETIME",
+                    "end_time": "DATETIME",
+                    "timeout": "INTEGER NOT NULL DEFAULT 3600",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                },
+                "indexes": ["name", "status", "created_at"],
+            },
+        },
+    },
+    6: {
+        "description": "为任务表添加类型字段",
+        "changes": {
+            "new_tables": [],
+            "alter_tables": {
+                "task": {"add_columns": {"type": "VARCHAR(50) NOT NULL DEFAULT 'unknown'"}}
+            },
+            "drop_tables": [],
+        },
+        "schema": {
+            "account": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                }
+            },
+            "portfolio": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "account_id": "VARCHAR(255) NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                    "is_default": "INTEGER NOT NULL",
+                },
+                "foreign_keys": {"account_id": "account(id)"},
+                "indexes": ["account_id"],
+            },
+            "fund": {
+                "fields": {
+                    "code": "VARCHAR(12) NOT NULL PRIMARY KEY",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "full_name": "VARCHAR(255)",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "issue_date": "DATE",
+                    "establishment_date": "DATE",
+                    "establishment_size": "DECIMAL(20, 4)",
+                    "company": "VARCHAR(100) NOT NULL",
+                    "custodian": "VARCHAR(100)",
+                    "fund_manager": "VARCHAR(100)",
+                    "management_fee": "DECIMAL(10, 4)",
+                    "custodian_fee": "DECIMAL(10, 4)",
+                    "sales_service_fee": "DECIMAL(10, 4)",
+                    "tracking": "VARCHAR(100)",
+                    "performance_benchmark": "VARCHAR(100)",
+                    "investment_scope": "TEXT",
+                    "investment_target": "TEXT",
+                    "investment_philosophy": "TEXT",
+                    "investment_strategy": "TEXT",
+                    "dividend_policy": "TEXT",
+                    "risk_return_characteristics": "TEXT",
+                    "data_source": "VARCHAR(20)",
+                    "data_source_version": "VARCHAR(20)",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                }
+            },
+            "fund_transactions": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "amount": "DECIMAL(20, 2) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "fee": "DECIMAL(10, 2) NOT NULL",
+                    "transaction_date": "DATETIME NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "code"],
+            },
+            "fund_positions": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "market_value": "DECIMAL(20, 2) NOT NULL",
+                    "cost": "DECIMAL(20, 2) NOT NULL",
+                    "return_rate": "DECIMAL(10, 4) NOT NULL",
+                    "purchase_date": "DATETIME NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "code"],
+            },
+            "fund_nav_history": {
+                "fields": {
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "nav_date": "DATETIME NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "acc_nav": "DECIMAL(10, 4) NOT NULL",
+                    "daily_return": "DECIMAL(10, 4) NOT NULL",
+                    "dividend": "DECIMAL(10, 4)",
+                },
+                "primary_key": ["code", "nav_date"],
+                "foreign_keys": {"code": "fund(code)"},
+                "indexes": ["code"],
+            },
+            "task": {
+                "fields": {
+                    "task_id": "VARCHAR(36) NOT NULL PRIMARY KEY",
+                    "parent_task_id": "VARCHAR(36)",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "priority": "INTEGER NOT NULL DEFAULT 0",
+                    "status": "VARCHAR(20) NOT NULL",
+                    "progress": "INTEGER NOT NULL DEFAULT 0",
+                    "input_params": "TEXT",
+                    "result": "TEXT",
+                    "error": "TEXT",
+                    "start_time": "DATETIME",
+                    "end_time": "DATETIME",
+                    "timeout": "INTEGER NOT NULL DEFAULT 3600",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "type": "VARCHAR(50) NOT NULL DEFAULT 'unknown'",
+                },
+                "indexes": ["name", "status", "created_at"],
+            },
+        },
+    },
+    7: {
+        "description": "更新基金交易表：修改表名和字段定义",
+        "changes": {
+            "new_tables": [],
+            "alter_tables": {
+                "fund_transactions": {
+                    "rename_to": "fund_transaction",
+                    "modify_columns": {"transaction_date": "DATE NOT NULL"},
+                    "rename_columns": {"code": "fund_code"},
+                    "modify_foreign_keys": {"fund_code": "fund(code)"},
+                    "modify_indexes": ["fund_code"],
+                }
+            },
+            "drop_tables": [],
+        },
+        "schema": {
+            "account": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                }
+            },
+            "portfolio": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "account_id": "VARCHAR(255) NOT NULL",
+                    "name": "VARCHAR(255) NOT NULL",
+                    "description": "VARCHAR(255)",
+                    "is_default": "INTEGER NOT NULL",
+                },
+                "foreign_keys": {"account_id": "account(id)"},
+                "indexes": ["account_id"],
+            },
+            "fund": {
+                "fields": {
+                    "code": "VARCHAR(12) NOT NULL PRIMARY KEY",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "full_name": "VARCHAR(255)",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "issue_date": "DATE",
+                    "establishment_date": "DATE",
+                    "establishment_size": "DECIMAL(20, 4)",
+                    "company": "VARCHAR(100) NOT NULL",
+                    "custodian": "VARCHAR(100)",
+                    "fund_manager": "VARCHAR(100)",
+                    "management_fee": "DECIMAL(10, 4)",
+                    "custodian_fee": "DECIMAL(10, 4)",
+                    "sales_service_fee": "DECIMAL(10, 4)",
+                    "tracking": "VARCHAR(100)",
+                    "performance_benchmark": "VARCHAR(100)",
+                    "investment_scope": "TEXT",
+                    "investment_target": "TEXT",
+                    "investment_philosophy": "TEXT",
+                    "investment_strategy": "TEXT",
+                    "dividend_policy": "TEXT",
+                    "risk_return_characteristics": "TEXT",
+                    "data_source": "VARCHAR(20)",
+                    "data_source_version": "VARCHAR(20)",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                }
+            },
+            "fund_transaction": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "fund_code": "VARCHAR(12) NOT NULL",
+                    "type": "VARCHAR(20) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "amount": "DECIMAL(20, 2) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "fee": "DECIMAL(10, 2) NOT NULL",
+                    "transaction_date": "DATE NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "fund_code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "fund_code"],
+            },
+            "fund_positions": {
+                "fields": {
+                    "id": "VARCHAR(255) NOT NULL PRIMARY KEY",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "portfolio_id": "VARCHAR(255) NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "shares": "DECIMAL(20, 4) NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "market_value": "DECIMAL(20, 2) NOT NULL",
+                    "cost": "DECIMAL(20, 2) NOT NULL",
+                    "return_rate": "DECIMAL(10, 4) NOT NULL",
+                    "purchase_date": "DATETIME NOT NULL",
+                },
+                "foreign_keys": {
+                    "portfolio_id": "portfolio(id)",
+                    "code": "fund(code)",
+                },
+                "indexes": ["portfolio_id", "code"],
+            },
+            "fund_nav_history": {
+                "fields": {
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "code": "VARCHAR(12) NOT NULL",
+                    "nav_date": "DATETIME NOT NULL",
+                    "nav": "DECIMAL(10, 4) NOT NULL",
+                    "acc_nav": "DECIMAL(10, 4) NOT NULL",
+                    "daily_return": "DECIMAL(10, 4) NOT NULL",
+                    "dividend": "DECIMAL(10, 4)",
+                },
+                "primary_key": ["code", "nav_date"],
+                "foreign_keys": {"code": "fund(code)"},
+                "indexes": ["code"],
+            },
+            "task": {
+                "fields": {
+                    "task_id": "VARCHAR(36) NOT NULL PRIMARY KEY",
+                    "parent_task_id": "VARCHAR(36)",
+                    "name": "VARCHAR(100) NOT NULL",
+                    "priority": "INTEGER NOT NULL DEFAULT 0",
+                    "status": "VARCHAR(20) NOT NULL",
+                    "progress": "INTEGER NOT NULL DEFAULT 0",
+                    "input_params": "TEXT",
+                    "result": "TEXT",
+                    "error": "TEXT",
+                    "start_time": "DATETIME",
+                    "end_time": "DATETIME",
+                    "timeout": "INTEGER NOT NULL DEFAULT 3600",
+                    "created_at": "DATETIME NOT NULL",
+                    "updated_at": "DATETIME NOT NULL",
+                    "type": "VARCHAR(50) NOT NULL DEFAULT 'unknown'",
                 },
                 "indexes": ["name", "status", "created_at"],
             },

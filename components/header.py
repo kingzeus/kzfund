@@ -37,18 +37,7 @@ def create_header() -> html.Div:
                 fac.AntdCol(
                     fac.AntdSpace(
                         [
-                            fac.AntdButton(
-                                "数据导入",
-                                type="primary",
-                                id="upload-button",
-                                icon=fac.AntdIcon(icon="fc-data-sheet"),
-                            ),
-                            fac.AntdButton(
-                                "刷新数据",
-                                id="refresh-button",
-                                icon=fac.AntdIcon(icon="antd-reload"),
-                                style={"color": "#fff", "borderColor": "#fff"},
-                            ),
+
                         ],
                         style={
                             "height": "100%",

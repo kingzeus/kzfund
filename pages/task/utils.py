@@ -9,8 +9,11 @@
 from typing import Any, Dict, List
 
 import feffery_antd_components as fac
+from dash import html
+import json
+from feffery_utils_components import FefferyJsonViewer
 
-from models.task import TaskHistory
+from models.task import ModelTask
 from scheduler.job_manager import TaskStatus
 from utils.datetime_helper import format_datetime
 
@@ -38,34 +41,7 @@ ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
 
 
 # ============= 工具函数 =============
-def convert_tasks_to_dict(tasks: List[TaskHistory]) -> List[Dict[str, Any]]:
-    """将TaskHistory模型实例列表转换为可JSON序列化的基础字典列表，用于存储
 
-    此函数将TaskHistory对象转换为纯字典格式，主要用于：
-    1. 数据存储到dcc.Store组件中
-    2. JSON序列化
-    3. 网络传输
-
-    Args:
-        tasks: TaskHistory实例列表
-
-    Returns:
-        基础字典列表，每个字典包含任务的基本属性
-    """
-    return [
-        {
-            "task_id": task.task_id,
-            "name": task.name,
-            "status": task.status,
-            "progress": task.progress,
-            "created_at": task.created_at.isoformat() if task.created_at else None,
-            "start_time": task.start_time.isoformat() if task.start_time else None,
-            "end_time": task.end_time.isoformat() if task.end_time else None,
-            "result": task.result,
-            "error": task.error,
-        }
-        for task in tasks
-    ]
 
 
 def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,6 +59,15 @@ def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         包含UI组件的显示数据字典
     """
+    # 处理输入参数
+    input_params = task.get("input_params", None)
+    if input_params:
+        try:
+            if isinstance(input_params, str):
+                input_params = json.loads(input_params)
+        except json.JSONDecodeError:
+            input_params = {"error": "无法解析的参数"}
+
     return {
         **task,
         "created_at": format_datetime(task["created_at"]) if task["created_at"] else "-",
@@ -94,6 +79,30 @@ def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
             percent=task["progress"],
             size="small",
         ),
+        "input_params": html.Div(
+            [
+                FefferyJsonViewer(
+                    data=input_params,
+                    quotesOnKeys=False,
+                    enableClipboard=False,
+                    displayDataTypes=False,
+                    displayObjectSize=False,
+                    style={
+                        "fontSize": "12px",
+                        "backgroundColor": "transparent",
+                        "padding": "0",
+                        "textAlign": "left",
+                    },
+                    collapseStringsAfterLength=False,
+                ),
+            ],
+            style={
+                "maxHeight": "200px",
+                "overflow": "auto",
+                "textAlign": "left",
+                "padding": "4px",
+            }
+        ) if input_params else "-",
         "actions": create_operation_buttons(task),
     }
 

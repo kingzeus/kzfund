@@ -49,14 +49,20 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
                         "title": "任务ID",
                         "dataIndex": "task_id",
                         "key": "task_id",
-                        "width": "20%",
+                        "width": "15%",
                         "copyable": True,
                     },
                     {
                         "title": "任务名称",
                         "dataIndex": "name",
                         "key": "name",
-                        "width": "15%",
+                        "width": "10%",
+                    },
+                    {
+                        "title": "输入参数",
+                        "dataIndex": "input_params",
+                        "key": "input_params",
+                        "width": "20%",
                     },
                     {
                         "title": "状态",
@@ -192,7 +198,7 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
 
         if should_full_refresh:
             # 获取最新的完整任务列表
-            latest_tasks = JobManager().get_task_history()
+            latest_tasks = [task.to_dict() for task in JobManager().get_task_history()]
 
             # 更新任务状态和其他信息
             for i, task in enumerate(updated_tasks):
