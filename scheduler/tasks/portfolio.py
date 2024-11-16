@@ -1,7 +1,8 @@
+import logging
 import time
 from datetime import datetime
-from typing import Dict, Any
-import logging
+from typing import Any, Dict
+
 from .base import BaseTask
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class PortfolioUpdateTask(BaseTask):
         return "更新投资组合数据"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始更新投资组合 {self.task_id}")
+        logger.info("[%s] 开始更新投资组合 %s", datetime.now(), self.task_id)
 
         portfolio_id = kwargs.get("portfolio_id")
         if not portfolio_id:
@@ -33,7 +34,7 @@ class PortfolioUpdateTask(BaseTask):
             time.sleep(1)
             progress = (i + 1) * (100 // total_steps)
             self.update_progress(progress)
-            logger.info(f"正在{step}...")
+            logger.info("正在 %s...", step)
 
         return {
             "message": "Portfolio update completed",

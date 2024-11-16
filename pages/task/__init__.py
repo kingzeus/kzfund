@@ -14,6 +14,6 @@
 - utils.py: 通用工具函数和常量
 """
 
-from .page import render_task_page
+from pages.task.page import render_task_page
 
 __all__ = ["render_task_page"]

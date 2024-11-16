@@ -7,11 +7,12 @@
 - 账户数量卡片: 显示账户数和组合数
 """
 
-from typing import Dict, Any
-from dash import html
-import feffery_antd_components as fac
+from typing import Any, Dict
 
-from .utils import CARD_STYLES, CARD_HEAD_STYLES
+import feffery_antd_components as fac
+from dash import html
+
+from .utils import CARD_HEAD_STYLES, CARD_STYLES
 
 # ============= 样式常量 =============
 VALUE_STYLES = {

@@ -1,6 +1,7 @@
 import json
-import string
 import random
+import re
+import string
 
 
 def extract_number_with_unit(
@@ -42,7 +43,6 @@ def extract_number_with_unit(
             return number / 100 if convert_unit else number
 
         # 处理其他单位
-        import re
 
         match = re.search(r"([\d.]+)([万亿])?", text)
         if not match:

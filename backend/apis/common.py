@@ -1,5 +1,6 @@
 from typing import Any
-from flask_restx import fields, Model
+
+from flask_restx import Model, fields
 
 
 def create_response_model(api: Any, name: str, data_model: Model) -> Model:

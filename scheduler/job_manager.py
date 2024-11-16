@@ -1,12 +1,14 @@
-from typing import Dict, List
-from datetime import datetime
-import uuid
 import logging
+import uuid
+from datetime import datetime
+from typing import Dict, List
+
 from flask_apscheduler import APScheduler
-from models.task import TaskHistory
+
 from config import SCHEDULER_CONFIG
-from utils.singleton import Singleton
+from models.task import TaskHistory
 from scheduler.tasks import TaskFactory
+from utils.singleton import Singleton
 
 # 创建调度器实例
 scheduler = APScheduler()
@@ -115,7 +117,7 @@ class JobManager:
         Raises:
             ValueError: 任务参数验证失败
         """
-        # 验证任务参数
+        # ���证任务参数
         is_valid, error_message = TaskFactory().validate_task_params(task_type, kwargs)
         if not is_valid:
             logger.error("任务参数验证失败: %s", error_message)
@@ -144,9 +146,7 @@ class JobManager:
             id=task_id,
             name=task_config.get("name", task_type),
             trigger="date",
-            misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"][
-                "misfire_grace_time"
-            ],
+            misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"]["misfire_grace_time"],
         )
 
         return task_id
@@ -187,11 +187,7 @@ class JobManager:
             任务历史记录列表,每条记录为TaskHistory实例
         """
         try:
-            query = (
-                TaskHistory.select()
-                .order_by(TaskHistory.created_at.desc())
-                .limit(limit)
-            )
+            query = TaskHistory.select().order_by(TaskHistory.created_at.desc()).limit(limit)
 
             return list(query)
         except Exception as e:
@@ -216,17 +212,59 @@ class JobManager:
         }
 
         # 缓存未命中的从数据库获取
-        missing_task_ids = [
-            task_id for task_id in task_ids if task_id not in progress_dict
-        ]
+        missing_task_ids = [task_id for task_id in task_ids if task_id not in progress_dict]
 
         if missing_task_ids:
             try:
-                query = TaskHistory.select(
-                    TaskHistory.task_id, TaskHistory.progress
-                ).where(TaskHistory.task_id.in_(missing_task_ids))
+                query = TaskHistory.select(TaskHistory.task_id, TaskHistory.progress).where(
+                    TaskHistory.task_id.in_(missing_task_ids)
+                )
                 progress_dict.update({task.task_id: task.progress for task in query})
             except Exception as e:
                 logger.error("从数据库获取任务进度失败: %s", str(e))
 
         return progress_dict
+
+    def get_task(self, task_id: str) -> Dict:
+        """获取指定任务的详细信息
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            Dict: 包含任务详细信息的字典，如果任务不存在返回 {"status": "not_found"}
+        """
+        try:
+            # 从数据库获取任务信息
+            task = TaskHistory.get_or_none(TaskHistory.task_id == task_id)
+
+            if not task:
+                logger.warning("任务不存在: %s", task_id)
+                return {"status": "not_found"}
+
+            # 获取最新进度
+            progress = self._progress_cache.get(task_id, task.progress)
+
+            # 获取任务运行状态
+            job = self.scheduler.get_job(task_id)
+            current_status = task.status
+            if job and task.status == TaskStatus.PENDING:
+                current_status = TaskStatus.RUNNING
+
+            return {
+                "task_id": task.task_id,
+                "name": task.name,
+                "priority": task.priority,
+                "status": current_status,
+                "progress": progress,
+                "result": task.result,
+                "error": task.error,
+                "start_time": task.start_time,
+                "end_time": task.end_time,
+                "timeout": task.timeout,
+                "created_at": task.created_at,
+            }
+
+        except Exception as e:
+            logger.error("获取任务信息失败: %s, 错误: %s", task_id, str(e), exc_info=True)
+            return {"status": "not_found", "error": str(e)}

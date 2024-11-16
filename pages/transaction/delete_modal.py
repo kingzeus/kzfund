@@ -6,9 +6,9 @@
 """
 
 import dash
+import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
-import feffery_antd_components as fac
 
 from models.database import delete_transaction, get_transactions
 

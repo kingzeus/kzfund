@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from datetime import datetime
-from flask_restx import Resource, Namespace, fields
-from flask import request
-from scheduler.job_manager import JobManager
-import uuid
+from typing import Dict, List, Optional
 
-from utils import response
-from .common import create_response_model, create_list_response_model
+from flask import request
+from flask_restx import Namespace, Resource, fields
+
+from backend.apis.common import create_list_response_model, create_response_model
+from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskFactory
+from utils.response import format_response
 
 logger = logging.getLogger(__name__)
 
@@ -57,60 +57,75 @@ task_input = api.model(
 
 @api.route("/tasks")
 class TaskList(Resource):
+    job_manager = JobManager()
+
     @api.doc("获取任务历史")
     @api.param("limit", "返回记录数量限制", type=int)
     @api.marshal_with(task_list_response)
     def get(self):
         """获取任务历史列表"""
-        limit = request.args.get("limit", 100, type=int)
-        return response(data=JobManager().get_task_history(limit))
+        try:
+            limit = request.args.get("limit", 100, type=int)
+            return format_response(data=self.job_manager.get_task_history(limit))
+        except (ValueError, KeyError) as e:
+            logger.error("获取任务历史失败: %s", str(e))
+            return format_response(message=f"获取任务历史失败: {str(e)}", code=500)
 
     @api.doc("创建新任务")
     @api.expect(task_input)
     @api.marshal_with(task_response)
     def post(self):
         """创建新任务"""
-        data = api.payload
-        task_type = data["type"]
+        try:
+            data = api.payload
+            task_type = data["type"]
 
-        if task_type not in TaskFactory().get_task_types():
-            return response(message="未知的任务类型", code=400)
+            if task_type not in TaskFactory().get_task_types():
+                return format_response(message="未知的任务类型", code=400)
 
-        # 创建任务
-        task_id = JobManager().add_task(
-            task_type=task_type,
-            priority=data.get("priority"),
-            timeout=data.get("timeout"),
-            **(data.get("params", {})),
-        )
+            task_id = self.job_manager.add_task(
+                task_type=task_type,
+                priority=data.get("priority"),
+                timeout=data.get("timeout"),
+                **(data.get("params", {})),
+            )
 
-        return response(data={"task_id": task_id}, message="任务创建成功")
+            return format_response(data={"task_id": task_id}, message="任务创建成功")
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error("创建任务失败: %s", str(e))
+            return format_response(message=f"创建任务失败: {str(e)}", code=500)
 
 
 @api.route("/tasks/<string:task_id>")
 @api.param("task_id", "任务ID")
 class Task(Resource):
+    job_manager = JobManager()
+
     @api.doc("获取任务状态")
     @api.marshal_with(task_response)
     def get(self, task_id):
         """获取指定任务的状态"""
-        status = JobManager.get_task_status(task_id)
-        if status.get("status") == "not_found":
-            return response(message="任务不存在", code=404)
-        return response(data=status)
+        try:
+            status = self.job_manager.get_task(task_id)
+            if status.get("status") == "not_found":
+                return format_response(message="任务不存在", code=404)
+            return format_response(data=status)
+        except (ValueError, KeyError) as e:
+            logger.error("获取任务状态失败: %s", str(e))
+            return format_response(message=f"获取任务状态失败: {str(e)}", code=500)
 
     @api.doc("暂停任务")
     @api.marshal_with(task_response)
     def put(self, task_id):
         """暂停任务"""
-        if JobManager.pause_task(task_id):
-            return response(message="任务已暂停")
-        return response(message="任务不存在或无法暂停", code=404)
+        if self.job_manager.pause_task(task_id):
+            return format_response(message="任务已暂停")
+        return format_response(message="任务不存在或无法暂停", code=404)
 
     @api.doc("恢复任务")
     @api.marshal_with(task_response)
     def post(self, task_id):
         """恢复任务"""
-        if JobManager.resume_task(task_id):
-            return response(message="任务已恢复")
-        return response(message="任务不存在或无法恢复", code=404)
+        if self.job_manager.resume_task(task_id):
+            return format_response(message="任务已恢复")
+        return format_response(message="任务不存在或无法恢复", code=404)

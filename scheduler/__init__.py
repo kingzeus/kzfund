@@ -1,6 +1,8 @@
-from flask_apscheduler import APScheduler
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+from flask_apscheduler import APScheduler
+
 from config import SCHEDULER_CONFIG
 
 scheduler = APScheduler()

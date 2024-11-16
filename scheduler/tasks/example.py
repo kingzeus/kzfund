@@ -1,7 +1,8 @@
+import logging
 import time
 from datetime import datetime
-from typing import Dict, Any
-import logging
+from typing import Any, Dict
+
 from .base import BaseTask
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class ExampleTask(BaseTask):
         return "example_task"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始执行任务 {self.task_id}")
+        logger.info("[%s] 开始执行任务 %s", datetime.now(), self.task_id)
 
         # 模拟耗时操作
         for i in range(5):

@@ -6,8 +6,10 @@
 - 工具函数
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import feffery_antd_components as fac
+
 from scheduler.job_manager import TaskStatus
 from utils.datetime_helper import format_datetime
 
@@ -95,9 +97,7 @@ def create_operation_buttons(task: Dict[str, Any]) -> fac.AntdSpace:
                 id={
                     "type": "task-action",
                     "index": task["task_id"],
-                    "action": (
-                        "pause" if task["status"] == TaskStatus.RUNNING else "resume"
-                    ),
+                    "action": ("pause" if task["status"] == TaskStatus.RUNNING else "resume"),
                 },
             )
         )

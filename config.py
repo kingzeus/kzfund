@@ -2,9 +2,8 @@
 应用配置文件
 """
 
-from typing import Dict, Any
 import os
-
+from typing import Any, Dict
 
 # 基本配置
 APP_NAME = "基金持仓分析系统"  # 应用名称

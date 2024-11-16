@@ -5,10 +5,10 @@
 - 收益走势折线图
 """
 
-from dash import html, dcc
 import feffery_antd_components as fac
+from dash import dcc
 
-from .utils import CARD_STYLES, CARD_HOVER_STYLES
+from .utils import CARD_HOVER_STYLES, CARD_STYLES
 
 # ============= 图表配置常量 =============
 CHART_CONFIG = {

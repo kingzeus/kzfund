@@ -6,16 +6,17 @@
 - 处理任务创建和编辑操作
 """
 
-from typing import List, Dict, Any, Optional
-import dash
-from dash import html, Input, Output, State, callback, ALL
-from dash.exceptions import PreventUpdate
-import feffery_antd_components as fac
 import logging
+from typing import Any, Dict, List, Optional
 
+import dash
+import feffery_antd_components as fac
+from dash import ALL, Input, Output, State, callback, html
+from dash.exceptions import PreventUpdate
+
+from components.fund_code_aio import FundCodeAIO
 from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskFactory
-from components.fund_code_aio import FundCodeAIO
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +52,7 @@ def render_task_modal() -> fac.AntdModal:
                                     "label": f"{config['name']} - {config['description']}",
                                     "value": task_type,
                                 }
-                                for task_type, config in TaskFactory()
-                                .get_task_types()
-                                .items()
+                                for task_type, config in TaskFactory().get_task_types().items()
                             ],
                             style={
                                 "width": "100%",

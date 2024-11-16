@@ -5,15 +5,17 @@
 - 表格操作按钮
 """
 
-from typing import List, Dict, Any
-import feffery_antd_components as fac
-from dash import callback, Input, Output, State
-from dash.exceptions import PreventUpdate
+from typing import Any, Dict, List
+
 import dash
+import feffery_antd_components as fac
+from dash import Input, Output, State, callback
+from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
-from .utils import build_cascader_options
 from models.database import get_portfolio
+
+from .utils import build_cascader_options
 
 # 表格样式常量
 TABLE_STYLES = {"marginTop": "8px", "width": "100%"}

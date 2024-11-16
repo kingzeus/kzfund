@@ -17,12 +17,13 @@ Usage:
     指定测试模块: python test.py tests.test_datetime
 """
 
-import unittest
-import sys
 import os
+import sys
 import time
+import unittest
 from datetime import datetime
 from typing import Dict, List
+
 import colorama
 from colorama import Fore, Style
 
@@ -79,32 +80,24 @@ class CustomTestResult(unittest.TestResult):
 
     def addSuccess(self, test):
         """记录成功的测试"""
-        self.test_results["success"].append(
-            self._format_test_result(test, "PASS", Fore.GREEN)
-        )
+        self.test_results["success"].append(self._format_test_result(test, "PASS", Fore.GREEN))
         super().addSuccess(test)
 
     def addError(self, test, err):
         """记录发生错误的测试"""
-        self.test_results["error"].append(
-            self._format_test_result(test, "ERROR", Fore.RED)
-        )
+        self.test_results["error"].append(self._format_test_result(test, "ERROR", Fore.RED))
         self.error_details[test.id()] = err
         super().addError(test, err)
 
     def addFailure(self, test, err):
         """记录失败的测试"""
-        self.test_results["failure"].append(
-            self._format_test_result(test, "FAIL", Fore.RED)
-        )
+        self.test_results["failure"].append(self._format_test_result(test, "FAIL", Fore.RED))
         self.failure_details[test.id()] = err
         super().addFailure(test, err)
 
     def addSkip(self, test, reason):
         """记录跳过的测试"""
-        self.test_results["skipped"].append(
-            self._format_test_result(test, "SKIP", Fore.YELLOW)
-        )
+        self.test_results["skipped"].append(self._format_test_result(test, "SKIP", Fore.YELLOW))
         super().addSkip(test, reason)
 
 
@@ -202,11 +195,7 @@ class CustomTestRunner:
         """打印错误和失败的详细信息"""
         if result.failures or result.errors:
             print(f"\n{self.divider}")
-            print(
-                self._center_text(
-                    f"{Fore.RED}Detailed Error Information{Style.RESET_ALL}"
-                )
-            )
+            print(self._center_text(f"{Fore.RED}Detailed Error Information{Style.RESET_ALL}"))
             print(self.divider)
 
             for test_id, failure in result.failure_details.items():
@@ -237,9 +226,7 @@ class CustomTestRunner:
         self._print_result_section("Successes", result.test_results["success"])
         self._print_result_section("Failures", result.test_results["failure"], Fore.RED)
         self._print_result_section("Errors", result.test_results["error"], Fore.RED)
-        self._print_result_section(
-            "Skipped", result.test_results["skipped"], Fore.YELLOW
-        )
+        self._print_result_section("Skipped", result.test_results["skipped"], Fore.YELLOW)
 
         # 打印错误详情
         self._print_error_details(result)

@@ -1,12 +1,13 @@
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import dash
-from dash import Input, Output, State, callback
 import feffery_antd_components as fac
+from dash import Input, Output, State, callback
 
 from models.database import add_account, update_account
+
 from .table import get_account_table_data
 from .utils import validate_name
-
 
 """账户编辑弹窗模块
 

@@ -17,14 +17,14 @@
    - 任务详情弹窗
 """
 
-from dash import html, dcc
 import feffery_antd_components as fac
+from dash import dcc, html
 
+from pages.task.detail_modal import render_task_detail_modal
+from pages.task.modal import render_task_modal
+from pages.task.table import render_task_table
+from pages.task.utils import ICON_STYLES, PAGE_PADDING
 from scheduler.job_manager import JobManager
-from .table import render_task_table
-from .modal import render_task_modal
-from .detail_modal import render_task_detail_modal
-from .utils import ICON_STYLES, PAGE_PADDING
 
 
 def render_task_page() -> html.Div:

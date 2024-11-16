@@ -6,16 +6,18 @@
 - 表单验证和错误处理
 """
 
-from typing import Tuple, Optional, List, Dict, Any
+import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import dash
+import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
-import feffery_antd_components as fac
-import logging
 
-from models.database import add_transaction, update_transaction, get_transactions
 from components.fund_code_aio import FundCodeAIO
+from models.database import add_transaction, get_transactions, update_transaction
+
 from .utils import build_cascader_options
 
 # ============= 日志配置 =============
@@ -198,9 +200,7 @@ def handle_transaction_save(
         tuple: (更新后的数据, 弹窗可见性)
     """
     # 验证必填字段
-    if not ok_counts or not all(
-        [portfolio_path, fund_code, transaction_type, amount, trade_time]
-    ):
+    if not ok_counts or not all([portfolio_path, fund_code, transaction_type, amount, trade_time]):
         raise PreventUpdate
 
     try:

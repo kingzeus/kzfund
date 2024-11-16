@@ -1,9 +1,9 @@
-from typing import Dict, Optional, Union, Any
-from config import API_CONFIG, SERVER_CONFIG
-from dash import html, Input, Output, callback, no_update
-from dash.dependencies import Component
+from typing import Any, Dict, Optional, Union
+
 import feffery_antd_components as fac
-from flask import request
+from dash import Input, Output, callback, html, no_update
+
+from config import API_CONFIG, SERVER_CONFIG
 
 # 定义类型别名
 StyleDict = Dict[str, Union[str, int]]

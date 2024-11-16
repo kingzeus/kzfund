@@ -5,7 +5,8 @@
 - 账户-组合级联选择器选项构建
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from models.database import get_accounts, get_portfolios
 
 

@@ -1,7 +1,7 @@
-from typing import Dict, Type
 import logging
-from .interface import IDataSource
+from typing import Dict, Type
 
+from data_source.interface import IDataSource
 
 logger = logging.getLogger(__name__)
 

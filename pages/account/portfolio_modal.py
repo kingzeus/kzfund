@@ -1,12 +1,12 @@
-from typing import Tuple, Optional
-from dash import dcc, Input, Output, State, callback
-from dash.exceptions import PreventUpdate
+from typing import Optional, Tuple
+
 import feffery_antd_components as fac
+from dash import Input, Output, State, callback, dcc
+from dash.exceptions import PreventUpdate
 
 from models.database import add_portfolio, update_portfolio
-from .table import get_account_table_data
-from .utils import validate_name
-
+from pages.account.table import get_account_table_data
+from pages.account.utils import validate_name
 
 """组合编辑弹窗模块
 

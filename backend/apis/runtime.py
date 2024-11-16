@@ -3,10 +3,12 @@
 
 import logging
 from datetime import datetime
-from flask_restx import Resource, Namespace, fields
+
+from flask_restx import Namespace, Resource, fields
+
+from backend.apis.common import create_response_model
 from config import VERSION
-from utils import response
-from .common import create_response_model
+from utils.response import format_response
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ class RuntimeStatus(Resource):
         minutes = int((total_seconds % 3600) // 60)
         seconds = int(total_seconds % 60)
 
-        return response(
+        return format_response(
             data={
                 "deploy_time": DEPLOY_TIME.strftime("%Y-%m-%d %H:%M:%S"),
                 "uptime": f"{days}天{hours}时{minutes}分{seconds}秒",

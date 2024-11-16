@@ -1,6 +1,6 @@
-from .fund_detail import FundDetailTask
-from .example import ExampleTask
 from .data_sync import DataSyncTask
+from .example import ExampleTask
+from .fund_detail import FundDetailTask
 from .fund_info import FundInfoTask
 from .task_factory import TaskFactory
 

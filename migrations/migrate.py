@@ -1,9 +1,11 @@
-from typing import Optional
 import os
 import shutil
-from migrations.version_manager import SchemaManager
+from typing import Optional
+
 from config import DATABASE_CONFIG
+from migrations.version_manager import SchemaManager
 from models.base import init_db
+
 
 def ensure_db_dir():
     """确保数据库目录存在"""

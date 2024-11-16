@@ -1,10 +1,9 @@
-from typing import Dict, Type, Any, Tuple
 import logging
+from typing import Any, Dict, Tuple, Type
 
 from config import DEBUG
-from .base import BaseTask
+from scheduler.tasks.base import BaseTask
 from utils.singleton import Singleton
-
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +18,16 @@ class TaskFactory:
     def register(self, task_class: Type[BaseTask]) -> None:
         """注册新的任务类型"""
         task_type = task_class.get_type()
-        logger.info(f"注册任务类型: {task_type}")
+        logger.info("注册任务类型: %s", task_type)
         self._tasks[task_type] = task_class
 
         if DEBUG:
             config = task_class.get_config()
-            logger.debug(f"任务配置: {task_type}")
+            logger.debug("任务配置: %s", task_type)
             for key, value in config.items():
-                logger.debug(f"  {key}: {value}")
+                logger.debug("  %s: %s", key, value)
 
-    def validate_task_params(
-        self, task_type: str, params: Dict[str, Any]
-    ) -> Tuple[bool, str]:
+    def validate_task_params(self, task_type: str, params: Dict[str, Any]) -> Tuple[bool, str]:
         """验证任务参数
 
         Args:
@@ -43,7 +40,7 @@ class TaskFactory:
             - error_message: 错误信息(验证失败时)
         """
         if task_type not in self._tasks:
-            logger.error(f"未知的任务类型: {task_type}")
+            logger.error("未知的任务类型: %s", task_type)
             return False, f"未知的任务类型: {task_type}"
 
         task_class = self._tasks[task_type]
@@ -56,34 +53,31 @@ class TaskFactory:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-        logger.debug(f"创建任务实例: {task_type} (ID: {task_id})")
+        logger.debug("创建任务实例: %s (ID: %s)", task_type, task_id)
         return self._tasks[task_type](task_id)
 
     def execute_task(self, task_type: str, task_id: str, **kwargs) -> Dict[str, Any]:
         """执行任务"""
-        logger.info(f"开始执行任务: {task_type} (ID: {task_id})")
+        logger.info("开始执行任务: %s (ID: %s)", task_type, task_id)
 
         # 先验证参数
         is_valid, error_message = self.validate_task_params(task_type, kwargs)
         if not is_valid:
-            logger.error(f"任务参数验证失败: {error_message}")
+            logger.error("任务参数验证失败: %s", error_message)
             raise ValueError(error_message)
 
         task = self.create(task_type, task_id)
         try:
             result = task.execute(**kwargs)
-            logger.info(f"任务执行完成: {task_type} (ID: {task_id})")
+            logger.info("任务执行完成: %s (ID: %s)", task_type, task_id)
             return result
         except Exception as e:
-            logger.exception(f"任务执行失败: {task_type} (ID: {task_id})")
+            logger.exception("任务执行失败: %s (ID: %s): %s", task_type, task_id, str(e))
             raise
 
     def get_task_types(self) -> Dict[str, Dict[str, Any]]:
         """获取所有任务类型的配置"""
-        return {
-            task_type: task_class.get_config()
-            for task_type, task_class in self._tasks.items()
-        }
+        return {task_type: task_class.get_config() for task_type, task_class in self._tasks.items()}
 
     def get_available_tasks(self) -> Dict[str, Type[BaseTask]]:
         """获取所有可用的任务类型"""

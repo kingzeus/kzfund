@@ -14,6 +14,6 @@
 - utils.py: 通用工具函数
 """
 
-from .page import render_account_page
+from pages.account.page import render_account_page
 
 __all__ = ["render_account_page"]

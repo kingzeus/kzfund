@@ -1,6 +1,7 @@
+import json
 import unittest
 import uuid
-import json
+
 from data_source.data_source_factory import DataSourceFactory
 from data_source.implementations.eastmoney import EastMoneyDataSource
 from scheduler.tasks.fund_detail import FundDetailTask
@@ -91,9 +92,7 @@ class TestFundDetailTasks(unittest.TestCase):
         self.assertIsInstance(results["establishment_size"], (int, float), "成立规模应为数值类型")
         self.assertIsInstance(results["management_fee"], (int, float), "管理费率应为数值类型")
         self.assertIsInstance(results["custodian_fee"], (int, float), "托管费率应为数值类型")
-        self.assertIsInstance(
-            results["sales_service_fee"], (int, float), "销售服务费率应为数值类型"
-        )
+        self.assertIsInstance(results["sales_service_fee"], (int, float), "销售服务费率应为数值类型")
 
     def tearDown(self):
         """测试后的清理工作"""

@@ -1,11 +1,10 @@
 import logging
-from typing import Optional, Dict, Any, Callable, TypeVar, Union
 from datetime import datetime
+from typing import Any, Callable, Dict, Optional, TypeVar, Union
 
 from config import DATA_SOURCE_DEFAULT
-from utils.response import response
-from .data_source_factory import DataSourceFactory
-
+from data_source import DataSourceFactory
+from utils.response import format_response
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")  # 用于泛型返回类型
@@ -52,17 +51,17 @@ class DataSourceProxy:
         """
         if not self._data_source:
             logger.error("数据源未初始化")
-            return response(message="数据源未初始化", code=500, is_array=is_array)
+            return format_response(message="数据源未初始化", code=500, is_array=is_array)
 
         try:
             logger.debug("调用%s: %s", func_name, str(kwargs))
             result = api_func(*args, **kwargs)
-            return response(data=result, message="success", is_array=is_array)
+            return format_response(data=result, message="success", is_array=is_array)
         except ValueError as e:
             logger.error("%s: %s", error_msg, str(e))
             if return_empty:
-                return response(message=str(e), code=200, is_array=is_array)
-            return response(message=str(e), code=500, is_array=is_array)
+                return format_response(message=str(e), code=200, is_array=is_array)
+            return format_response(message=str(e), code=500, is_array=is_array)
 
     def get_quick_tips(self, search_text: str) -> Dict[str, Any]:
         """获取基金代码快速提示"""

@@ -1,7 +1,8 @@
+import logging
 import time
 from datetime import datetime
-from typing import Dict, Any
-import logging
+from typing import Any, Dict
+
 from .base import BaseTask
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,5 @@ class DataSyncTask(BaseTask):
             "message": "Data sync completed",
             "task_id": self.task_id,
             "sync_type": sync_type,
-            "date_range": (
-                f"{start_date}-{end_date}" if start_date and end_date else "all"
-            ),
+            "date_range": (f"{start_date}-{end_date}" if start_date and end_date else "all"),
         }

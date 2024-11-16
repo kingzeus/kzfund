@@ -15,19 +15,20 @@
    - 收益走势图
 """
 
-from dash import html, dcc
 import feffery_antd_components as fac
+from dash import dcc, html
 
 from models.database import get_statistics
-from .overview import (
-    render_total_assets_card,
+from pages.home.charts import render_asset_allocation_chart, render_performance_chart
+from pages.home.overview import (
+    render_account_count_card,
     render_fund_count_card,
     render_return_rate_card,
-    render_account_count_card,
+    render_total_assets_card,
 )
-from .charts import render_asset_allocation_chart, render_performance_chart
-from .utils import ICON_STYLES
+
 from . import callbacks  # 添加这行导入
+from .utils import ICON_STYLES
 
 
 def render_home_page() -> html.Div:

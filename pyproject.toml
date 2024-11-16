@@ -37,7 +37,14 @@ peewee = "^3.17.0"
 black = "^23.11.0"                      # 代码格式化检查
 pylint = "^3.1.0"                       # 代码质量检查
 colorama = "^0.4.6"                     # 测试用
+isort = "^5.12.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"

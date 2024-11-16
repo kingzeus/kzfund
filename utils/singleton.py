@@ -1,4 +1,5 @@
-from typing import Dict, Any, Type, TypeVar
+from threading import Lock
+from typing import Any, Dict, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -24,8 +25,6 @@ class Singleton:
         """获取锁对象"""
         # 使用类属性作为锁
         if not hasattr(self._cls, "_lock"):
-            from threading import Lock
-
             setattr(self._cls, "_lock", Lock())
         return getattr(self._cls, "_lock")
 

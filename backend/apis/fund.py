@@ -2,14 +2,13 @@ from flask_restx import Namespace, Resource, fields
 
 from backend.apis.common import create_list_response_model, create_response_model
 from models.database import (
-    get_fund_positions,
     add_fund_position,
-    update_fund_position,
     delete_fund_position,
+    get_fund_positions,
     get_fund_transactions,
+    update_fund_position,
 )
-from utils import response
-
+from utils.response import format_response
 
 api = Namespace("funds", description="基金相关操作")
 
@@ -49,9 +48,7 @@ fund_transaction_base = api.model(
 # 使用通用函数创建响应模型
 position_response = create_response_model(api, "Position", fund_position_base)
 position_list_response = create_list_response_model(api, "Position", fund_position_base)
-transaction_list_response = create_list_response_model(
-    api, "Transaction", fund_transaction_base
-)
+transaction_list_response = create_list_response_model(api, "Transaction", fund_transaction_base)
 
 # 定义输入模型
 position_input = api.model(
@@ -75,7 +72,7 @@ class FundPositionList(Resource):
     @api.marshal_with(position_list_response)
     def get(self, portfolio_id):
         """获取指定组合的基金持仓"""
-        return response(data=get_fund_positions(portfolio_id))
+        return format_response(data=get_fund_positions(portfolio_id))
 
     @api.doc("添加基金持仓")
     @api.expect(position_input)
@@ -84,31 +81,31 @@ class FundPositionList(Resource):
         """添加基金持仓"""
         data = api.payload
         data["portfolio_id"] = portfolio_id
-        position_id = add_fund_position(data)
-        return response(data=get_fund_positions(portfolio_id), message="持仓添加成功")
+        add_fund_position(data)
+        return format_response(data=get_fund_positions(portfolio_id), message="持仓添加成功")
 
 
-@api.route("/positions/<string:id>")
-@api.param("id", "持仓ID")
+@api.route("/positions/<string:position_id>")
+@api.param("position_id", "持仓ID")
 class FundPosition(Resource):
     @api.doc("更新持仓信息")
     @api.expect(position_input)
     @api.marshal_with(position_response)
-    def put(self, id):
+    def put(self, position_id):
         """更新持仓信息"""
         data = api.payload
-        position = update_fund_position(id, data)
+        position = update_fund_position(position_id, data)
         if not position:
-            return response(message="持仓不存在", code=404)
-        return response(data=position, message="持仓更新成功")
+            return format_response(message="持仓不存在", code=404)
+        return format_response(data=position, message="持仓更新成功")
 
     @api.doc("删除持仓")
     @api.marshal_with(position_response)
-    def delete(self, id):
+    def delete(self, position_id):
         """删除持仓"""
-        if delete_fund_position(id):
-            return response(message="持仓删除成功")
-        return response(message="持仓不存在", code=404)
+        if delete_fund_position(position_id):
+            return format_response(message="持仓删除成功")
+        return format_response(message="持仓不存在", code=404)
 
 
 @api.route("/transactions/<string:portfolio_id>")
@@ -118,4 +115,4 @@ class FundTransactionList(Resource):
     @api.marshal_with(transaction_list_response)
     def get(self, portfolio_id):
         """获取指定组合的交易记录"""
-        return response(data=get_fund_transactions(portfolio_id))
+        return format_response(data=get_fund_transactions(portfolio_id))

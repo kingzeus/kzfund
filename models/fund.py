@@ -1,15 +1,15 @@
 from peewee import (
     CharField,
+    CompositeKey,
+    DateField,
+    DateTimeField,
     DecimalField,
     ForeignKeyField,
-    DateTimeField,
-    DateField,
     TextField,
-    CompositeKey,
 )
-from .base import BaseModel
-from datetime import datetime
+
 from .account import Portfolio
+from .base import BaseModel
 
 
 class Fund(BaseModel):

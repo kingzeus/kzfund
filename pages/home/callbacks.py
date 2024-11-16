@@ -5,11 +5,12 @@
 - 图表数据更新: 更新资产配置和收益走势图表
 """
 
-from typing import Dict, Any, Tuple
-from dash import Input, Output, callback
-import plotly.graph_objects as go
-from dash.exceptions import PreventUpdate
 import logging
+from typing import Any, Dict, Tuple
+
+import plotly.graph_objects as go
+from dash import Input, Output, callback
+from dash.exceptions import PreventUpdate
 
 from .utils import format_money, format_percent
 

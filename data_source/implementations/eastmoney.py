@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
+from bs4 import BeautifulSoup
 
 from data_source.interface import IDataSource
 from utils.datetime_helper import format_date, get_timestamp
@@ -13,8 +14,10 @@ from utils.string_helper import (
     get_json_from_jsonp_simple,
 )
 
-
 logger = logging.getLogger(__name__)
+
+# 请求超时时间（秒）
+REQUEST_TIMEOUT = 10
 
 
 class EastMoneyDataSource(IDataSource):
@@ -43,7 +46,7 @@ class EastMoneyDataSource(IDataSource):
     def __init__(self):
         self.headers = {
             "Referer": "https://fund.eastmoney.com/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # pylint: disable=C0301
         }
         logger.debug("初始化东方财富数据源")
 
@@ -59,7 +62,9 @@ class EastMoneyDataSource(IDataSource):
             }
             logger.debug("请求基金搜索建议: %s, params: %s", url, params)
 
-            response = requests.get(url, params=params, headers=self.headers)
+            response = requests.get(
+                url, params=params, headers=self.headers, timeout=REQUEST_TIMEOUT
+            )
             response.raise_for_status()
 
             text = response.text
@@ -81,8 +86,11 @@ class EastMoneyDataSource(IDataSource):
                     )
             logger.debug("获取到 %d 个搜索建议", len(results))
             return results
-        except Exception as e:
-            logger.error("获取基金搜索建议失败: %s", str(e), exc_info=True)
+        except (KeyError, ValueError) as e:
+            logger.error("解析基金搜索建议数据失败: %s", str(e), exc_info=True)
+            return []
+        except requests.exceptions.RequestException as e:
+            logger.error("请求基金搜索建议失败: %s", str(e), exc_info=True)
             return []
 
     def get_fund_info(self, fund_code: str) -> Dict[str, Any]:
@@ -94,7 +102,9 @@ class EastMoneyDataSource(IDataSource):
             }
             logger.debug("请求基金信息: %s, params: %s", url, params)
 
-            response = requests.get(url, params=params, headers=self.headers)
+            response = requests.get(
+                url, params=params, headers=self.headers, timeout=REQUEST_TIMEOUT
+            )
             response.raise_for_status()
             text = response.text
 
@@ -113,9 +123,12 @@ class EastMoneyDataSource(IDataSource):
                 "valuation_value": data.get("gsz", 0),  # 估值
                 "valuation_growth": data.get("gszzl", 0),  # 估值增长率
             }
-        except Exception as e:
-            logger.error("获取基金信息失败: %s", str(e), exc_info=True)
-            raise ValueError(f"获取基金信息失败: {str(e)}")
+        except (KeyError, ValueError) as e:
+            logger.error("解析基金信息数据失败: %s", str(e), exc_info=True)
+            raise ValueError(f"解析基金信息数据失败: {str(e)}") from e
+        except requests.exceptions.RequestException as e:
+            logger.error("请求基金信息失败: %s", str(e), exc_info=True)
+            raise ValueError(f"请求基金信息失败: {str(e)}") from e
 
     def get_fund_detail(self, fund_code: str) -> Dict[str, Any]:
         """获取基金详情
@@ -133,12 +146,10 @@ class EastMoneyDataSource(IDataSource):
         try:
             url = f"https://fundf10.eastmoney.com/jbgk_{fund_code}.html"
 
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
 
             # 使用 BeautifulSoup 解析 HTML
-            from bs4 import BeautifulSoup
-
             soup = BeautifulSoup(response.text, "html.parser")
 
             # 获取表格数据
@@ -163,9 +174,7 @@ class EastMoneyDataSource(IDataSource):
                 "name": fund_data.get("基金简称"),
                 "full_name": fund_data.get("基金全称"),
                 "type": fund_data.get("基金类型"),
-                "issue_date": format_date(
-                    fund_data.get("发行日期"), input_format="%Y年%m月%d日"
-                ),
+                "issue_date": format_date(fund_data.get("发行日期"), input_format="%Y年%m月%d日"),
                 "establishment_date": format_date(
                     fund_data.get("成立日期/规模", "").split("/")[0],
                     input_format="%Y年%m月%d日",
@@ -193,9 +202,12 @@ class EastMoneyDataSource(IDataSource):
                 # "investment_scope": fund_data.get("投资范围", ""),
             }
 
-        except Exception as e:
-            logger.error("获取基金详情失败: %s", str(e), exc_info=True)
-            raise ValueError(f"获取基金详情失败: {str(e)}")
+        except (KeyError, ValueError) as e:
+            logger.error("解析基金详情数据失败: %s", str(e), exc_info=True)
+            raise ValueError(f"解析基金详情数据失败: {str(e)}") from e
+        except requests.exceptions.RequestException as e:
+            logger.error("请求基金详情失败: %s", str(e), exc_info=True)
+            raise ValueError(f"请求基金详情失败: {str(e)}") from e
 
     def get_fund_nav_history(
         self,

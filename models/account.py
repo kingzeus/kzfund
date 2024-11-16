@@ -1,5 +1,6 @@
-from peewee import CharField, ForeignKeyField, BooleanField
-from .base import BaseModel
+from peewee import BooleanField, CharField, ForeignKeyField
+
+from models.base import BaseModel
 
 
 class Account(BaseModel):

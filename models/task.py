@@ -1,5 +1,5 @@
-from datetime import datetime
-from peewee import CharField, IntegerField, TextField, DateTimeField
+from peewee import CharField, DateTimeField, IntegerField, TextField
+
 from .base import BaseModel
 
 

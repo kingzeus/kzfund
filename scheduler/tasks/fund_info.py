@@ -1,10 +1,11 @@
-import time
-from datetime import datetime
-from typing import Dict, Any
 import logging
-from .base import BaseTask
+from datetime import datetime
+from typing import Any, Dict
+
 from data_source.proxy import DataSourceProxy
 from models.fund import Fund
+
+from .base import BaseTask
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class FundInfoTask(BaseTask):
         return "更新基金基本信息"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        logger.info(f"[{datetime.now()}] 开始更新基金信息 {self.task_id}")
+        logger.info("[%s] 开始更新基金信息 %s", datetime.now(), self.task_id)
 
         # 获取参数
         fund_code = kwargs.get("fund_code")
@@ -52,7 +53,7 @@ class FundInfoTask(BaseTask):
 
             # 更新进度
             self.update_progress(20)
-            logger.info(f"正在获取基金 {fund_code} 的信息...")
+            logger.info("正在获取基金 %s 的信息...", fund_code)
 
             # 获取基金信息
             fund_info = data_source.get_fund_info(fund_code)
@@ -97,7 +98,7 @@ class FundInfoTask(BaseTask):
             #     fund.save()
 
             self.update_progress(100)
-            logger.info(f"基金 {fund_code} 信息更新完成")
+            logger.info("基金 %s 信息更新完成", fund_code)
 
             return {
                 "message": "Fund info update completed",
@@ -106,11 +107,9 @@ class FundInfoTask(BaseTask):
                 "fund_name": fund_data["name"],
                 "created": created,
                 "nav": str(fund.nav) if fund.nav else None,
-                "nav_date": (
-                    fund.nav_date.strftime("%Y-%m-%d") if fund.nav_date else None
-                ),
+                "nav_date": (fund.nav_date.strftime("%Y-%m-%d") if fund.nav_date else None),
             }
 
         except Exception as e:
-            logger.error(f"更新基金信息失败: {str(e)}", exc_info=True)  # 添加完整的错误堆栈
+            logger.error("更新基金信息失败: %s", str(e), exc_info=True)  # 添加完整的错误堆栈
             raise

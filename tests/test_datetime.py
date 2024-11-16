@@ -1,6 +1,7 @@
 import unittest
-from datetime import datetime, date
-from utils.datetime_helper import format_datetime, format_date
+from datetime import date, datetime
+
+from utils.datetime_helper import format_date, format_datetime
 
 
 class TestDatetimeFunctions(unittest.TestCase):
@@ -8,9 +9,7 @@ class TestDatetimeFunctions(unittest.TestCase):
         # 测试datetime对象
         dt = datetime(2021, 7, 6, 12, 30)
         self.assertEqual(format_datetime(dt), "2021-07-06 12:30")
-        self.assertEqual(
-            format_datetime(dt, format="%Y/%m/%d %H:%M"), "2021/07/06 12:30"
-        )
+        self.assertEqual(format_datetime(dt, output_format="%Y/%m/%d %H:%M"), "2021/07/06 12:30")
 
         # 测试ISO格式字符串
         self.assertEqual(format_datetime("2021-07-06T12:30:00"), "2021-07-06 12:30")
@@ -33,9 +32,7 @@ class TestDatetimeFunctions(unittest.TestCase):
 
         # 测试中文格式
         self.assertEqual(
-            format_date(
-                "2021年07月06日", output_format="%Y-%m-%d", input_format="%Y年%m月%d日"
-            ),
+            format_date("2021年07月06日", output_format="%Y-%m-%d", input_format="%Y年%m月%d日"),
             "2021-07-06",
         )
 

@@ -1,15 +1,17 @@
-from typing import List, Dict, Any, Optional
+import logging
 import uuid
 from datetime import datetime
-import logging
+from typing import Any, Dict, List, Optional
 
-from utils.datetime_helper import format_datetime
+from peewee import JOIN, fn
+
 from scheduler.job_manager import JobManager
-from .base import Database, db_connection
+from utils.datetime_helper import format_datetime
+
 from .account import Account, Portfolio
-from .fund import FundPosition, FundTransaction, FundNav, Fund
+from .base import Database, db_connection
+from .fund import Fund, FundNav, FundPosition, FundTransaction
 from .task import TaskHistory
-from peewee import fn, JOIN
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ def get_account(account_id: str) -> Optional[Dict[str, Any]]:
                 "create_time": account.created_at,
                 "update_time": account.updated_at,
             }
-        except Account.DoesNotExist:
+        except Account.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -100,7 +102,7 @@ def update_account(account_id: str, name: str, description: str = None) -> bool:
             account.save()
             return True
     except Exception as e:
-        logger.error(f"更新账户失败: {e}")
+        logger.error("更新账户失败: %s", str(e))
         return False
 
 
@@ -109,9 +111,7 @@ def delete_account(account_id: str) -> bool:
     try:
         with db_connection():
             # 首先检查是否有关联的组合
-            portfolio_count = (
-                Portfolio.select().where(Portfolio.account == account_id).count()
-            )
+            portfolio_count = Portfolio.select().where(Portfolio.account == account_id).count()
             if portfolio_count > 0:
                 return False
 
@@ -119,7 +119,7 @@ def delete_account(account_id: str) -> bool:
             account.delete_instance()
             return True
     except Exception as e:
-        logger.error(f"删除账户失败: {e}")
+        logger.error("删除账户失败: %s", str(e))
         return False
 
 
@@ -131,9 +131,7 @@ def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
             Portfolio.select(
                 Portfolio,
                 fn.COUNT(FundPosition.id).alias("fund_count"),
-                fn.COALESCE(fn.SUM(FundPosition.market_value), 0).alias(
-                    "total_market_value"
-                ),
+                fn.COALESCE(fn.SUM(FundPosition.market_value), 0).alias("total_market_value"),
             )
             .join(FundPosition, JOIN.LEFT_OUTER)
             .where(Portfolio.account == account_id)
@@ -192,13 +190,11 @@ def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
                 "create_time": portfolio.created_at,
                 "update_time": portfolio.updated_at,
             }
-        except Portfolio.DoesNotExist:
+        except Portfolio.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
-def update_portfolio(
-    portfolio_id: str, data: Dict[str, Any]
-) -> Optional[Dict[str, Any]]:
+def update_portfolio(portfolio_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """更新投资组合信息"""
     with db_connection():
         try:
@@ -208,7 +204,7 @@ def update_portfolio(
             portfolio.is_default = data.get("is_default", portfolio.is_default)
             portfolio.save()
             return get_portfolio(portfolio_id)
-        except Portfolio.DoesNotExist:
+        except Portfolio.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -226,7 +222,7 @@ def delete_portfolio(portfolio_id: str) -> bool:
             portfolio.delete_instance(recursive=True)
             return True
     except Exception as e:
-        logger.error(f"删除组合失败: {e}")
+        logger.error("删除组合失败: %s", str(e))
         return False
 
 
@@ -280,9 +276,7 @@ def add_fund_position(data: Dict[str, Any]) -> str:
         return position_id
 
 
-def update_fund_position(
-    position_id: str, data: Dict[str, Any]
-) -> Optional[Dict[str, Any]]:
+def update_fund_position(position_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """更新基金持仓信息"""
     with db_connection():
         try:
@@ -293,13 +287,13 @@ def update_fund_position(
 
             # 更新市值和收益率
             position.market_value = float(position.shares) * float(position.nav)
-            position.return_rate = (
-                position.market_value - float(position.cost)
-            ) / float(position.cost)
+            position.return_rate = (position.market_value - float(position.cost)) / float(
+                position.cost
+            )
             position.save()
 
             return get_fund_positions(str(position.portfolio.id))
-        except FundPosition.DoesNotExist:
+        except FundPosition.DoesNotExist:  # pylint: disable=E1101
             return None
 
 
@@ -310,7 +304,7 @@ def delete_fund_position(position_id: str) -> bool:
             position = FundPosition.get_by_id(position_id)
             position.delete_instance()
             return True
-        except FundPosition.DoesNotExist:
+        except FundPosition.DoesNotExist:  # pylint: disable=E1101
             return False
 
 
@@ -346,13 +340,13 @@ def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
     with db_connection():
         # 获取账户总数
-        account_count = Account.select().count()
+        account_count = Account.select().count()  # pylint: disable=E1120
 
         # 获取组合总数
-        portfolio_count = Portfolio.select().count()
+        portfolio_count = Portfolio.select().count()  # pylint: disable=E1120
 
         # 获取基金持仓总数
-        position_count = FundPosition.select().count()
+        position_count = FundPosition.select().count()  # pylint: disable=E1120
 
         return {
             "account_count": account_count,
@@ -399,12 +393,12 @@ def get_transactions() -> List[Dict[str, Any]]:
                     }
                     result.append(transaction_dict)
                 except Exception as e:
-                    logger.error(f"Error processing transaction {trans.id}: {e}")
+                    logger.error("Error processing transaction %s: %s", trans.id, str(e))
 
             return result
 
         except Exception as e:
-            logger.error(f"获取交易记录失败: {e}")
+            logger.error("获取交易记录失败: %s", str(e))
             return []
 
 
@@ -429,7 +423,7 @@ def add_transaction(
                     "fund_info",
                     fund_code=fund_code,
                 )
-                logger.info(f"已添加获取基金信息任务: {task_id}")
+                logger.info("已添加获取基金信息任务: %s", task_id)
                 return False
 
             # 创建交易记录
@@ -457,7 +451,7 @@ def add_transaction(
 
             return True
     except Exception as e:
-        logger.error(f"添加交易记录失败: {e}")
+        logger.error("添加交易记录失败: %s", str(e))
         return False
 
 
@@ -496,7 +490,7 @@ def update_transaction(
 
             return True
     except Exception as e:
-        logger.error(f"更新交易记录失败: {e}")
+        logger.error("更新交易记录失败: %s", str(e))
         return False
 
 
@@ -517,7 +511,7 @@ def delete_transaction(transaction_id: str) -> bool:
 
             return True
     except Exception as e:
-        logger.error(f"删除交易记录失败: {e}")
+        logger.error("删除交易记录失败: %s", str(e))
         return False
 
 
@@ -534,10 +528,7 @@ def update_position_after_transaction(
         # 查找现有持仓
         position = (
             FundPosition.select()
-            .where(
-                (FundPosition.portfolio == portfolio_id)
-                & (FundPosition.code == fund.code)
-            )
+            .where((FundPosition.portfolio == portfolio_id) & (FundPosition.code == fund.code))
             .first()
         )
 
@@ -554,9 +545,7 @@ def update_position_after_transaction(
             position.nav = nav
             position.market_value = position.shares * nav
             if position.cost > 0:
-                position.return_rate = (
-                    position.market_value - position.cost
-                ) / position.cost
+                position.return_rate = (position.market_value - position.cost) / position.cost
             else:
                 position.return_rate = 0
 
@@ -581,7 +570,7 @@ def update_position_after_transaction(
                     purchase_date=datetime.now(),
                 )
     except Exception as e:
-        logger.error(f"更新持仓失败: {e}")
+        logger.error("更新持仓失败: %s", str(e))
 
 
 def recalculate_position(portfolio_id: str, fund_code: str) -> None:
@@ -600,8 +589,7 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
 
             # 删除现有持仓
             FundPosition.delete().where(
-                (FundPosition.portfolio == portfolio_id)
-                & (FundPosition.code == fund_code)
+                (FundPosition.portfolio == portfolio_id) & (FundPosition.code == fund_code)
             ).execute()
 
             # 重新计算持仓
@@ -624,9 +612,7 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
             # 如果还有持仓，创建新的持仓记录
             if total_shares > 0:
                 market_value = total_shares * latest_nav
-                return_rate = (
-                    (market_value - total_cost) / total_cost if total_cost > 0 else 0
-                )
+                return_rate = (market_value - total_cost) / total_cost if total_cost > 0 else 0
 
                 FundPosition.create(
                     id=str(uuid.uuid4()),
@@ -642,30 +628,32 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                     purchase_date=datetime.now(),
                 )
     except Exception as e:
-        logger.error(f"重新计算持仓失败: {e}")
+        logger.error("重新计算持仓失败: %s", str(e))
 
 
 def check_database_content():
     """检查数据库内容"""
     with db_connection():
         # 检查交易记录表
-        trans_count = FundTransaction.select().count()
-        logger.info(f"交易记录数量: {trans_count}")
+        trans_count = FundTransaction.select().count()  # pylint: disable=E1120
+        logger.info("交易记录数量: %s", trans_count)
 
         # 检查组合表
-        portfolio_count = Portfolio.select().count()
-        logger.info(f"组合数量: {portfolio_count}")
+        portfolio_count = Portfolio.select().count()  # pylint: disable=E1120
+        logger.info("组合数量: %s", portfolio_count)
 
         # 如果有交易记录，打印第一条记录的详细信息
         if trans_count > 0:
-            first_trans = FundTransaction.select().first()
+            first_trans = FundTransaction.select().first()  # pylint: disable=E1120
             logger.info(
-                "第一条交易记录:",
-                {
-                    "id": first_trans.id,
-                    "portfolio_id": first_trans.portfolio_id,
-                    "code": first_trans.code,
-                    "type": first_trans.type,
-                    "amount": first_trans.amount,
-                },
+                "第一条交易记录: %s",
+                str(
+                    {
+                        "id": first_trans.id,
+                        "portfolio_id": first_trans.portfolio_id,
+                        "code": first_trans.code,
+                        "type": first_trans.type,
+                        "amount": first_trans.amount,
+                    }
+                ),
             )

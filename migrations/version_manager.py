@@ -1,8 +1,10 @@
 import os
-from typing import Dict, Any, List, Optional
-from models.base import db_connection
-from .schema_versions import SCHEMA_VERSIONS
+from typing import Any, Dict, List, Optional
+
 from config import DATABASE_CONFIG
+from models.base import db_connection
+
+from .schema_versions import SCHEMA_VERSIONS
 
 
 class SchemaManager:

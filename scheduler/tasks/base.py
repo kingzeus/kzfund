@@ -1,16 +1,24 @@
-from typing import Dict, Any, Tuple
 import logging
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Protocol, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+class TaskProgressUpdater(Protocol):
+    """任务进度更新器协议"""
+
+    def update_task_progress(self, task_id: str, progress: int) -> None:
+        """更新任务进度"""
 
 
 class BaseTask(ABC):
     """任务基类"""
 
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, progress_updater: Optional[TaskProgressUpdater] = None):
         self.task_id = task_id
         self.progress = 0
+        self._progress_updater = progress_updater
 
     def update_progress(self, progress: int):
         """更新进度
@@ -20,10 +28,9 @@ class BaseTask(ABC):
         """
         self.progress = progress
         # 更新进度缓存
-        from scheduler.job_manager import JobManager
-
-        JobManager().update_task_progress(self.task_id, progress)
-        logger.info(f"Task {self.task_id} progress: {progress}%")
+        if self._progress_updater:
+            self._progress_updater.update_task_progress(self.task_id, progress)
+        logger.info("Task %s progress: %d%%", self.task_id, progress)
 
     @classmethod
     def validate_params(cls, params: Dict[str, Any]) -> Tuple[bool, str]:
@@ -56,7 +63,6 @@ class BaseTask(ABC):
     @abstractmethod
     def execute(self, **kwargs) -> Dict[str, Any]:
         """执行任务"""
-        pass
 
     @classmethod
     @abstractmethod
@@ -78,16 +84,13 @@ class BaseTask(ABC):
                 - default: 默认值
                 - options: 选项列表(type为select时使用)
         """
-        pass
 
     @classmethod
     @abstractmethod
     def get_type(cls) -> str:
         """获取任务类型"""
-        pass
 
     @classmethod
     @abstractmethod
     def get_description(cls) -> str:
         """获取任务描述"""
-        pass

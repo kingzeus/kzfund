@@ -1,25 +1,19 @@
-from typing import Tuple, Optional, List, Dict, Any
 import dash
+import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
-import feffery_antd_components as fac
-from dash import dcc
 
 from models.database import delete_account, delete_portfolio
-from .table import get_account_table_data
-
-
-"""删除确认弹窗模块
-
-提供通用的删除确认功能:
-- 支持账户删除确认
-- 支持组合删除确认
-- 统一的删除处理逻辑
-"""
+from pages.account.table import get_account_table_data
 
 
 def render_delete_confirm_modal() -> fac.AntdModal:
     """渲染删除确认弹窗
+
+    提供通用的删除确认功能:
+    - 支持账户删除确认
+    - 支持组合删除确认
+    - 统一的删除处理逻辑
 
     Returns:
         AntdModal: 删除确认弹窗组件
@@ -72,5 +66,4 @@ def handle_delete_confirm(ok_counts, object_id, custom_info):
 
     if success:
         return get_account_table_data(), False
-    else:
-        return dash.no_update, False
+    return dash.no_update, False

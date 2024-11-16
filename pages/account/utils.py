@@ -5,7 +5,7 @@
 - 操作按钮创建函数
 """
 
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # ============= 常量定义 =============
 NAME_MIN_LENGTH = 2  # 名称最小长度

@@ -1,9 +1,11 @@
-from datetime import datetime
-from typing import Dict, Any
 import logging
-from .base import BaseTask
+from datetime import datetime
+from typing import Any, Dict
+
 from data_source.proxy import DataSourceProxy
 from models.fund import Fund
+
+from .base import BaseTask
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +82,7 @@ class FundDetailTask(BaseTask):
                 "investment_philosophy": fund_info.get("investment_philosophy", ""),
                 "investment_strategy": fund_info.get("investment_strategy", ""),
                 "dividend_policy": fund_info.get("dividend_policy", ""),
-                "risk_return_characteristics": fund_info.get(
-                    "risk_return_characteristics", ""
-                ),
+                "risk_return_characteristics": fund_info.get("risk_return_characteristics", ""),
                 "data_source": fund_info.get("data_source"),
                 "data_source_version": fund_info.get("data_source_version"),
             }

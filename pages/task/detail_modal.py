@@ -5,11 +5,11 @@
 - 处理详情查看操作
 """
 
+import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
-import feffery_antd_components as fac
 
-from .utils import get_task_detail_items
+from pages.task.utils import get_task_detail_items
 
 
 def render_task_detail_modal() -> fac.AntdModal:

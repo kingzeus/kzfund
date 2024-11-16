@@ -6,16 +6,17 @@
 - 数据刷新
 """
 
-from typing import List, Dict, Any
-import feffery_antd_components as fac
-from dash import callback, Input, Output, State, ALL
-from dash.exceptions import PreventUpdate
-import dash
 import json
 import logging
+from typing import Any, Dict, List
 
+import dash
+import feffery_antd_components as fac
+from dash import ALL, Input, Output, State, callback
+from dash.exceptions import PreventUpdate
+
+from pages.task.utils import TABLE_STYLES, process_task_data
 from scheduler.job_manager import JobManager, TaskStatus
-from .utils import TABLE_STYLES, process_task_data
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +150,7 @@ def handle_task_action(action_clicks, current_data):
 def toggle_refresh_interval(tasks_data: List[Dict[str, Any]]) -> bool:
     """根据任务状态控制定时器"""
     has_running_tasks = any(
-        task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING]
-        for task in tasks_data
+        task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING] for task in tasks_data
     )
     return not has_running_tasks
 
@@ -175,8 +175,7 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
         unfinished_task_ids = [
             task["task_id"]
             for task in current_tasks
-            if task["status"]
-            in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED]
+            if task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED]
         ]
 
         if not unfinished_task_ids:
@@ -233,8 +232,9 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
 
     except Exception as e:
         logger.error("刷新任务列表失败: %s", str(e))
+        # todo 错误message实现
         # 发生错误时，显示错误提示
-        fac.AntdMessage.error(f"刷新任务列表失败: {str(e)}")
+        # fac.AntdMessage.error(f"刷新任务列表失败: {str(e)}")
         return dash.no_update, False, False
 
 

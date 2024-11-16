@@ -128,6 +128,16 @@ run_code_check() {
     local has_error=0
     local python_files=$(find . -type f -name "*.py" ! -path "*/\.*" ! -path "*/migrations/*" ! -path "*/venv/*" ! -path "*/env/*")
 
+
+    # 运行isort检查代码格式
+    echo -e "\n${YELLOW}[1/2] 运行isort检查代码格式...${NC}"
+    if ! isort --check $python_files; then
+        echo -e "${YELLOW}代码格式需要调整，正在格式化...${NC}"
+        if ! isort $python_files; then
+            echo -e "${RED}isort 格式化失败${NC}"
+            has_error=1
+        fi
+    fi
     # 运行black检查代码格式
     echo -e "\n${YELLOW}[1/2] 运行black检查代码格式...${NC}"
     if ! black --check $python_files; then
@@ -285,7 +295,7 @@ run_code_check() {
             echo -e "${RED}无法解析评分信息${NC}"
         fi
 
-        # 保存当前��分
+        # 保存当前分
         echo "$curr_rate" > .pylint_rate
 
         has_error=1
@@ -300,11 +310,9 @@ run_code_check() {
     rm -f "$temp_file"
 
     if [ $has_error -eq 1 ]; then
-        echo -e "\n${RED}代码检查发现问题，请根据上方提示进行修复${NC}"
         return 1
     fi
 
-    echo -e "\n${GREEN}所有代码检查完成，未发现问题${NC}"
     return 0
 }
 
@@ -385,7 +393,14 @@ while true; do
             ;;
         3)
             echo -e "${YELLOW}开始运行代码检查...${NC}"
-            run_code_check || continue
+            if run_code_check; then
+                echo -e "\n${GREEN}所有代码检查完成，未发现问题${NC}"
+            else
+                echo -e "\n${RED}代码检查发现问题，请根据上方提示进行修复${NC}"
+                echo -e "\n${YELLOW}提示: 使用 pylint --help-msg=<msg-id> 查看具体错误说明${NC}"
+            fi
+            echo -e "\n按回车键返回主菜单..."
+            read
             ;;
         4)
             echo -e "${YELLOW}开始启动应用...${NC}"
@@ -410,8 +425,9 @@ while true; do
     esac
 
     # 如果不是启动应用，则等待用户按回车继续
-    if [ "$choice" != "4" ] && [ "$choice" != "5" ]; then
+    if [ "$choice" != "3" ] && [ "$choice" != "4" ] && [ "$choice" != "5" ]; then
         echo
         echo -e "按回车键返回主菜单..."
+        read
     fi
 done

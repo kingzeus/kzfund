@@ -17,13 +17,13 @@
    - 删除确认弹窗
 """
 
-from dash import html, dcc
 import feffery_antd_components as fac
+from dash import dcc, html
 
-from .table import render_account_table, get_account_table_data
-from .account_modal import render_account_modal
-from .portfolio_modal import render_portfolio_modal
-from .delete_modal import render_delete_confirm_modal
+from pages.account.account_modal import render_account_modal
+from pages.account.delete_modal import render_delete_confirm_modal
+from pages.account.portfolio_modal import render_portfolio_modal
+from pages.account.table import get_account_table_data, render_account_table
 
 
 def render_account_page() -> html.Div:

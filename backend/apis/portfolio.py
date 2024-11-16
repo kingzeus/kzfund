@@ -1,13 +1,14 @@
 from flask_restx import Namespace, Resource, fields
+
+from backend.apis.common import create_list_response_model, create_response_model
 from models.database import (
-    get_portfolios,
     add_portfolio,
-    get_portfolio,
-    update_portfolio,
     delete_portfolio,
+    get_portfolio,
+    get_portfolios,
+    update_portfolio,
 )
-from utils import response
-from .common import create_response_model, create_list_response_model
+from utils.response import format_response
 
 api = Namespace("portfolios", description="投资组合相关操作")
 
@@ -52,8 +53,8 @@ class PortfolioList(Resource):
         """获取指定账户下的所有投资组合"""
         account_id = api.payload.get("account_id")
         if not account_id:
-            return response(message="缺少账户ID", code=400)
-        return response(data=get_portfolios(account_id))
+            return format_response(message="缺少账户ID", code=400)
+        return format_response(data=get_portfolios(account_id))
 
     @api.doc("创建新投资组合")
     @api.expect(portfolio_input)
@@ -67,35 +68,35 @@ class PortfolioList(Resource):
             data.get("description"),
             data.get("is_default", False),
         )
-        return response(data=get_portfolio(portfolio_id), message="组合创建成功")
+        return format_response(data=get_portfolio(portfolio_id), message="组合创建成功")
 
 
-@api.route("/<string:id>")
-@api.param("id", "组合ID")
+@api.route("/<string:portfolio_id>")
+@api.param("portfolio_id", "组合ID")
 class Portfolio(Resource):
     @api.doc("获取组合详情")
     @api.marshal_with(portfolio_response)
-    def get(self, id):
+    def get(self, portfolio_id):
         """获取指定组合的详情"""
-        portfolio = get_portfolio(id)
+        portfolio = get_portfolio(portfolio_id)
         if not portfolio:
-            return response(message="组合不存在", code=404)
-        return response(data=portfolio)
+            return format_response(message="组合不存在", code=404)
+        return format_response(data=portfolio)
 
     @api.doc("更新组合信息")
     @api.expect(portfolio_input)
     @api.marshal_with(portfolio_response)
-    def put(self, id):
+    def put(self, portfolio_id):
         """更新组合信息"""
         data = api.payload
-        portfolio = update_portfolio(id, data)
+        portfolio = update_portfolio(portfolio_id, data)
         if not portfolio:
-            return response(message="组合不存在", code=404)
-        return response(data=portfolio, message="组合更新成功")
+            return format_response(message="组合不存在", code=404)
+        return format_response(data=portfolio, message="组合更新成功")
 
     @api.doc("删除组合")
     @api.marshal_with(portfolio_response)
-    def delete(self, id):
+    def delete(self, portfolio_id):
         """删除组合"""
-        delete_portfolio(id)
-        return response(message="组合删除成功")
+        delete_portfolio(portfolio_id)
+        return format_response(message="组合删除成功")

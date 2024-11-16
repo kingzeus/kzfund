@@ -1,10 +1,12 @@
-from peewee import Model, SqliteDatabase, DateTimeField
-from datetime import datetime
 import logging
-from config import DATABASE_CONFIG
 from contextlib import contextmanager
-from utils.singleton import Singleton
+from datetime import datetime
+from typing import Optional
 
+from peewee import DatabaseError, DateTimeField, Model, SqliteDatabase
+
+from config import DATABASE_CONFIG
+from utils.singleton import Singleton
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +15,8 @@ logger = logging.getLogger(__name__)
 class Database:
     def __init__(self):
         # 初始化属性
-        self.db = None
-        self.db_path = None
+        self.db: Optional[SqliteDatabase] = None
+        self.db_path: Optional[str] = None
 
     def connect(self):
         if self.db.is_closed():
@@ -22,15 +24,15 @@ class Database:
 
     def open(self, db_path: str):
         new_db_path = db_path or DATABASE_CONFIG["path"]
+        if self.db is not None and new_db_path == self.db_path:
+            return
+
         if self.db is not None:
-            if new_db_path == self.db_path:
-                return
-            else:
-                self.close()
+            self.close()
 
         self.db_path = new_db_path
         self.db = SqliteDatabase(self.db_path)
-        logger.debug(f"初始化数据库连接: {self.db_path}")
+        logger.debug("初始化数据库连接: %s", self.db_path)
 
     def close(self):
         if self.db is not None:
@@ -44,7 +46,7 @@ class Database:
         if self.db is None:
             error_msg = "数据库未初始化"
             logger.error(error_msg)
-            raise Exception(error_msg)
+            raise DatabaseError(error_msg)
         return self.db
 
 
@@ -52,11 +54,12 @@ def init_db(db_path: str = None):
     """初始化数据库连接"""
     try:
         Database().open(db_path)
+        # pylint: disable=W0212,E1101
         BaseModel._meta.database = Database().get_db()
-        logger.info(f"数据库初始化成功: {db_path or DATABASE_CONFIG['path']}")
+        logger.info("数据库初始化成功: %s", db_path or DATABASE_CONFIG["path"])
         return Database().get_db()
     except Exception as e:
-        logger.error(f"数据库初始化失败: {str(e)}", exc_info=True)
+        logger.error("数据库初始化失败: %s", str(e), exc_info=True)
         raise
 
 
@@ -83,7 +86,7 @@ def db_connection(db_path: str = None):
         logger.debug("打开数据库连接")
         yield Database().get_db()
     except Exception as e:
-        logger.error(f"数据库操作失败: {str(e)}", exc_info=True)
+        logger.error("数据库操作失败: %s", str(e), exc_info=True)
         raise
     finally:
         Database().close()

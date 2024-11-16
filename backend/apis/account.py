@@ -1,13 +1,14 @@
 from flask_restx import Namespace, Resource, fields
+
+from backend.apis.common import create_list_response_model, create_response_model
 from models.database import (
-    get_accounts,
     add_account,
-    get_account,
-    update_account,
     delete_account,
+    get_account,
+    get_accounts,
+    update_account,
 )
-from utils import response
-from .common import create_response_model, create_list_response_model
+from utils.response import format_response
 
 api = Namespace("accounts", description="账户相关操作")
 
@@ -43,7 +44,7 @@ class AccountList(Resource):
     @api.marshal_with(account_list_response)
     def get(self):
         """获取所有账户列表"""
-        return response(data=get_accounts())
+        return format_response(data=get_accounts())
 
     @api.doc("创建新账户")
     @api.expect(account_input)
@@ -52,35 +53,35 @@ class AccountList(Resource):
         """创建新账户"""
         data = api.payload
         account_id = add_account(data["name"], data.get("description"))
-        return response(data=get_account(account_id), message="账户创建成功")
+        return format_response(data=get_account(account_id), message="账户创建成功")
 
 
-@api.route("/<string:id>")
-@api.param("id", "账户ID")
+@api.route("/<string:account_id>")
+@api.param("account_id", "账户ID")
 class Account(Resource):
     @api.doc("获取账户详情")
     @api.marshal_with(account_response)
-    def get(self, id):
+    def get(self, account_id):
         """获取指定账户的详情"""
-        account = get_account(id)
+        account = get_account(account_id)
         if not account:
-            return response(message="账户不存在", code=404)
-        return response(data=account)
+            return format_response(message="账户不存在", code=404)
+        return format_response(data=account)
 
     @api.doc("更新账户信息")
     @api.expect(account_input)
     @api.marshal_with(account_response)
-    def put(self, id):
+    def put(self, account_id):
         """更新账户信息"""
         data = api.payload
-        account = update_account(id, data)
+        account = update_account(account_id, data)
         if not account:
-            return response(message="账户不存在", code=404)
-        return response(data=account, message="账户更新成功")
+            return format_response(message="账户不存在", code=404)
+        return format_response(data=account, message="账户更新成功")
 
     @api.doc("删除账户")
     @api.marshal_with(account_response)
-    def delete(self, id):
+    def delete(self, account_id):
         """删除账户"""
-        delete_account(id)
-        return response(message="账户删除成功")
+        delete_account(account_id)
+        return format_response(message="账户删除成功")

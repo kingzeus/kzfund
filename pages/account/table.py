@@ -1,12 +1,14 @@
-from typing import List, Dict, Any
-import feffery_antd_components as fac
-from dash import callback, Input, Output, State
-from dash.exceptions import PreventUpdate
-import dash
-from models.database import get_accounts, get_portfolios, get_portfolio
-from utils.datetime_helper import format_datetime
-from .utils import create_operation_buttons
+from typing import Any, Dict, List
 
+import dash
+import feffery_antd_components as fac
+from dash import Input, Output, State, callback
+from dash.exceptions import PreventUpdate
+
+from models.database import get_accounts, get_portfolio, get_portfolios
+from utils.datetime_helper import format_datetime
+
+from .utils import create_operation_buttons
 
 """账户表格模块
 
@@ -48,9 +50,7 @@ def get_account_table_data() -> List[Dict[str, Any]]:
                     "description": p.get("description", ""),
                     "create_time": format_datetime(p["create_time"]),
                     "market_value": (
-                        f"¥ {p['total_market_value']:,.2f}"
-                        if p["total_market_value"]
-                        else "¥ 0.00"
+                        f"¥ {p['total_market_value']:,.2f}" if p["total_market_value"] else "¥ 0.00"
                     ),
                     "fund_count": p["fund_count"] or 0,
                     "operation": operation_buttons,
@@ -64,9 +64,7 @@ def get_account_table_data() -> List[Dict[str, Any]]:
                 "name": account["name"],
                 "description": account.get("description", ""),
                 "create_time": format_datetime(account["create_time"]),
-                "operation": create_operation_buttons(
-                    account["id"], "account", is_danger=True
-                ),
+                "operation": create_operation_buttons(account["id"], "account", is_danger=True),
                 "children": portfolio_data,
             }
         )

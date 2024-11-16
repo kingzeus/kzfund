@@ -1,14 +1,14 @@
 from flask import Flask
 from flask_restx import Api
 
+from backend.apis.account import api as account_ns
+from backend.apis.fund import api as fund_ns
+from backend.apis.portfolio import api as portfolio_ns
+from backend.apis.runtime import api as runtime_ns
+from backend.apis.task import api as task_ns
+from config import API_CONFIG
 from scheduler.job_manager import JobManager
 from scheduler.tasks import init_tasks
-from .apis.account import api as account_ns
-from .apis.portfolio import api as portfolio_ns
-from .apis.fund import api as fund_ns
-from .apis.runtime import api as runtime_ns
-from .apis.task import api as task_ns
-from config import API_CONFIG
 
 
 def register_blueprint(app):

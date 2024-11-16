@@ -6,8 +6,8 @@
 - 工具函数
 """
 
-from typing import Dict, Any, Union
 from datetime import datetime
+from typing import Any, Dict
 
 # ============= 样式常量 =============
 CARD_STYLES = {

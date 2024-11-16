@@ -1,7 +1,7 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
-def response(
+def format_response(
     data: Optional[Any] = None,
     message: str = "success",
     is_array: bool = True,
