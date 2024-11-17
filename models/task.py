@@ -30,19 +30,21 @@ class ModelTask(BaseModel):
         # 获取基类的字典
         result = super().to_dict()
         # 添加任务特有的字段
-        result.update({
-            "task_id": self.task_id,
-            "parent_task_id": self.parent_task_id,
-            "name": self.name,
-            "type": self.type,
-            "status": self.status,
-            "progress": self.progress,
-            "priority": self.priority,
-            "timeout": self.timeout,
-            "start_time": self.start_time.isoformat() if self.start_time else None,
-            "end_time": self.end_time.isoformat() if self.end_time else None,
-            "input_params": self.input_params,
-            "result": self.result,
-            "error": self.error,
-        })
+        result.update(
+            {
+                "task_id": self.task_id,
+                "parent_task_id": self.parent_task_id,
+                "name": self.name,
+                "type": self.type,
+                "status": self.status,
+                "progress": self.progress,
+                "priority": self.priority,
+                "timeout": self.timeout,
+                "start_time": self.start_time.isoformat() if self.start_time else None,
+                "end_time": self.end_time.isoformat() if self.end_time else None,
+                "input_params": self.input_params,
+                "result": self.result,
+                "error": self.error,
+            }
+        )
         return result

@@ -6,11 +6,11 @@
 - 工具函数
 """
 
+import json
 from typing import Any, Dict, List
 
 import feffery_antd_components as fac
 from dash import html
-import json
 from feffery_utils_components import FefferyJsonViewer
 
 from models.task import ModelTask
@@ -41,7 +41,6 @@ ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
 
 
 # ============= 工具函数 =============
-
 
 
 def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
@@ -101,8 +100,10 @@ def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
                 "overflow": "auto",
                 "textAlign": "left",
                 "padding": "4px",
-            }
-        ) if input_params else "-",
+            },
+        )
+        if input_params
+        else "-",
         "actions": create_operation_buttons(task),
     }
 

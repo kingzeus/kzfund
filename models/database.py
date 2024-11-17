@@ -111,7 +111,9 @@ def delete_account(account_id: str) -> bool:
     try:
         with db_connection():
             # 首先检查是否有关联的组合
-            portfolio_count = ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
+            portfolio_count = (
+                ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
+            )
             if portfolio_count > 0:
                 return False
 
@@ -552,7 +554,10 @@ def update_position_after_transaction(
         # 查找现有持仓
         position = (
             ModelFundPosition.select()
-            .where((ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund.code))
+            .where(
+                (ModelFundPosition.portfolio == portfolio_id)
+                & (ModelFundPosition.code == fund.code)
+            )
             .first()
         )
 
@@ -613,7 +618,8 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
 
             # 删除现有持仓
             ModelFundPosition.delete().where(
-                (ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund_code)
+                (ModelFundPosition.portfolio == portfolio_id)
+                & (ModelFundPosition.code == fund_code)
             ).execute()
 
             # 重新计算持仓

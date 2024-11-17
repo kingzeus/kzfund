@@ -20,6 +20,7 @@ from models.database import add_transaction, get_transactions, update_transactio
 from models.fund import ModelFundTransaction
 
 from .utils import build_cascader_options
+from data_source.proxy import DataSourceProxy
 
 # ============= 日志配置 =============
 logger = logging.getLogger(__name__)
@@ -36,7 +37,16 @@ TRANSACTION_TYPE_OPTIONS = [
     },
 ]
 
-FORM_LAYOUT = {"labelCol": {"span": 6}, "wrapperCol": {"span": 18}}
+FEE_TYPE_OPTIONS = [
+    {"label": "费率(%)", "value": "rate"},
+    {"label": "金额(元)", "value": "fixed"},
+]
+
+FORM_LAYOUT = {
+    "labelCol": {"flex": "none"},
+    "wrapperCol": {"flex": "auto"},
+    "labelAlign": "left",
+}
 
 
 # ============= 组件渲染函数 =============
@@ -49,6 +59,9 @@ def render_transaction_modal() -> fac.AntdModal:
         - 基金代码输入(自动完成)
         - 交易类型选择
         - 交易金额输入
+        - 份额输入
+        - 净值输入
+        - 费用输入
         - 交易时间选择
     """
     return fac.AntdModal(
@@ -56,7 +69,7 @@ def render_transaction_modal() -> fac.AntdModal:
         title="新建交易",
         visible=False,
         maskClosable=False,
-        width=600,
+        width=700,
         renderFooter=True,
         okText="确定",
         cancelText="取消",
@@ -65,59 +78,171 @@ def render_transaction_modal() -> fac.AntdModal:
                 id="transaction-form",
                 labelCol=FORM_LAYOUT["labelCol"],
                 wrapperCol=FORM_LAYOUT["wrapperCol"],
+                labelAlign=FORM_LAYOUT["labelAlign"],
+                colon=False,
                 children=[
-                    # 投资组合选择
-                    fac.AntdFormItem(
-                        fac.AntdCascader(
-                            id="portfolio-cascader",
-                            placeholder="请选择账户和组合",
-                            options=[],
-                            style={"width": "100%"},
-                            changeOnSelect=False,
-                        ),
-                        label="投资组合",
-                        required=True,
+                    # 基础信息分组
+                    fac.AntdDivider(),
+                    fac.AntdRow(
+                        [
+                            fac.AntdCol(
+                                fac.AntdFormItem(
+                                    fac.AntdCascader(
+                                        id="portfolio-cascader",
+                                        placeholder="请选择账户和组合",
+                                        options=[],
+                                        style={
+                                            "width": "100%",
+                                        },
+                                        changeOnSelect=False,
+                                    ),
+                                    label="投资组合",
+                                    required=True,
+                                ),
+                                style={"marginBottom": "-18px"},
+                                span=8,
+                            ),
+                            fac.AntdCol(
+                                style={"marginBottom": "-18px"},
+                                span=8,
+                            ),
+                            fac.AntdCol(
+                                fac.AntdFormItem(
+                                    fac.AntdRadioGroup(
+                                        id="transaction-type-select",
+                                        options=TRANSACTION_TYPE_OPTIONS,
+                                        optionType="button",
+                                        defaultValue="None",
+                                        style={
+                                            "width": "100%",
+                                        },
+                                    ),
+                                    label="交易类型",
+                                    required=True,
+                                ),
+                                style={"marginBottom": "-18px"},
+                                span=8,
+                            ),
+                        ],
+                        gutter=30,
+                        justify="space-between",
                     ),
-                    # 基金代码输入
-                    fac.AntdFormItem(
-                        FundCodeAIO(aio_id="fund-code-aio"),
-                        label="基金代码",
-                        required=True,
+                    fac.AntdDivider(isDashed=True, style={"margin": "12px"}),
+                    # 交易信息分组
+                    fac.AntdRow(
+                        [
+                            fac.AntdCol(
+                                [
+                                    fac.AntdFormItem(
+                                        FundCodeAIO(aio_id="fund-code-aio"),
+                                        label="基金代码",
+                                        required=True,
+                                        style={"marginBottom": "0"},
+                                    ),
+                                    fac.AntdFormItem(
+                                        fac.AntdDatePicker(
+                                            id="trade-time-picker",
+                                            placeholder="请选择交易时间",
+                                            style={"width": "100%"},
+                                            format="YYYY-MM-DD",
+                                            showTime=False,
+                                        ),
+                                        label="交易时间",
+                                        required=True,
+                                        style={"marginBottom": "0"},
+                                    ),
+                                    fac.AntdFormItem(
+                                        fac.AntdInputNumber(
+                                            id="nav-input",
+                                            placeholder="请输入净值",
+                                            style={"width": "100%"},
+                                            min=0,
+                                            precision=4,
+                                        ),
+                                        label="单位净值",
+                                        required=True,
+                                        style={"marginBottom": "0"},
+                                    ),
+                                ],
+                                span=8,
+                            ),
+                            fac.AntdCol(
+                                fac.AntdFormItem(
+                                    fac.AntdInputNumber(
+                                        prefix=fac.AntdIcon(icon="antd-money-collect"),
+                                        id="amount-input",
+                                        placeholder="交易金额",
+                                        style={
+                                            "width": "100%",
+                                            "height": "100px",
+                                            "fontSize": "80px",
+                                        },
+                                        className={
+                                            "#amount-input": {
+                                                "fontSize": "48px",
+                                                "fontWeight": "500",
+                                            }
+                                        },
+                                        min=0,
+                                        precision=2,
+                                        bordered=False,
+                                        controls=False,
+                                    ),
+                                    required=True,
+                                ),
+                                span=12,
+                            ),
+                        ],
                     ),
-                    # 交易类型选择
-                    fac.AntdFormItem(
-                        fac.AntdSelect(
-                            id="transaction-type-select",
-                            placeholder="请选择交易类型",
-                            options=TRANSACTION_TYPE_OPTIONS,
-                            style={"width": "100%"},
-                        ),
-                        label="交易类型",
-                        required=True,
-                    ),
-                    # 交易金额输入
-                    fac.AntdFormItem(
-                        fac.AntdInputNumber(
-                            id="amount-input",
-                            placeholder="请输入交易金额",
-                            style={"width": "100%"},
-                            min=0,
-                            precision=2,
-                        ),
-                        label="交易金额",
-                        required=True,
-                    ),
-                    # 交易时间选择
-                    fac.AntdFormItem(
-                        fac.AntdDatePicker(
-                            id="trade-time-picker",
-                            placeholder="请选择交易时间",
-                            style={"width": "100%"},
-                            format="YYYY-MM-DD",
-                            showTime=False,
-                        ),
-                        label="交易时间",
-                        required=True,
+                    # 详细信息分组
+                    fac.AntdRow(
+                        [
+                            fac.AntdCol(
+                                span=8,
+                                style={"paddingRight": "12px"},
+                            ),
+                            fac.AntdCol(
+                                fac.AntdFormItem(
+                                    fac.AntdInputNumber(
+                                        id="shares-input",
+                                        placeholder="请输入份额",
+                                        style={"width": "100%"},
+                                        min=0,
+                                        precision=4,
+                                    ),
+                                    label="份额",
+                                ),
+                                span=8,
+                                style={"paddingRight": "12px"},
+                            ),
+                            fac.AntdCol(
+                                fac.AntdFormItem(
+                                    fac.AntdSpace(
+                                        [
+                                            fac.AntdSelect(
+                                                id="fee-type-select",
+                                                options=FEE_TYPE_OPTIONS,
+                                                defaultValue="rate",
+                                                allowClear=False,
+                                                style={"width": "120px"},
+                                            ),
+                                            fac.AntdInputNumber(
+                                                id="fee-input",
+                                                placeholder="请输入费用",
+                                                style={"width": "calc(100% - 120px)"},
+                                                min=0,
+                                                precision=2,
+                                                addonAfter="%",
+                                            ),
+                                        ],
+                                        direction="horizontal",
+                                        style={"width": "100%"},
+                                    ),
+                                    label="费用",
+                                ),
+                                span=12,
+                            ),
+                        ],
                     ),
                 ],
             )
@@ -135,36 +260,73 @@ def render_transaction_modal() -> fac.AntdModal:
         Output(FundCodeAIO.ids.select("fund-code-aio"), "value", allow_duplicate=True),
         Output("transaction-type-select", "value", allow_duplicate=True),
         Output("amount-input", "value", allow_duplicate=True),
+        Output("shares-input", "value", allow_duplicate=True),
+        Output("nav-input", "value", allow_duplicate=True),
+        Output("fee-input", "value", allow_duplicate=True),
         Output("trade-time-picker", "value", allow_duplicate=True),
         Output("editing-transaction-id", "data", allow_duplicate=True),
     ],
-    Input("add-transaction-btn", "nClicks"),
+    [
+        Input("add-transaction-btn", "nClicks"),
+        Input("nav-input", "nSubmit"),
+        Input("amount-input", "nSubmit"),
+    ],
+    [State("nav-input", "value"), State("amount-input", "value")],
     prevent_initial_call=True,
 )
-def show_transaction_modal(n_clicks: Optional[int]) -> Tuple:
-    """显示新建交易对话框
+def show_transaction_modal(
+    n_clicks: Optional[int],
+    nav_submit: Optional[int],
+    amount_submit: Optional[int],
+    nav: Optional[float],
+    amount: Optional[float],
+) -> Tuple:
+    """显示新建交易对话框并处理自动计算"""
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
-    Args:
-        n_clicks: 按钮点击次数
+    # 如果是净值或金额输入触发
+    if triggered_id in ["nav-input", "amount-input"]:
+        if nav and amount:
+            try:
+                shares = round(amount / nav, 4)
+                return (
+                    dash.no_update,  # modal visible
+                    dash.no_update,  # modal title
+                    dash.no_update,  # cascader options
+                    dash.no_update,  # cascader value
+                    dash.no_update,  # fund code
+                    dash.no_update,  # transaction type
+                    dash.no_update,  # amount
+                    shares,  # shares - 更新计算的份额
+                    dash.no_update,  # nav
+                    dash.no_update,  # fee
+                    dash.no_update,  # trade time
+                    dash.no_update,  # editing id
+                )
+            except:
+                return tuple([dash.no_update] * 12)
 
-    Returns:
-        tuple: 包含所有表单项的初始值
-    """
-    if not n_clicks:
-        raise PreventUpdate
+    # 如果是添加按钮触发
+    if triggered_id == "add-transaction-btn" and n_clicks:
+        cascader_options = build_cascader_options()
+        today = datetime.now().strftime("%Y-%m-%d")
+        return (
+            True,  # modal visible
+            "新建交易",  # modal title
+            cascader_options,  # cascader options
+            None,  # cascader value
+            "",  # fund code
+            None,  # transaction type
+            None,  # amount
+            None,  # shares
+            None,  # nav
+            None,  # fee
+            today,  # trade time - 默认今天
+            "",  # editing id
+        )
 
-    cascader_options = build_cascader_options()
-    return (
-        True,  # modal visible
-        "新建交易",  # modal title
-        cascader_options,  # cascader options
-        None,  # cascader value
-        "",  # fund code
-        None,  # transaction type
-        None,  # amount
-        None,  # trade time
-        "",  # editing id
-    )
+    raise PreventUpdate
 
 
 @callback(
@@ -178,6 +340,10 @@ def show_transaction_modal(n_clicks: Optional[int]) -> Tuple:
         State(FundCodeAIO.ids.select("fund-code-aio"), "value"),
         State("transaction-type-select", "value"),
         State("amount-input", "value"),
+        State("shares-input", "value"),
+        State("nav-input", "value"),
+        State("fee-type-select", "value"),
+        State("fee-input", "value"),
         State("trade-time-picker", "value"),
         State("editing-transaction-id", "data"),
     ],
@@ -189,6 +355,10 @@ def handle_transaction_save(
     fund_code: Optional[str],
     transaction_type: Optional[str],
     amount: Optional[float],
+    shares: Optional[float],
+    nav: Optional[float],
+    fee_type: Optional[str],
+    fee: Optional[float],
     trade_time: Optional[str],
     editing_id: Optional[str],
 ) -> Tuple[List[Dict[str, Any]], bool]:
@@ -224,6 +394,10 @@ def handle_transaction_save(
                 fund_code=fund_code,
                 transaction_type=transaction_type,
                 amount=amount,
+                shares=shares,
+                nav=nav,
+                fee=fee,
+                fee_type=fee_type,
                 trade_time=trade_datetime,
             )
         else:
@@ -232,6 +406,10 @@ def handle_transaction_save(
                 fund_code=fund_code,
                 transaction_type=transaction_type,
                 amount=amount,
+                shares=shares,
+                nav=nav,
+                fee=fee,
+                fee_type=fee_type,
                 trade_time=trade_datetime,
             )
 
@@ -243,3 +421,96 @@ def handle_transaction_save(
         logger.error("处理交易保存失败: %s", str(e), exc_info=True)
 
     return dash.no_update, dash.no_update
+
+
+@callback(
+    Output("fee-input", "addonAfter"),
+    Input("fee-type-select", "value"),
+    prevent_initial_call=False,
+)
+def update_fee_input_suffix(fee_type: str) -> str:
+    """更新费用输入框后缀
+
+    Args:
+        fee_type: 费用类型，'rate' 或 'fixed'
+
+    Returns:
+        str: 输入框后缀，'%' 或 '元'
+    """
+    if fee_type == "rate":
+        return "%"
+    return "元"
+
+
+@callback(
+    Output("fee-input", "value", allow_duplicate=True),
+    [
+        Input("amount-input", "nSubmit"),
+        Input("fee-type-select", "value"),
+    ],
+    [
+        State("amount-input", "value"),
+        State("fee-input", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def calculate_fee(
+    amount_submit: Optional[int],
+    fee_type: str,
+    amount: Optional[float],
+    current_fee: Optional[float],
+) -> Optional[float]:
+    """计算费用
+
+    根据费用类型和交易金额自动计算费用：
+    - 费率: 费用 = 金额 * 费率%
+    - 固定金额: 保持不变
+    """
+    if not amount or not fee_type:
+        return dash.no_update
+
+    try:
+        if fee_type == "rate" and current_fee:
+            # 如果是费率，自动计算费用金额
+            fee_amount = amount * (current_fee / 100)
+            return round(fee_amount, 2)
+        return current_fee
+
+    except Exception as e:
+        logger.error("计算费用失败: %s", str(e))
+
+    return dash.no_update
+
+
+@callback(
+    Output("nav-input", "value"),
+    [
+        Input(FundCodeAIO.ids.select("fund-code-aio"), "value"),
+        Input("trade-time-picker", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def update_nav_value(fund_code: Optional[str], trade_time: Optional[str]) -> Optional[float]:
+    """更新净值输入框的值
+
+    当基金代码和交易时间都有值时，自动获取对应日期的净值
+    """
+    if not fund_code or not trade_time:
+        raise PreventUpdate
+
+    try:
+        # 初始化数据源
+        data_source = DataSourceProxy()
+
+        # 获取基金信息
+        fund_info = data_source.get_fund_info(fund_code)
+        if not fund_info:
+            logger.warning("未找到基金信息: %s", fund_code)
+            return None
+
+        # 返回净值
+        return fund_info.get("net_value", 0)
+
+    except Exception as e:
+        logger.error("获取基金净值失败: %s", str(e))
+        return None

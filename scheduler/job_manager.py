@@ -173,9 +173,7 @@ class JobManager:
         """暂停指定任务"""
         try:
             self.scheduler.pause_job(task_id)
-            ModelTask.update(status=TaskStatus.PAUSED).where(
-                ModelTask.task_id == task_id
-            ).execute()
+            ModelTask.update(status=TaskStatus.PAUSED).where(ModelTask.task_id == task_id).execute()
             logger.info("任务已暂停: %s", task_id)
             return True
         except (DatabaseError, IntegrityError) as e:

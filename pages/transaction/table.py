@@ -77,6 +77,24 @@ def render_transaction_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard
                         "width": "10%",
                     },
                     {
+                        "title": "份额",
+                        "dataIndex": "shares",
+                        "key": "shares",
+                        "width": "10%",
+                    },
+                    {
+                        "title": "净值",
+                        "dataIndex": "nav",
+                        "key": "nav",
+                        "width": "10%",
+                    },
+                    {
+                        "title": "费用",
+                        "dataIndex": "fee",
+                        "key": "fee",
+                        "width": "10%",
+                    },
+                    {
                         "title": "交易时间",
                         "dataIndex": "trade_time",
                         "key": "trade_time",
@@ -127,6 +145,9 @@ def update_transaction_table(store_data: List[Dict[str, Any]]) -> List[Dict[str,
         Output(FundCodeAIO.ids.select("fund-code-aio"), "value"),
         Output("transaction-type-select", "value"),
         Output("amount-input", "value"),
+        Output("shares-input", "value"),
+        Output("nav-input", "value"),
+        Output("fee-input", "value"),
         Output("trade-time-picker", "value"),
         Output("transaction-delete-confirm-modal", "visible"),
         Output("editing-transaction-id", "data"),
@@ -176,6 +197,9 @@ def handle_button_click(nClicksButton, custom_info, store_data):
             transaction["fund_code"],  # fund code
             transaction["type"],  # transaction type
             float(transaction["amount"].replace("¥", "").replace(",", "")),  # amount
+            transaction["shares"],  # shares
+            transaction["nav"],  # nav
+            transaction["fee"],  # fee
             transaction["trade_time"],  # trade time
             False,  # delete modal visible
             transaction_id,  # editing id
@@ -189,6 +213,9 @@ def handle_button_click(nClicksButton, custom_info, store_data):
             "",  # fund code
             None,  # transaction type
             None,  # amount
+            None,  # shares
+            None,  # nav
+            None,  # fee
             None,  # trade time
             True,  # delete modal visible
             transaction_id,  # editing id

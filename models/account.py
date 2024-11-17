@@ -16,11 +16,13 @@ class ModelAccount(BaseModel):
     def to_dict(self) -> dict:
         """将账户实例转换为可JSON序列化的字典"""
         result = super().to_dict()
-        result.update({
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-        })
+        result.update(
+            {
+                "id": self.id,
+                "name": self.name,
+                "description": self.description,
+            }
+        )
         return result
 
 
@@ -39,11 +41,13 @@ class ModelPortfolio(BaseModel):
     def to_dict(self) -> dict:
         """将投资组合实例转换为可JSON序列化的字典"""
         result = super().to_dict()
-        result.update({
-            "id": self.id,
-            "account_id": self.account.id,
-            "name": self.name,
-            "description": self.description,
-            "is_default": self.is_default,
-        })
+        result.update(
+            {
+                "id": self.id,
+                "account_id": self.account.id,
+                "name": self.name,
+                "description": self.description,
+                "is_default": self.is_default,
+            }
+        )
         return result
