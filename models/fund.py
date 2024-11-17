@@ -70,31 +70,39 @@ class ModelFund(BaseModel):
     def to_dict(self) -> dict:
         """将基金实例转换为可JSON序列化的字典"""
         result = super().to_dict()
-        result.update({
-            "code": self.code,
-            "name": self.name,
-            "full_name": self.full_name,
-            "type": self.type,
-            "issue_date": self.issue_date.isoformat() if self.issue_date else None,
-            "establishment_date": self.establishment_date.isoformat() if self.establishment_date else None,
-            "establishment_size": float(self.establishment_size) if self.establishment_size else None,
-            "company": self.company,
-            "custodian": self.custodian,
-            "fund_manager": self.fund_manager,
-            "management_fee": float(self.management_fee) if self.management_fee else None,
-            "custodian_fee": float(self.custodian_fee) if self.custodian_fee else None,
-            "sales_service_fee": float(self.sales_service_fee) if self.sales_service_fee else None,
-            "tracking": self.tracking,
-            "performance_benchmark": self.performance_benchmark,
-            "investment_scope": self.investment_scope,
-            "investment_target": self.investment_target,
-            "investment_philosophy": self.investment_philosophy,
-            "investment_strategy": self.investment_strategy,
-            "dividend_policy": self.dividend_policy,
-            "risk_return_characteristics": self.risk_return_characteristics,
-            "data_source": self.data_source,
-            "data_source_version": self.data_source_version,
-        })
+        result.update(
+            {
+                "code": self.code,
+                "name": self.name,
+                "full_name": self.full_name,
+                "type": self.type,
+                "issue_date": self.issue_date.isoformat() if self.issue_date else None,
+                "establishment_date": self.establishment_date.isoformat()
+                if self.establishment_date
+                else None,
+                "establishment_size": float(self.establishment_size)
+                if self.establishment_size
+                else None,
+                "company": self.company,
+                "custodian": self.custodian,
+                "fund_manager": self.fund_manager,
+                "management_fee": float(self.management_fee) if self.management_fee else None,
+                "custodian_fee": float(self.custodian_fee) if self.custodian_fee else None,
+                "sales_service_fee": float(self.sales_service_fee)
+                if self.sales_service_fee
+                else None,
+                "tracking": self.tracking,
+                "performance_benchmark": self.performance_benchmark,
+                "investment_scope": self.investment_scope,
+                "investment_target": self.investment_target,
+                "investment_philosophy": self.investment_philosophy,
+                "investment_strategy": self.investment_strategy,
+                "dividend_policy": self.dividend_policy,
+                "risk_return_characteristics": self.risk_return_characteristics,
+                "data_source": self.data_source,
+                "data_source_version": self.data_source_version,
+            }
+        )
         return result
 
 
@@ -126,17 +134,19 @@ class ModelFundPosition(BaseModel):
     def to_dict(self) -> dict:
         """将基金持仓实例转换为可JSON序列化的字典"""
         result = super().to_dict()
-        result.update({
-            "id": self.id,
-            "portfolio_id": self.portfolio.id,
-            "fund_code": self.fund.code,
-            "shares": float(self.shares) if self.shares else None,
-            "nav": float(self.nav) if self.nav else None,
-            "market_value": float(self.market_value) if self.market_value else None,
-            "cost": float(self.cost) if self.cost else None,
-            "return_rate": float(self.return_rate) if self.return_rate else None,
-            "purchase_date": self.purchase_date.isoformat() if self.purchase_date else None,
-        })
+        result.update(
+            {
+                "id": self.id,
+                "portfolio_id": self.portfolio.id,
+                "fund_code": self.fund.code,
+                "shares": float(self.shares) if self.shares else None,
+                "nav": float(self.nav) if self.nav else None,
+                "market_value": float(self.market_value) if self.market_value else None,
+                "cost": float(self.cost) if self.cost else None,
+                "return_rate": float(self.return_rate) if self.return_rate else None,
+                "purchase_date": self.purchase_date.isoformat() if self.purchase_date else None,
+            }
+        )
         return result
 
 
@@ -150,15 +160,24 @@ class ModelFundTransaction(BaseModel):
     # 交易类型映射
     TRANSACTION_TYPES = {TYPE_BUY: "买入", TYPE_SELL: "卖出"}
 
+    # 交易记录ID
     id = CharField(primary_key=True)
+    # 所属投资组合，关联ModelPortfolio表
     portfolio = ForeignKeyField(ModelPortfolio, backref="transactions")
-    fund_code = CharField(null=False)
-    type = CharField(null=False)  # 交易类型: buy/sell
-    shares = DecimalField(decimal_places=4, max_digits=20, null=False)  # 份额
-    amount = DecimalField(decimal_places=2, max_digits=20, null=False)  # 金额
-    nav = DecimalField(decimal_places=4, max_digits=10, null=False)  # 净值
-    fee = DecimalField(decimal_places=2, max_digits=10, null=False)  # 手续费
-    transaction_date = DateField(null=False)  # 交易日期
+    # 交易的基金，通过反向引用可以获取基金的所有交易记录
+    fund = ForeignKeyField(ModelFund, backref="transactions", column_name="fund_code")
+    # 交易类型: buy(买入)/sell(卖出)
+    type = CharField(max_length=20)
+    # 交易份额，精确到小数点后4位
+    shares = DecimalField(decimal_places=4, max_digits=20, null=False)
+    # 交易金额，精确到小数点后2位，买入为正，卖出为负
+    amount = DecimalField(decimal_places=2, max_digits=20, null=False)
+    # 交易时净值，精确到小数点后4位
+    nav = DecimalField(decimal_places=4, max_digits=10, null=False)
+    # 交易手续费，精确到小数点后2位
+    fee = DecimalField(decimal_places=2, max_digits=10, null=False)
+    # 交易日期，格式：YYYY-MM-DD
+    transaction_date = DateField(null=False)
 
     class Meta:
         table_name = "fund_transaction"
@@ -187,31 +206,43 @@ class ModelFundNav(BaseModel):
     """基金净值历史"""
 
     # 关联的基金，通过反向引用可以获取基金的所有净值历史
-    fund = ForeignKeyField(ModelFund, backref="nav_history")
+    fund = ForeignKeyField(ModelFund, backref="nav_history", column_name="fund_code")
     # 净值日期
-    nav_date = DateTimeField()
+    nav_date = DateField()
     # 基金单位净值
     nav = DecimalField(max_digits=10, decimal_places=4)
     # 累计净值
     acc_nav = DecimalField(max_digits=10, decimal_places=4)
     # 日收益率
     daily_return = DecimalField(max_digits=10, decimal_places=4)
+    # 申购状态
+    subscription_status = CharField(max_length=20)
+    # 赎回状态
+    redemption_status = CharField(max_length=20)
     # 分红
     dividend = DecimalField(max_digits=10, decimal_places=4, null=True)
+    # 数据来源
+    data_source = CharField(max_length=20)
+    # 数据来源版本
+    data_source_version = CharField(max_length=20)
 
     class Meta:
         table_name = "fund_nav_history"
-        primary_key = CompositeKey("fund", "nav_date")
+        primary_key = CompositeKey("fund_code", "nav_date")
 
     def to_dict(self) -> dict:
         """将基金净值历史实例转换为可JSON序列化的字典"""
         result = super().to_dict()
-        result.update({
-            "fund_code": self.fund.code,
-            "nav_date": self.nav_date.isoformat() if self.nav_date else None,
-            "nav": float(self.nav) if self.nav else None,
-            "acc_nav": float(self.acc_nav) if self.acc_nav else None,
-            "daily_return": float(self.daily_return) if self.daily_return else None,
-            "dividend": float(self.dividend) if self.dividend else None,
-        })
+        result.update(
+            {
+                "fund_code": self.fund_code,
+                "nav_date": self.nav_date.isoformat() if self.nav_date else None,
+                "nav": float(self.nav) if self.nav else None,
+                "acc_nav": float(self.acc_nav) if self.acc_nav else None,
+                "daily_return": float(self.daily_return) if self.daily_return else None,
+                "dividend": float(self.dividend) if self.dividend else None,
+                "data_source": self.data_source,
+                "data_source_version": self.data_source_version,
+            }
+        )
         return result

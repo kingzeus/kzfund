@@ -412,7 +412,7 @@ while true; do
             do_full_install || continue
             ;;
         9)
-            start_test || continue
+            start_test
             ;;
         0)
             echo -e "${GREEN}再见！${NC}"

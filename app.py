@@ -111,6 +111,8 @@ app.layout = html.Div(
                 "position": "relative",
             },
         ),
+        # 消息提示
+        fac.Fragment(id="message-container"),
     ],
     style={
         "backgroundColor": "#f0f2f5",

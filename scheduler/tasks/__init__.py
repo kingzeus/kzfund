@@ -24,4 +24,5 @@ def init_tasks():
     factory.register(FundInfoTask)
     factory.register(FundDetailTask)
 
+
 __all__ = ["TaskFactory", "TaskStatus", "init_tasks"]

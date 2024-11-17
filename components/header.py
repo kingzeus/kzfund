@@ -36,9 +36,7 @@ def create_header() -> html.Div:
                 ),
                 fac.AntdCol(
                     fac.AntdSpace(
-                        [
-
-                        ],
+                        [],
                         style={
                             "height": "100%",
                             "display": "flex",

@@ -53,11 +53,19 @@ class IDataSource(ABC):
         """
 
     @abstractmethod
+    def get_fund_nav_history_size(self) -> int:
+        """
+        单词获取基金历史净值数据大小
+        Returns:
+            int: 历史净值数据大小
+        """
+
+    @abstractmethod
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime,
+        end_date: datetime,
     ) -> List[Dict[str, Any]]:
         """
         获取基金历史净值

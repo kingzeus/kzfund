@@ -1,6 +1,6 @@
 import json
 import unittest
-from datetime import date
+from datetime import date, datetime
 
 from data_source.implementations.eastmoney import EastMoneyDataSource
 
@@ -131,6 +131,50 @@ class TestDataSource(unittest.TestCase):
         # 验证数据源信息
         self.assertEqual(fund_detail["data_source"], "eastmoney", "数据源标识不正确")
         self.assertIsNotNone(fund_detail["data_source_version"], "数据源版本不能为空")
+
+    def test_get_fund_nav_history(self):
+        """测试获取基金净值历史功能"""
+        fund_code = "012348"
+        start_date = datetime(2024, 3, 5)
+        end_date = datetime(2024, 3, 30)
+        nav_history = self.data_source.get_fund_nav_history(fund_code, start_date, end_date)
+
+        # 打印完整的返回数据，方便调试
+        print("\n获取到的基金净值历史:")
+        print(json.dumps(nav_history[:3], indent=2, ensure_ascii=False, default=str))
+
+        # 验证结果不为空
+        self.assertIsNotNone(nav_history, "获取基金净值历史失败，返回为空")
+        self.assertGreater(len(nav_history), 0, "基金净值历史记录为空")
+
+        # 验证第一条记录的字段
+        first_record = nav_history[0]
+        required_fields = [
+            "nav_date",
+            "nav",
+            "acc_nav",
+            "daily_return",
+            "subscription_status",
+            "redemption_status",
+        ]
+
+        # 验证所有必需字段存在且不为空
+        for field in required_fields:
+            self.assertFieldNotEmpty(first_record, field)
+
+        # 验证日期字段
+        self.assertIsValidDate(first_record["nav_date"], "date")
+
+        # 验证数值字段
+        self.assertIsInstance(float(first_record["nav"]), float, "单位净值必须是有效的数值")
+        self.assertIsInstance(float(first_record["acc_nav"]), float, "累计净值必须是有效的数值")
+
+        # 验证日增长率为百分比格式
+        self.assertIsValidPercentage(first_record["daily_return"], "daily_return")
+
+        # 验证记录按日期降序排序
+        dates = [record["nav_date"] for record in nav_history[:2]]
+        self.assertGreater(dates[0], dates[1], "净值历史记录未按日期降序排序")
 
     def tearDown(self):
         """测试后的清理工作"""

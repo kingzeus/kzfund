@@ -111,7 +111,9 @@ def delete_account(account_id: str) -> bool:
     try:
         with db_connection():
             # 首先检查是否有关联的组合
-            portfolio_count = ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
+            portfolio_count = (
+                ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
+            )
             if portfolio_count > 0:
                 return False
 
@@ -552,7 +554,10 @@ def update_position_after_transaction(
         # 查找现有持仓
         position = (
             ModelFundPosition.select()
-            .where((ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund.code))
+            .where(
+                (ModelFundPosition.portfolio == portfolio_id)
+                & (ModelFundPosition.code == fund.code)
+            )
             .first()
         )
 
@@ -613,7 +618,8 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
 
             # 删除现有持仓
             ModelFundPosition.delete().where(
-                (ModelFundPosition.portfolio == portfolio_id) & (ModelFundPosition.code == fund_code)
+                (ModelFundPosition.portfolio == portfolio_id)
+                & (ModelFundPosition.code == fund_code)
             ).execute()
 
             # 重新计算持仓
@@ -685,3 +691,32 @@ def check_database_content():
                     }
                 ),
             )
+
+
+def get_fund_nav(fund_code: str, nav_date: datetime) -> Optional[ModelFundNav]:
+    """获取指定日期的基金净值
+
+    Args:
+        fund_code: 基金代码
+        nav_date: 净值日期
+
+    Returns:
+        ModelFundNav | None: 基金净值记录，如果不存在则返回 None
+    """
+    try:
+        with db_connection():
+            nav_record = (
+                ModelFundNav.select()
+                .where(
+                    (ModelFundNav.fund == fund_code) & (ModelFundNav.nav_date == nav_date.date())
+                )
+                .first()
+            )
+
+            if nav_record:
+                return nav_record
+            return None
+
+    except Exception as e:
+        logger.error("获取基金净值失败: %s", str(e))
+        return None

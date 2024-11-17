@@ -189,7 +189,7 @@ def generate_param_items(task_type: str, use_pattern_id: bool = True) -> List[An
         Output("task-params-container", "children", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
         Output("priority-input", "value"),  # 添加优先级输出
-        Output("timeout-input", "value"),   # 添加超时时间输出
+        Output("timeout-input", "value"),  # 添加超时时间输出
     ],
     [
         Input("add-task-btn", "nClicks"),
@@ -215,7 +215,13 @@ def show_task_modal(n_clicks, task_type):
             if default_task_type:
                 task_config = task_factory.get_task_types().get(default_task_type, {})
                 param_items = generate_param_items(default_task_type)
-                return True, param_items, default_task_type, task_config.get("priority"), task_config.get("timeout")
+                return (
+                    True,
+                    param_items,
+                    default_task_type,
+                    task_config.get("priority"),
+                    task_config.get("timeout"),
+                )
             return True, [], None, None, None
 
     elif trigger_id == "task-type-select.value":
@@ -224,7 +230,13 @@ def show_task_modal(n_clicks, task_type):
 
         task_config = task_factory.get_task_types().get(task_type, {})
         param_items = generate_param_items(task_type)
-        return dash.no_update, param_items, dash.no_update, task_config.get("priority"), task_config.get("timeout")
+        return (
+            dash.no_update,
+            param_items,
+            dash.no_update,
+            task_config.get("priority"),
+            task_config.get("timeout"),
+        )
 
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 

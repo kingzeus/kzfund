@@ -27,7 +27,7 @@ class EastMoneyDataSource(IDataSource):
     - 获取基金搜索建议
     - 获取基金基本信息
     - 获取基金详情
-
+    - 获取基金历史净值数据
 
 
 
@@ -209,47 +209,98 @@ class EastMoneyDataSource(IDataSource):
             logger.error("请求基金详情失败: %s", str(e), exc_info=True)
             raise ValueError(f"请求基金详情失败: {str(e)}") from e
 
+    def get_fund_nav_history_size(self) -> int:
+        """
+        单词获取基金历史净值数据大小
+        Returns:
+            int: 历史净值数据大小
+        """
+        return 25
+
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime,
+        end_date: datetime,
     ) -> List[Dict[str, Any]]:
         """获取基金历史净值"""
-        # try:
-        #     url = f"https://fundsuggest.eastmoney.com/LCAPI/FundNetValue/GetFundNetValueList"
-        #     params = {
-        #         "fundCode": fund_code,
-        #         "pageIndex": 1,
-        #         "pageSize": 50,  # 默认获取最近50条记录
-        #     }
+        try:
+            url = "https://fundf10.eastmoney.com/F10DataApi.aspx"
+            params = {
+                "code": fund_code,
+                "type": "lsjz",  # 历史净值
+                "page": 1,  # 页码
+                "sdate": start_date.strftime("%Y-%m-%d"),
+                "edate": end_date.strftime("%Y-%m-%d"),
+                "per": 20,  # 默认获取最近20条记录
+            }
+            logger.debug("请求基金历史净值: %s, params: %s", url, params)
 
-        #     if start_date:
-        #         params["startDate"] = start_date.strftime("%Y-%m-%d")
-        #     if end_date:
-        #         params["endDate"] = end_date.strftime("%Y-%m-%d")
+            response = requests.get(url, params=params, headers=self.headers)
+            response.raise_for_status()
+            # 解析返回的HTML内容
+            text = response.text
+            if not text.startswith("var apidata="):
+                error_msg = "获取基金历史净值失败: 返回格式错误"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
-        #     logger.debug(f"请求基金历史净值: {url}, params: {params}")
+            # 提取总记录数
+            records_start = text.find("records:") + 8
+            records_end = text.find(",", records_start)
+            total_records = int(text[records_start:records_end])
+            logger.debug("总记录数: %s", total_records)
 
-        #     response = requests.get(url, params=params, headers=self.headers)
-        #     response.raise_for_status()
-        #     data = response.json()
+            if total_records == 0:
+                logger.debug("未找到基金历史净值记录")
+                return []
 
-        #     results = []
-        #     if "Data" in data and "LSJZList" in data["Data"]:
-        #         for item in data["Data"]["LSJZList"]:
-        #             results.append(
-        #                 {
-        #                     "date": item.get("FSRQ", ""),
-        #                     "nav": float(item.get("DWJZ", 0)),
-        #                     "acc_nav": float(item.get("LJJZ", 0)),
-        #                     "daily_return": float(item.get("JZZZL", 0))
-        #                     / 100,  # 转换为小数
-        #                 }
-        #             )
-        #     logger.debug(f"获取到 {len(results)} 条历史净值记录")
-        #     return results
-        # except Exception as e:
-        #     logger.error(f"获取基金历史净值失败: {str(e)}", exc_info=True)
-        #     raise ValueError(f"获取基金历史净值失败: {str(e)}")
-        raise NotImplementedError
+            if total_records > 20:
+                error_msg = f"获取基金历史净值数量错误: {total_records}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            # 提取HTML内容
+            content_start = text.find('content:"') + 9
+            content_end = text.find('",records:')
+            html_content = text[content_start:content_end]
+            html_content = html_content.replace("\\", "")
+
+            # 使用BeautifulSoup解析HTML
+            soup = BeautifulSoup(html_content, "html.parser")
+            results = []
+
+            # 遍历表格行
+            for row in soup.select("tbody tr"):
+                cols = row.select("td")
+                if len(cols) >= 4:
+                    # 提取日期和净值数据
+                    date = cols[0].text.strip()
+                    nav = float(cols[1].text.strip())
+                    acc_nav = float(cols[2].text.strip())
+                    subscription_status = cols[4].text.strip()
+                    redemption_status = cols[5].text.strip()
+                    dividend = cols[6].text.strip()
+
+                    # 处理日增长率
+                    daily_return_text = cols[3].text.strip().replace("%", "")
+                    daily_return = float(daily_return_text) / 100 if daily_return_text else 0
+
+                    item = {
+                        "nav_date": date,
+                        "nav": nav,
+                        "acc_nav": acc_nav,
+                        "daily_return": daily_return,
+                        "subscription_status": subscription_status,
+                        "redemption_status": redemption_status,
+                    }
+                    if dividend:
+                        item["dividend"] = dividend
+                    results.append(item)
+
+            logger.debug("获取到 %d 条历史净值记录", len(results))
+            return results
+
+        except Exception as e:
+            logger.error(f"获取基金历史净值失败: {str(e)}", exc_info=True)
+            raise ValueError(f"获取基金历史净值失败: {str(e)}")
