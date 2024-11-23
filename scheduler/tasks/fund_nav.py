@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
-from models.fund import ModelFund
+from models.fund import ModelFundNav
 
 from .base import BaseTask
 
@@ -72,62 +72,23 @@ class FundNavTask(BaseTask):
 
             # 更新进度
             self.update_progress(20)
-            logger.info("正在获取基金 %s 的信息...", fund_code)
+            logger.info("正在获取基金 %s [%s-%s] 的净值...", fund_code, start_date, end_date)
 
             # 获取基金信息
-            fund_info = data_source.get_fund_info(fund_code)
-
-            # 检查必要字段是否存在，设置默认值
-            fund_data = {
-                "name": fund_info.get("name", "未知名称"),
-                "type": fund_info.get("type", "未知类型"),  # 添加默认值
-                "company": fund_info.get("company", "未知公司"),
-                "description": fund_info.get("description", ""),
-            }
+            nav_history_response = data_source.get_fund_nav_history(fund_code, start_date, end_date)
 
             self.update_progress(50)
+            if nav_history_response["code"] != 200:
+                raise ValueError(nav_history_response["message"])
+
             logger.info("正在更新数据库...")
-
-            # 更新或创建基金记录
-            fund, created = ModelFund.get_or_create(code=fund_code, defaults=fund_data)
-
-            if not created:
-                # 更新现有记录
-                for key, value in fund_data.items():
-                    setattr(fund, key, value)
-                fund.save()
-
-            self.update_progress(80)
-            logger.info("正在获取最新净值...")
-
-            # # 获取最新净值
-            # nav_history = data_source.get_fund_nav_history(
-            #     fund_code,
-            #     start_date=datetime.now().replace(
-            #         hour=0, minute=0, second=0, microsecond=0
-            #     ),
-            # )
-
-            # if nav_history:
-            #     latest_nav = nav_history[0]
-            #     fund.nav = latest_nav.get("nav")
-            #     nav_date = latest_nav.get("date")
-            #     if nav_date:
-            #         fund.nav_date = datetime.strptime(nav_date, "%Y-%m-%d")
-            #     fund.save()
+            # 批量保存净值到数据库
+            ModelFundNav.bulk_create(nav_history_response["data"])
 
             self.update_progress(100)
             logger.info("基金 %s 信息更新完成", fund_code)
 
-            return {
-                "message": "Fund info update completed",
-                "task_id": self.task_id,
-                "fund_code": fund_code,
-                "fund_name": fund_data["name"],
-                "created": created,
-                "nav": str(fund.nav) if fund.nav else None,
-                "nav_date": (fund.nav_date.strftime("%Y-%m-%d") if fund.nav_date else None),
-            }
+            return nav_history_response["data"]
 
         except Exception as e:
             logger.error("更新基金信息失败: %s", str(e), exc_info=True)  # 添加完整的错误堆栈

@@ -302,5 +302,5 @@ class EastMoneyDataSource(IDataSource):
             return results
 
         except Exception as e:
-            logger.error(f"获取基金历史净值失败: {str(e)}", exc_info=True)
+            logger.error("获取基金历史净值失败: %s", str(e), exc_info=True)
             raise ValueError(f"获取基金历史净值失败: {str(e)}")

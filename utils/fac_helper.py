@@ -3,7 +3,10 @@ from dash import set_props
 
 
 def show_message(
-    message: str, type: str = "default", duration: int = 3, component_id: str = "message-container"
+    message: str,
+    display_type: str = "default",
+    duration: int = 3,
+    component_id: str = "message-container",
 ):
     """显示消息框
 
@@ -13,5 +16,5 @@ def show_message(
     """
     set_props(
         component_id,
-        {"children": fac.AntdMessage(content=message, type=type, duration=duration)},
+        {"children": fac.AntdMessage(content=message, type=display_type, duration=duration)},
     )

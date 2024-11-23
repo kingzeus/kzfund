@@ -8,15 +8,13 @@ from models.database import add_portfolio, update_portfolio
 from pages.account.table import get_account_table_data
 from pages.account.utils import validate_name
 
-"""组合编辑弹窗模块
 
-提供投资组合的创建和编辑功能:
-- 渲染组合编辑弹窗
-- 处理组合名称验证
-- 处理组合创建和编辑操作
-"""
-
-
+# 组合编辑弹窗模块
+# 提供投资组合的创建和编辑功能:
+# - 渲染组合编辑弹窗
+# - 处理组合名称验证
+# - 处理组合创建和编辑操作
+#
 def render_portfolio_modal() -> fac.AntdModal:
     """渲染组合编辑弹窗
 

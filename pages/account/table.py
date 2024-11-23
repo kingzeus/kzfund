@@ -10,13 +10,12 @@ from utils.datetime_helper import format_datetime
 
 from .utils import create_operation_buttons
 
-"""账户表格模块
-
-提供账户和组合数据的表格展示功能:
-- 嵌套表格显示账户和组合的层级关系
-- 表格数据的获取和转换
-- 表格的操作按钮和交互处理
-"""
+# 账户表格模块
+# 提供账户和组合数据的表格展示功能:
+# - 嵌套表格显示账户和组合的层级关系
+# - 表格数据的获取和转换
+# - 表格的操作按钮和交互处理
+#
 
 
 def get_account_table_data() -> List[Dict[str, Any]]:

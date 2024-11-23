@@ -1,23 +1,22 @@
-"""任务管理页面主渲染模块
+# 任务管理页面主渲染模块
+#
+# 页面结构:
+# 1. Store组件
+#    - task-store: 存储任务数据
+#    - viewing-task-id: 存储正在查看的任务ID
+#    - task-loading-state: 存储任务加载状态
+#
+# 2. 页面标题
+#    - 图标 + 文字标题
+#
+# 3. 主要内容
+#    - 任务列表表格
+#
+# 4. 弹窗组件
+#    - 任务创建弹窗
+#    - 任务详情弹窗
+#
 
-页面结构:
-1. Store组件
-   - task-store: 存储任务数据
-   - viewing-task-id: 存储正在查看的任务ID
-   - task-loading-state: 存储任务加载状态
-
-2. 页面标题
-   - 图标 + 文字标题
-
-3. 主要内容
-   - 任务列表表格
-
-4. 弹窗组件
-   - 任务创建弹窗
-   - 任务详情弹窗
-"""
-
-from typing import Dict, List
 
 import feffery_antd_components as fac
 from dash import dcc, html

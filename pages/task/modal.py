@@ -302,7 +302,7 @@ def handle_task_create(
         logger.info("创建任务成功: %s", task_type)
     except Exception as e:
         logger.error("创建任务失败: %s", str(e), exc_info=True)
-        raise PreventUpdate
+        raise PreventUpdate from e
 
     # 更新任务列表并关闭对话框
     tasks = JobManager().get_task_history()

@@ -40,8 +40,10 @@ class ModelTask(BaseModel):
                 "progress": self.progress,
                 "priority": self.priority,
                 "timeout": self.timeout,
-                "start_time": self.start_time.isoformat() if self.start_time else None,
-                "end_time": self.end_time.isoformat() if self.end_time else None,
+                "start_time": (
+                    self.start_time.strftime("%Y-%m-%d %H:%M:%S") if self.start_time else None
+                ),
+                "end_time": self.end_time.strftime("%Y-%m-%d %H:%M:%S") if self.end_time else None,
                 "input_params": self.input_params,
                 "result": self.result,
                 "error": self.error,

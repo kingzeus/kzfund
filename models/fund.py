@@ -76,21 +76,23 @@ class ModelFund(BaseModel):
                 "name": self.name,
                 "full_name": self.full_name,
                 "type": self.type,
-                "issue_date": self.issue_date.isoformat() if self.issue_date else None,
-                "establishment_date": self.establishment_date.isoformat()
-                if self.establishment_date
-                else None,
-                "establishment_size": float(self.establishment_size)
-                if self.establishment_size
-                else None,
+                "issue_date": self.issue_date.strftime("%Y-%m-%d") if self.issue_date else None,
+                "establishment_date": (
+                    self.establishment_date.strftime("%Y-%m-%d")
+                    if self.establishment_date
+                    else None
+                ),
+                "establishment_size": (
+                    float(self.establishment_size) if self.establishment_size else None
+                ),
                 "company": self.company,
                 "custodian": self.custodian,
                 "fund_manager": self.fund_manager,
                 "management_fee": float(self.management_fee) if self.management_fee else None,
                 "custodian_fee": float(self.custodian_fee) if self.custodian_fee else None,
-                "sales_service_fee": float(self.sales_service_fee)
-                if self.sales_service_fee
-                else None,
+                "sales_service_fee": (
+                    float(self.sales_service_fee) if self.sales_service_fee else None
+                ),
                 "tracking": self.tracking,
                 "performance_benchmark": self.performance_benchmark,
                 "investment_scope": self.investment_scope,

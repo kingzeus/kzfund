@@ -15,7 +15,7 @@ import feffery_antd_components as fac
 from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from pages.task.utils import PAGE_PADDING, TABLE_STYLES, prepare_task_for_display
+from pages.task.utils import TABLE_STYLES, prepare_task_for_display
 from scheduler.job_manager import JobManager, TaskStatus
 
 logger = logging.getLogger(__name__)

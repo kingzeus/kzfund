@@ -13,7 +13,6 @@ import feffery_antd_components as fac
 from dash import html
 from feffery_utils_components import FefferyJsonViewer
 
-from models.task import ModelTask
 from scheduler.job_manager import TaskStatus
 from utils.datetime_helper import format_datetime
 

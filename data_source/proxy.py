@@ -97,8 +97,8 @@ class DataSourceProxy:
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime,
+        end_date: datetime,
     ) -> Dict[str, Any]:
         """获取基金历史净值"""
         return self._call_api(

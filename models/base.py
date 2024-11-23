@@ -83,8 +83,12 @@ class BaseModel(Model):
             包含模型基本属性的字典
         """
         return {
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": (
+                self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None
+            ),
+            "updated_at": (
+                self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None
+            ),
         }
 
 

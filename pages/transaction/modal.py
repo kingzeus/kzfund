@@ -16,12 +16,17 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
-from models.database import add_transaction, get_fund_nav, get_transactions, update_transaction
+from data_source.proxy import DataSourceProxy
+from models.database import (
+    add_transaction,
+    get_fund_nav,
+    get_transactions,
+    update_transaction,
+)
 from models.fund import ModelFundTransaction
 from utils.fac_helper import show_message
 
 from .utils import build_cascader_options
-from data_source.proxy import DataSourceProxy
 
 # ============= 日志配置 =============
 logger = logging.getLogger(__name__)
