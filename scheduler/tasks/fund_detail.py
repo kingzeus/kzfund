@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
+from models.database import update_record
 from models.fund import ModelFund
 
 from .base import BaseTask
@@ -90,14 +91,7 @@ class FundDetailTask(BaseTask):
             self.update_progress(80)
             logger.info("正在更新数据库...")
 
-            # 更新或创建基金记录
-            fund, created = ModelFund.get_or_create(code=fund_code, defaults=fund_data)
-
-            if not created:
-                # 更新现有记录
-                for key, value in fund_data.items():
-                    setattr(fund, key, value)
-                fund.save()
+            update_record(ModelFund, {"code": fund_code}, fund_data)
 
             self.update_progress(100)
             logger.info("基金 %s 信息更新完成", fund_code)

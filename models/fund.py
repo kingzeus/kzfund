@@ -216,7 +216,7 @@ class ModelFundNav(BaseModel):
     # 累计净值
     acc_nav = DecimalField(max_digits=10, decimal_places=4)
     # 日收益率
-    daily_return = DecimalField(max_digits=10, decimal_places=4)
+    daily_return = DecimalField(max_digits=10, decimal_places=4, auto_round=True)
     # 申购状态
     subscription_status = CharField(max_length=20)
     # 赎回状态
@@ -230,7 +230,7 @@ class ModelFundNav(BaseModel):
 
     class Meta:
         table_name = "fund_nav_history"
-        primary_key = CompositeKey("fund_code", "nav_date")
+        primary_key = CompositeKey("fund", "nav_date")
 
     def to_dict(self) -> dict:
         """将基金净值历史实例转换为可JSON序列化的字典"""
@@ -238,7 +238,7 @@ class ModelFundNav(BaseModel):
         result.update(
             {
                 "fund_code": self.fund_code,
-                "nav_date": self.nav_date.isoformat() if self.nav_date else None,
+                "nav_date": self.nav_date.strftime("%Y-%m-%d") if self.nav_date else None,
                 "nav": float(self.nav) if self.nav else None,
                 "acc_nav": float(self.acc_nav) if self.acc_nav else None,
                 "daily_return": float(self.daily_return) if self.daily_return else None,

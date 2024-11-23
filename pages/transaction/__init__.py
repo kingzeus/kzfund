@@ -6,7 +6,7 @@
 - 表格展示所有交易记录
 
 文件结构:
-- page.py: 页面主渲染函数
+- task_page.py: 页面主渲染函数
 - table.py: 交易记录表格相关组件和回调
 - modal.py: 交易记录编辑弹窗及其回调
 - delete_modal.py: 删除确认弹窗相关

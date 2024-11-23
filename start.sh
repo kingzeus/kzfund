@@ -347,6 +347,7 @@ show_menu() {
     echo "4) 启动应用"
     echo "5) 完整安装(1-4步骤)"
     echo "------------"
+    echo "8) 清理日志"
     echo "9) 测试"
     echo "0) 退出"
     echo "------------------------"
@@ -366,6 +367,23 @@ do_full_install() {
     run_code_check || return 1
     start_app || return 1
 
+    return 0
+}
+
+# 添加清理日志文件的函数
+clean_logs() {
+    echo -e "${YELLOW}开始清理日志文件...${NC}"
+    if [ -d "logs" ]; then
+        rm -f logs/*
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}日志文件清理完成${NC}"
+        else
+            echo -e "${RED}日志文件清理失败${NC}"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}logs目录不存在，无需清理${NC}"
+    fi
     return 0
 }
 
@@ -406,10 +424,14 @@ while true; do
             echo -e "${YELLOW}开始启动应用...${NC}"
             ensure_directories || continue
             activate_conda_env || continue
-            start_app || continue
+            clean_logs
+            start_app
             ;;
         5)
             do_full_install || continue
+            ;;
+        8)
+            clean_logs
             ;;
         9)
             start_test

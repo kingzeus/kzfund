@@ -6,7 +6,7 @@
 - 嵌套表格展示账户和组合的层级关系
 
 文件结构:
-- page.py: 页面主渲染函数
+- task_page.py: 页面主渲染函数
 - table.py: 账户表格相关组件和回调
 - account_modal.py: 账户编辑弹窗相关
 - portfolio_modal.py: 组合编辑弹窗相关

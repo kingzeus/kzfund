@@ -20,7 +20,7 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 
 # Local imports
-from models.database import add_account, update_account
+from models.account import update_account
 from pages.account.table import get_account_table_data
 from pages.account.utils import validate_name
 
@@ -195,9 +195,11 @@ def handle_account_create_or_edit(
             - 账户描述输入框值
     """
     if ok_counts and name and validate_status == "success":
-        if editing_id:
-            update_account(editing_id, name, description)
-        else:
-            add_account(name, description)
+
+        update_account(
+            editing_id,
+            {"name": name, "description": description},
+        )
+
         return get_account_table_data(), False, "", ""
     return get_account_table_data(), dash.no_update, dash.no_update, dash.no_update

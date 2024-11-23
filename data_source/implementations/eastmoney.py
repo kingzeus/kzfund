@@ -220,8 +220,8 @@ class EastMoneyDataSource(IDataSource):
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: str,
+        end_date: str,
     ) -> List[Dict[str, Any]]:
         """获取基金历史净值"""
         try:
@@ -230,8 +230,8 @@ class EastMoneyDataSource(IDataSource):
                 "code": fund_code,
                 "type": "lsjz",  # 历史净值
                 "page": 1,  # 页码
-                "sdate": start_date.strftime("%Y-%m-%d"),
-                "edate": end_date.strftime("%Y-%m-%d"),
+                "sdate": start_date,
+                "edate": end_date,
                 "per": 20,  # 默认获取最近20条记录
             }
             logger.debug("请求基金历史净值: %s, params: %s", url, params)
@@ -293,6 +293,8 @@ class EastMoneyDataSource(IDataSource):
                         "daily_return": daily_return,
                         "subscription_status": subscription_status,
                         "redemption_status": redemption_status,
+                        "data_source": self.get_name(),
+                        "data_source_version": self.get_version(),
                     }
                     if dividend:
                         item["dividend"] = dividend

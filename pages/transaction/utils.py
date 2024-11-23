@@ -7,7 +7,8 @@
 
 from typing import Any, Dict, List
 
-from models.database import get_accounts, get_portfolios
+from models.account import ModelAccount
+from models.database import get_record_list
 
 
 def create_operation_buttons(transaction_id: str) -> List[Dict[str, Any]]:
@@ -55,22 +56,22 @@ def build_cascader_options() -> List[Dict[str, Any]]:
         - value: 选项值
         - children: 子选项列表(组合)
     """
-    accounts = get_accounts()
+    accounts = get_record_list(ModelAccount)
     cascader_options = []
 
     for account in accounts:
-        portfolios = get_portfolios(account["id"])
+        portfolios = account.portfolios
         portfolio_children = [
             {
-                "label": p["name"],
-                "value": p["id"],
+                "label": p.name,
+                "value": p.id,
             }
             for p in portfolios
         ]
         cascader_options.append(
             {
-                "label": account["name"],
-                "value": account["id"],
+                "label": account.name,
+                "value": account.id,
                 "children": portfolio_children,
             }
         )

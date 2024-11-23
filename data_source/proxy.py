@@ -97,8 +97,8 @@ class DataSourceProxy:
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: str,
+        end_date: str,
     ) -> Dict[str, Any]:
         """获取基金历史净值"""
         return self._call_api(
@@ -109,4 +109,14 @@ class DataSourceProxy:
             start_date=start_date,
             end_date=end_date,
             is_array=True,
+        )
+
+    def get_fund_nav_history_size(
+        self,
+    ) -> Dict[str, Any]:
+        """获取基金历史净值"""
+        return self._call_api(
+            func_name="get_fund_nav_history_size",
+            api_func=self._data_source.get_fund_nav_history_size,
+            error_msg="获取基金历史净值失败",
         )

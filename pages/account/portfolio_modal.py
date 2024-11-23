@@ -1,10 +1,12 @@
 from typing import Optional, Tuple
+import uuid
 
 import feffery_antd_components as fac
 from dash import Input, Output, State, callback, dcc
 from dash.exceptions import PreventUpdate
 
-from models.database import add_portfolio, update_portfolio
+from models.account import ModelPortfolio
+from models.database import update_record
 from pages.account.table import get_account_table_data
 from pages.account.utils import validate_name
 
@@ -143,22 +145,17 @@ def handle_portfolio_create_or_edit(
     if not ok_counts or not name:
         raise PreventUpdate
 
-    if is_edit_mode and editing_id:
-        update_portfolio(
-            editing_id,
-            {
-                "name": name,
-                "description": description,
-            },
-        )
-    else:
-        if not account_id:
-            raise PreventUpdate
-        add_portfolio(
-            account_id=account_id,
-            name=name,
-            description=description,
-            is_default=False,
-        )
+    update_record(
+        ModelPortfolio,
+        {
+            "id": str(uuid.uuid4()) if not editing_id else editing_id,
+            "account_id": account_id,
+        },
+        {
+            "name": name,
+            "description": description,
+            "is_default": False,
+        },
+    )
 
     return get_account_table_data(), False, None, "", ""

@@ -13,7 +13,8 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
-from models.database import get_portfolio
+from models.account import ModelPortfolio
+from models.database import get_record
 
 from .utils import build_cascader_options
 
@@ -146,11 +147,11 @@ def update_transaction_table(store_data: List[Dict[str, Any]]) -> List[Dict[str,
         Output("transaction-type-select", "value"),
         Output("amount-input", "value"),
         Output("shares-input", "value"),
-        Output("nav-input", "value"),
+        Output("nav-input", "value", allow_duplicate=True),
         Output("fee-input", "value"),
         Output("trade-time-picker", "value"),
         Output("transaction-delete-confirm-modal", "visible"),
-        Output("editing-transaction-id", "data"),
+        Output("editing-transaction-id", "data", allow_duplicate=True),
     ],
     Input("transaction-list", "nClicksButton"),
     State("transaction-list", "clickedCustom"),
@@ -182,7 +183,7 @@ def handle_button_click(nClicksButton, custom_info, store_data):
         # 找到当前交易记录对应的组合路径
         portfolio_id = transaction["portfolio_id"]
         # 从组合信息中获取账户ID
-        portfolio = get_portfolio(portfolio_id)
+        portfolio = get_record(ModelPortfolio, {"id": portfolio_id})
         if not portfolio:
             raise PreventUpdate
 

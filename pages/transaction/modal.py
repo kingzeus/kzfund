@@ -7,6 +7,7 @@
 """
 
 import logging
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -16,14 +17,16 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
-from data_source.proxy import DataSourceProxy
 from models.database import (
     add_transaction,
-    get_fund_nav,
+    get_record,
     get_transactions,
+    update_record,
     update_transaction,
 )
-from models.fund import ModelFundTransaction
+from models.fund import ModelFundNav, ModelFundTransaction
+from scheduler import job_manager
+from scheduler.job_manager import JobManager
 from utils.fac_helper import show_message
 
 from .utils import build_cascader_options
@@ -380,44 +383,28 @@ def handle_transaction_save(
             raise PreventUpdate
 
         # 处理日期时间
-        trade_datetime = None
-        if isinstance(trade_time, str):
-            if len(trade_time) == 10:
-                trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d")
-            else:
-                trade_datetime = datetime.strptime(trade_time, "%Y-%m-%d %H:%M:%S")
 
-        if not trade_datetime:
+        if not trade_time:
             logger.error("无效的交易时间格式")
             raise PreventUpdate
 
         # 保存交易记录
-        success = False
-        if editing_id:
-            success = update_transaction(
-                transaction_id=editing_id,
-                portfolio_id=portfolio_id,
-                fund_code=fund_code,
-                transaction_type=transaction_type,
-                amount=amount,
-                shares=shares,
-                nav=nav,
-                fee=fee,
-                fee_type=fee_type,
-                trade_time=trade_datetime,
-            )
-        else:
-            success = add_transaction(
-                portfolio_id=portfolio_id,
-                fund_code=fund_code,
-                transaction_type=transaction_type,
-                amount=amount,
-                shares=shares,
-                nav=nav,
-                fee=fee,
-                fee_type=fee_type,
-                trade_time=trade_datetime,
-            )
+
+        # 交易记录数据
+        transaction_data = {
+            "portfolio": portfolio_id,
+            "fund_code": fund_code,
+            "type": transaction_type,
+            "amount": amount,
+            "shares": shares or 0.0,
+            "nav": nav or 0.0,
+            "fee": fee or 0.0,
+            "fee_type": fee_type,
+            "transaction_date": trade_time,
+        }
+
+        condition = {"id": editing_id if editing_id else str(uuid.uuid4())}
+        success = update_record(ModelFundTransaction, condition, transaction_data)
 
         if success:
             return get_transactions(), False
@@ -489,7 +476,7 @@ def calculate_fee(
 
 
 @callback(
-    Output("nav-input", "value"),
+    Output("nav-input", "value", allow_duplicate=True),
     [
         Input(FundCodeAIO.ids.select("fund-code-aio"), "value"),
         Input("trade-time-picker", "value"),
@@ -506,13 +493,18 @@ def update_nav_value(fund_code: Optional[str], trade_time: Optional[str]) -> Opt
 
     try:
         # 1. 从数据库中获取基金净值
-        trade_date = datetime.strptime(trade_time, "%Y-%m-%d")
-        nav = get_fund_nav(fund_code, trade_date)
+        nav: Optional[ModelFundNav] = get_record(
+            ModelFundNav, {"fund_code": fund_code, "nav_date": trade_time}
+        )
         if nav:
             return str(nav.nav)
         show_message("未找到基金净值, 请手动输入", "info")
         # 2. 触发净值更新任务 - 异步更新数据库中的净值
-        update_fund_nav.delay(fund_code, trade_date, nav)
+        JobManager().add_task(
+            "fund_nav",
+            fund_code=fund_code,
+            start_date=trade_time,
+        )
 
         return dash.no_update
 

@@ -2,8 +2,11 @@ import logging
 from datetime import datetime
 from typing import Any, Dict
 
+
 from data_source.proxy import DataSourceProxy
+from models.database import update_record
 from models.fund import ModelFundNav
+from utils.datetime_helper import get_date_str_after_days
 
 from .base import BaseTask
 
@@ -63,27 +66,41 @@ class FundNavTask(BaseTask):
         if not start_date:
             raise ValueError("start_date 不能为空")
         end_date = kwargs.get("end_date")
-        if not end_date:
-            raise ValueError("end_date 不能为空")
 
         try:
             # 初始化数据源
             data_source = DataSourceProxy()
 
+            # 获取基金历史净值数据大小
+            nav_history_size_response = data_source.get_fund_nav_history_size()
+            if nav_history_size_response["code"] != 200:
+                raise ValueError(nav_history_size_response["message"])
+            self.update_progress(30)
+
+            if not end_date:
+                # 默认结束日期是 开始日期
+                end_date = get_date_str_after_days(start_date, nav_history_size_response["data"])
+
             # 更新进度
-            self.update_progress(20)
+            self.update_progress(50)
             logger.info("正在获取基金 %s [%s-%s] 的净值...", fund_code, start_date, end_date)
 
             # 获取基金信息
             nav_history_response = data_source.get_fund_nav_history(fund_code, start_date, end_date)
 
-            self.update_progress(50)
+            self.update_progress(70)
             if nav_history_response["code"] != 200:
                 raise ValueError(nav_history_response["message"])
 
             logger.info("正在更新数据库...")
             # 批量保存净值到数据库
-            ModelFundNav.bulk_create(nav_history_response["data"])
+            nav_data = nav_history_response["data"]
+            for nav_item in nav_data:
+                update_record(
+                    ModelFundNav,
+                    {"fund_code": fund_code, "nav_date": nav_item["nav_date"]},
+                    nav_item,
+                )
 
             self.update_progress(100)
             logger.info("基金 %s 信息更新完成", fund_code)

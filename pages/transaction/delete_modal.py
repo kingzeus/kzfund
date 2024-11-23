@@ -10,7 +10,8 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from models.database import delete_transaction, get_transactions
+from models.database import delete_record, get_transactions
+from models.fund import ModelFundTransaction
 
 
 def render_delete_confirm_modal() -> fac.AntdModal:
@@ -41,6 +42,6 @@ def handle_delete_confirm(ok_counts, transaction_id):
     if not ok_counts or not transaction_id:
         raise PreventUpdate
 
-    if delete_transaction(transaction_id):
+    if delete_record(ModelFundTransaction, {"id": transaction_id}):
         return get_transactions(), False
     return dash.no_update, False

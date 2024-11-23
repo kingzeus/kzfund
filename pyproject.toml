@@ -31,6 +31,7 @@ numpy = "^1.26.2"
 
 # 数据库
 peewee = "^3.17.0"
+playhouse = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
 # 开发工具

@@ -5,7 +5,8 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from models.database import get_accounts, get_portfolio, get_portfolios
+from models.account import ModelAccount, ModelPortfolio
+from models.database import get_record, get_record_list
 from utils.datetime_helper import format_datetime
 
 from .utils import create_operation_buttons
@@ -27,43 +28,41 @@ def get_account_table_data() -> List[Dict[str, Any]]:
         - 包含嵌套的组合数据
         - 包含操作按钮配置
     """
-    accounts = get_accounts()
+    accounts = get_record_list(ModelAccount)
     table_data = []
 
     for account in accounts:
-        portfolios = get_portfolios(account["id"])
+        portfolios = account.portfolios
         portfolio_data = []
 
         for p in portfolios:
             operation_buttons = []
-            if not p["is_default"]:
+            if not p.is_default:
                 operation_buttons = create_operation_buttons(
-                    p["id"], "portfolio", account["id"], is_danger=True
+                    p.id, "portfolio", account.id, is_danger=True
                 )
 
             portfolio_data.append(
                 {
-                    "key": p["id"],
-                    "id": p["id"],
-                    "name": p["name"],
-                    "description": p.get("description", ""),
-                    "create_time": format_datetime(p["create_time"]),
-                    "market_value": (
-                        f"¥ {p['total_market_value']:,.2f}" if p["total_market_value"] else "¥ 0.00"
-                    ),
-                    "fund_count": p["fund_count"] or 0,
+                    "key": p.id,
+                    "id": p.id,
+                    "name": p.name,
+                    "description": p.description,
+                    "create_time": format_datetime(p.created_at),
+                    "market_value": "¥ 0.00",
+                    "fund_count": 0,
                     "operation": operation_buttons,
                 }
             )
 
         table_data.append(
             {
-                "key": account["id"],
-                "id": account["id"],
-                "name": account["name"],
-                "description": account.get("description", ""),
-                "create_time": format_datetime(account["create_time"]),
-                "operation": create_operation_buttons(account["id"], "account", is_danger=True),
+                "key": account.id,
+                "id": account.id,
+                "name": account.name,
+                "description": account.description,
+                "create_time": format_datetime(account.created_at),
+                "operation": create_operation_buttons(account.id, "account", is_danger=True),
                 "children": portfolio_data,
             }
         )
@@ -269,9 +268,11 @@ def handle_button_click(nClicksButton, custom_info, accounts_data):
     # 处理组合操作
     elif object_type == "portfolio":
         account_id = custom_info.get("accountId")
-        portfolio = get_portfolio(object_id)
+        portfolio = get_record(ModelPortfolio, {"id": object_id})
         if not portfolio:
             raise PreventUpdate
+
+        portfolio = portfolio.to_dict()
 
         if action == "edit":
             return (

@@ -1,6 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import logging
 from typing import Optional, Union
-
+logger = logging.getLogger(__name__)
 
 def format_datetime(
     dt: Union[str, datetime, None],
@@ -81,3 +82,39 @@ def get_timestamp() -> int:
         1709251200  # 2024-03-01 00:00:00 UTC
     """
     return int(datetime.now().timestamp())
+
+
+def get_date_str_after_days(start_date: Union[str, date], days: int) -> str:
+    """获取开始日期后几天的日期字符串"""
+    return format_date(get_date_after_days(start_date, days))
+
+
+def get_date_after_days(start_date: Union[str, date], days: int) -> date:
+    """获取开始日期后几天的日期
+
+    Args:
+        start_date: 开始日期,可以是date对象或ISO格式字符串
+        days: 天数,正数表示往后,负数表示往前
+
+    Returns:
+        date: 计算后的日期
+
+    Examples:
+        >>> get_date_after_days('2024-03-01', 1)
+        datetime.date(2024, 3, 2)
+        >>> get_date_after_days(date(2024, 3, 1), -1)
+        datetime.date(2024, 2, 29)
+    """
+    try:
+        if isinstance(start_date, str):
+            start_date = date.fromisoformat(start_date.strip())
+
+        if not isinstance(start_date, date):
+            logger.error("无效的日期格式: %s", start_date)
+            raise ValueError("无效的日期格式")
+
+        return start_date + timedelta(days=days)
+
+    except (ValueError, TypeError) as e:
+        logger.error("计算日期失败: %s", str(e))
+        raise

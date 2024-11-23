@@ -23,7 +23,7 @@ from dash import dcc, html
 
 from pages.task.detail_modal import render_task_detail_modal
 from pages.task.modal import render_task_modal
-from pages.task.table import render_task_table
+from pages.task.task_table import render_task_table
 from pages.task.utils import ICON_STYLES, PAGE_PADDING
 from scheduler.job_manager import JobManager
 

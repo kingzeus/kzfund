@@ -3,7 +3,8 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from models.database import delete_account, delete_portfolio
+from models.account import ModelPortfolio, delete_account
+from models.database import delete_record
 from pages.account.table import get_account_table_data
 
 
@@ -60,7 +61,7 @@ def handle_delete_confirm(ok_counts, object_id, custom_info):
 
     success = False
     if custom_info and custom_info.get("type") == "portfolio":
-        success = delete_portfolio(object_id)
+        success = delete_record(ModelPortfolio, {"id": object_id})
     else:
         success = delete_account(object_id)
 

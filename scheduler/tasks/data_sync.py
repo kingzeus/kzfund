@@ -19,20 +19,20 @@ class DataSyncTask(BaseTask):
             "timeout": 7200,  # 2小时
             "priority": 2,
             "params": [
-                {
-                    "name": "同步类型",
-                    "key": "sync_type",
-                    "type": "select",
-                    "required": True,
-                    "description": "选择要同步的数据类型",
-                    "default": "all",
-                    "options": [
-                        {"label": "全部数据", "value": "all"},
-                        {"label": "基金信息", "value": "info"},
-                        {"label": "净值数据", "value": "nav"},
-                        {"label": "持仓数据", "value": "position"},
-                    ],
-                },
+                # {
+                #     "name": "同步类型",
+                #     "key": "sync_type",
+                #     "type": "select",
+                #     "required": True,
+                #     "description": "选择要同步的数据类型",
+                #     "default": "all",
+                #     "options": [
+                #         {"label": "全部数据", "value": "all"},
+                #         {"label": "基金信息", "value": "info"},
+                #         {"label": "净值数据", "value": "nav"},
+                #         {"label": "持仓数据", "value": "position"},
+                #     ],
+                # },
                 {
                     "name": "开始日期",
                     "key": "start_date",

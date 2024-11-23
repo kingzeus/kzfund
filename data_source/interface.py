@@ -64,15 +64,15 @@ class IDataSource(ABC):
     def get_fund_nav_history(
         self,
         fund_code: str,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: str,
+        end_date: str,
     ) -> List[Dict[str, Any]]:
         """
         获取基金历史净值
         Args:
             fund_code: 基金代码
-            start_date: 开始日期
-            end_date: 结束日期
+            start_date: 开始日期，格式： 2004-01-01
+            end_date: 结束日期，格式： 2004-01-01
         Returns:
             List[Dict]: [{
                 "date": "日期",

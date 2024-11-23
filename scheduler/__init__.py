@@ -3,18 +3,9 @@ from typing import Any, Dict, Optional
 
 from flask_apscheduler import APScheduler
 
-from config import SCHEDULER_CONFIG
+from scheduler.tasks import TaskStatus
 
 scheduler = APScheduler()
-
-
-class TaskStatus:
-    PENDING = "等待中"
-    RUNNING = "运行中"
-    COMPLETED = "已完成"
-    FAILED = "失败"
-    TIMEOUT = "超时"
-    PAUSED = "已暂停"
 
 
 class TaskResult:

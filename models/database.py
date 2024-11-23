@@ -1,15 +1,17 @@
+from collections.abc import Callable
 import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from peewee import JOIN, fn
+from playhouse.shortcuts import update_model_from_dict
 
-from scheduler.job_manager import JobManager
+
 from utils.datetime_helper import format_datetime
 
 from .account import ModelAccount, ModelPortfolio
-from .base import Database, db_connection
+from .base import BaseModel, Database, db_connection
 from .fund import ModelFund, ModelFundNav, ModelFundPosition, ModelFundTransaction
 from .task import ModelTask
 
@@ -30,202 +32,6 @@ def init_database():
                 ModelTask,
             ]
         )
-
-
-# 账户相关操作
-def get_accounts() -> List[Dict[str, Any]]:
-    """获取所有账户"""
-    with db_connection():
-        accounts = ModelAccount.select()
-        # 如果没有数据，返回空列表
-        if not accounts:
-            return []
-
-        return [
-            {
-                "id": str(account.id),
-                "name": account.name,
-                "description": account.description,
-                "create_time": account.created_at,
-                "update_time": account.updated_at,
-            }
-            for account in accounts
-        ]
-
-
-def add_account(name: str, description: Optional[str] = None) -> str:
-    """添加账户并创建默认投资组合"""
-    with db_connection():
-        # 创建账户
-        account_id = str(uuid.uuid4())
-        ModelAccount.create(
-            id=account_id,
-            name=name,
-            description=description,
-        )
-
-        # 创建默认投资组合
-        ModelPortfolio.create(
-            id=str(uuid.uuid4()),
-            account=account_id,
-            name=f"{name}-默认组合",
-            description=f"{name}的默认投资组合",
-            is_default=True,
-        )
-
-        return account_id
-
-
-def get_account(account_id: str) -> Optional[Dict[str, Any]]:
-    """获取账户详情"""
-    with db_connection():
-        try:
-            account = ModelAccount.get_by_id(account_id)
-            return {
-                "id": str(account.id),
-                "name": account.name,
-                "description": account.description,
-                "create_time": account.created_at,
-                "update_time": account.updated_at,
-            }
-        except ModelAccount.DoesNotExist:  # pylint: disable=E1101
-            return None
-
-
-def update_account(account_id: str, name: str, description: str = None) -> bool:
-    """更新账户信息"""
-    try:
-        with db_connection():
-            account = ModelAccount.get_by_id(account_id)
-            account.name = name
-            account.description = description
-            account.save()
-            return True
-    except Exception as e:
-        logger.error("更新账户失败: %s", str(e))
-        return False
-
-
-def delete_account(account_id: str) -> bool:
-    """删除账户"""
-    try:
-        with db_connection():
-            # 首先检查是否有关联的组合
-            portfolio_count = (
-                ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
-            )
-            if portfolio_count > 0:
-                return False
-
-            account = ModelAccount.get_by_id(account_id)
-            account.delete_instance()
-            return True
-    except Exception as e:
-        logger.error("删除账户失败: %s", str(e))
-        return False
-
-
-# 投资组合相关操作
-def get_portfolios(account_id: str) -> List[Dict[str, Any]]:
-    """获取账户下的所有投资组合"""
-    with db_connection():
-        portfolios = (
-            ModelPortfolio.select(
-                ModelPortfolio,
-                fn.COUNT(ModelFundPosition.id).alias("fund_count"),
-                fn.COALESCE(fn.SUM(ModelFundPosition.market_value), 0).alias("total_market_value"),
-            )
-            .join(ModelFundPosition, JOIN.LEFT_OUTER)
-            .where(ModelPortfolio.account == account_id)
-            .group_by(ModelPortfolio)
-            .order_by(ModelPortfolio.created_at.asc())
-        )
-
-        if not portfolios:
-            return []
-
-        return [
-            {
-                "id": str(p.id),
-                "name": p.name,
-                "description": p.description,
-                "is_default": p.is_default,
-                "create_time": p.created_at.isoformat(),
-                "update_time": p.updated_at.isoformat(),
-                "fund_count": p.fund_count,
-                "total_market_value": float(p.total_market_value),
-            }
-            for p in portfolios
-        ]
-
-
-def add_portfolio(
-    account_id: str,
-    name: str,
-    description: Optional[str] = None,
-    is_default: bool = False,
-) -> str:
-    """添加投资组合"""
-    with db_connection():
-        portfolio_id = str(uuid.uuid4())
-        ModelPortfolio.create(
-            id=portfolio_id,
-            account=account_id,
-            name=name,
-            description=description,
-            is_default=is_default,
-        )
-        return portfolio_id
-
-
-def get_portfolio(portfolio_id: str) -> Optional[Dict[str, Any]]:
-    """获取投资组合详情"""
-    with db_connection():
-        try:
-            portfolio = ModelPortfolio.get_by_id(portfolio_id)
-            return {
-                "id": str(portfolio.id),
-                "account_id": str(portfolio.account.id),
-                "name": portfolio.name,
-                "description": portfolio.description,
-                "is_default": portfolio.is_default,
-                "create_time": portfolio.created_at,
-                "update_time": portfolio.updated_at,
-            }
-        except ModelPortfolio.DoesNotExist:  # pylint: disable=E1101
-            return None
-
-
-def update_portfolio(portfolio_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """更新投资组合信息"""
-    with db_connection():
-        try:
-            portfolio = ModelPortfolio.get_by_id(portfolio_id)
-            portfolio.name = data.get("name", portfolio.name)
-            portfolio.description = data.get("description", portfolio.description)
-            portfolio.is_default = data.get("is_default", portfolio.is_default)
-            portfolio.save()
-            return get_portfolio(portfolio_id)
-        except ModelPortfolio.DoesNotExist:  # pylint: disable=E1101
-            return None
-
-
-def delete_portfolio(portfolio_id: str) -> bool:
-    """删除投资组合"""
-    try:
-        with db_connection():
-            portfolio = ModelPortfolio.get_by_id(portfolio_id)
-
-            # 检查是否为默认组合
-            if portfolio.is_default:
-                return False
-
-            # 删除组合及其关联的基金持仓
-            portfolio.delete_instance(recursive=True)
-            return True
-    except Exception as e:
-        logger.error("删除组合失败: %s", str(e))
-        return False
 
 
 # 基金持仓相关操作
@@ -276,38 +82,6 @@ def add_fund_position(data: Dict[str, Any]) -> str:
             purchase_date=datetime.now(),
         )
         return position_id
-
-
-def update_fund_position(position_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """更新基金持仓信息"""
-    with db_connection():
-        try:
-            position = ModelFundPosition.get_by_id(position_id)
-            for key, value in data.items():
-                if hasattr(position, key):
-                    setattr(position, key, value)
-
-            # 更新市值和收益率
-            position.market_value = float(position.shares) * float(position.nav)
-            position.return_rate = (position.market_value - float(position.cost)) / float(
-                position.cost
-            )
-            position.save()
-
-            return get_fund_positions(str(position.portfolio.id))
-        except ModelFundPosition.DoesNotExist:  # pylint: disable=E1101
-            return None
-
-
-def delete_fund_position(position_id: str) -> bool:
-    """删除基金持仓"""
-    with db_connection():
-        try:
-            position = ModelFundPosition.get_by_id(position_id)
-            position.delete_instance()
-            return True
-        except ModelFundPosition.DoesNotExist:  # pylint: disable=E1101
-            return False
 
 
 def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
@@ -435,6 +209,8 @@ def add_transaction(
             fund = ModelFund.get_or_none(ModelFund.code == fund_code)
             if not fund:
                 # 如果基金不存在，触发更新基金详情任务
+                from scheduler.job_manager import JobManager
+
                 task_id = JobManager().add_task(
                     "fund_info",
                     fund_code=fund_code,
@@ -517,27 +293,6 @@ def update_transaction(
             return True
     except Exception as e:
         logger.error("更新交易记录失败: %s", str(e))
-        return False
-
-
-def delete_transaction(transaction_id: str) -> bool:
-    """删除交易记录"""
-    try:
-        with db_connection():
-            # 获取交易记录
-            transaction = ModelFundTransaction.get_by_id(transaction_id)
-            portfolio_id = transaction.portfolio.id
-            fund_code = transaction.code
-
-            # 删除交易记录
-            transaction.delete_instance()
-
-            # 重新计算持仓
-            recalculate_position(portfolio_id, fund_code)
-
-            return True
-    except Exception as e:
-        logger.error("删除交易记录失败: %s", str(e))
         return False
 
 
@@ -693,30 +448,138 @@ def check_database_content():
             )
 
 
-def get_fund_nav(fund_code: str, nav_date: datetime) -> Optional[ModelFundNav]:
-    """获取指定日期的基金净值
+########################################
+# 通用函数
+########################################
+def get_record(model_class, search_fields: Dict[str, Any]) -> Optional[BaseModel]:
+    """通用的获取记录函数
 
     Args:
-        fund_code: 基金代码
-        nav_date: 净值日期
+        model_class: Peewee 模型类
+        search_fields: 用于查找记录的字段和值的字典
 
-    Returns:
-        ModelFundNav | None: 基金净值记录，如果不存在则返回 None
+    Example:
+        get_record(
+            ModelFundNav,
+            {"fund_code": "000001", "nav_date": "2024-01-01"}
+        )
     """
     try:
         with db_connection():
-            nav_record = (
-                ModelFundNav.select()
-                .where(
-                    (ModelFundNav.fund == fund_code) & (ModelFundNav.nav_date == nav_date.date())
-                )
-                .first()
-            )
-
-            if nav_record:
-                return nav_record
-            return None
-
+            return model_class.get_or_none(**search_fields)
     except Exception as e:
-        logger.error("获取基金净值失败: %s", str(e))
+        logger.error("获取记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
         return None
+
+
+def get_record_list(model_class, search_fields: Optional[Dict[str, Any]] = None) -> List[BaseModel]:
+    """通用的获取记录列表函数
+
+    Args:
+        model_class: Peewee 模型类
+        search_fields: 用于过滤记录的字段和值的字典,为空时返回所有记录
+
+    Returns:
+        List[BaseModel]: 记录列表
+
+    Example:
+        get_record_list(
+            ModelFundNav,
+            {"fund_code": "000001"}
+        )
+    """
+    try:
+        with db_connection():
+            query = model_class.select()
+            if search_fields:
+                query = query.where(
+                    *[
+                        getattr(model_class, field) == value
+                        for field, value in search_fields.items()
+                    ]
+                )
+            return list(query)
+    except Exception as e:
+        logger.error("获取记录列表失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        return []
+
+
+def delete_record(
+    model_class,
+    search_fields: Dict[str, Any],
+    callback_before: Optional[Callable[[BaseModel], None]] = None,
+) -> bool:
+    """通用的删除记录函数
+
+    Args:
+        model_class: Peewee 模型类
+        search_fields: 用于查找记录的字段和值的字典
+        callback_before: 删除记录前的回调函数
+    Returns:
+        bool: 删除是否成功
+
+    Example:
+        delete_record(
+            ModelFundNav,
+            {"fund_code": "000001", "nav_date": "2024-01-01"}
+        )
+    """
+    try:
+        with db_connection():
+            record = model_class.get_or_none(**search_fields)
+            if record:
+                if callback_before:
+                    callback_before(record)
+                record.delete_instance()
+                logger.info(
+                    "成功删除记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
+                )
+                return True
+            logger.warning(
+                "未找到要删除的记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
+            )
+            return False
+    except Exception as e:
+        logger.error(
+            "删除记录失败 - 模型: %s, 条件: %s, 错误: %s",
+            model_class.__name__,
+            str(search_fields),
+            str(e),
+        )
+        return False
+
+
+def update_record(
+    model_class,
+    search_fields: Dict[str, Any],
+    update_data: Dict[str, Any],
+    callback_created: Optional[Callable[[BaseModel], None]] = None,
+) -> bool:
+    """通用的更新或创建记录函数
+
+    Args:
+        model_class: Peewee 模型类
+        search_fields: 用于查找记录的字段和值的字典
+        update_data: 需要更新的数据字典
+        callback_created: 创建记录后的回调函数
+    Example:
+        _update_record(
+            ModelFundNav,
+            {"fund_code": "000001", "nav_date": "2024-01-01"},
+            {"nav": 1.234, "acc_nav": 2.345}
+        )
+    """
+    try:
+        with db_connection():
+            existing_record, created = model_class.get_or_create(
+                **search_fields, defaults=update_data
+            )
+            if not created:
+                update_model_from_dict(existing_record, update_data)
+            existing_record.save()
+            if created and callback_created:
+                callback_created(existing_record)
+            return True
+    except Exception as e:
+        logger.error("更新记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        return False

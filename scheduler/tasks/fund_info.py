@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
-from models.fund import ModelFund
 
 from .base import BaseTask
 
@@ -66,20 +65,13 @@ class FundInfoTask(BaseTask):
                 "description": fund_info.get("description", ""),
             }
 
-            self.update_progress(50)
-            logger.info("正在更新数据库...")
+            # self.update_progress(50)
+            # logger.info("正在更新数据库...")
 
-            # 更新或创建基金记录
-            fund, created = ModelFund.get_or_create(code=fund_code, defaults=fund_data)
+            # # update_record(ModelFund, {"code": fund_code}, fund_data)
 
-            if not created:
-                # 更新现有记录
-                for key, value in fund_data.items():
-                    setattr(fund, key, value)
-                fund.save()
-
-            self.update_progress(80)
-            logger.info("正在获取最新净值...")
+            # self.update_progress(80)
+            # logger.info("正在获取最新净值...")
 
             # # 获取最新净值
             # nav_history = data_source.get_fund_nav_history(
@@ -100,15 +92,7 @@ class FundInfoTask(BaseTask):
             self.update_progress(100)
             logger.info("基金 %s 信息更新完成", fund_code)
 
-            return {
-                "message": "Fund info update completed",
-                "task_id": self.task_id,
-                "fund_code": fund_code,
-                "fund_name": fund_data["name"],
-                "created": created,
-                "nav": str(fund.nav) if fund.nav else None,
-                "nav_date": (fund.nav_date.strftime("%Y-%m-%d") if fund.nav_date else None),
-            }
+            return fund_data
 
         except Exception as e:
             logger.error("更新基金信息失败: %s", str(e), exc_info=True)  # 添加完整的错误堆栈

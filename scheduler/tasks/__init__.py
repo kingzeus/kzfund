@@ -1,18 +1,19 @@
+from scheduler.tasks.fund_nav import FundNavTask
 from .data_sync import DataSyncTask
 from .fund_detail import FundDetailTask
 from .fund_info import FundInfoTask
-from .portfolio import PortfolioUpdateTask
 from .task_factory import TaskFactory
 
 
 class TaskStatus:
     """任务状态常量"""
 
-    PENDING = "pending"  # 等待执行
-    RUNNING = "running"  # 正在执行
-    COMPLETED = "completed"  # 执行完成
-    FAILED = "failed"  # 执行失败
-    PAUSED = "paused"  # 已暂停
+    PENDING = "等待中"  # 等待执行
+    RUNNING = "运行中"  # 正在执行
+    COMPLETED = "已完成"  # 执行完成
+    FAILED = "失败"  # 执行失败
+    TIMEOUT = "超时"  # 超时
+    PAUSED = "已暂停"  # 已暂停
 
 
 def init_tasks():
@@ -23,6 +24,7 @@ def init_tasks():
     # factory.register(PortfolioUpdateTask)
     factory.register(FundInfoTask)
     factory.register(FundDetailTask)
+    factory.register(FundNavTask)
 
 
 __all__ = ["TaskFactory", "TaskStatus", "init_tasks"]

@@ -3,11 +3,12 @@ from flask_restx import Namespace, Resource, fields
 from backend.apis.common import create_list_response_model, create_response_model
 from models.database import (
     add_fund_position,
-    delete_fund_position,
+    delete_record,
     get_fund_positions,
     get_fund_transactions,
-    update_fund_position,
+    update_record,
 )
+from models.fund import ModelFundPosition
 from utils.response import format_response
 
 api = Namespace("funds", description="基金相关操作")
@@ -94,7 +95,7 @@ class FundPosition(Resource):
     def put(self, position_id):
         """更新持仓信息"""
         data = api.payload
-        position = update_fund_position(position_id, data)
+        position = update_record(ModelFundPosition, {"id": position_id}, data)
         if not position:
             return format_response(message="持仓不存在", code=404)
         return format_response(data=position, message="持仓更新成功")
@@ -103,7 +104,7 @@ class FundPosition(Resource):
     @api.marshal_with(position_response)
     def delete(self, position_id):
         """删除持仓"""
-        if delete_fund_position(position_id):
+        if delete_record(ModelFundPosition, {"id": position_id}):
             return format_response(message="持仓删除成功")
         return format_response(message="持仓不存在", code=404)
 
