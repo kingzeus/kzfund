@@ -204,3 +204,106 @@ def render_account_count_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
         hoverable=True,
         style=CARD_STYLES,
     )
+
+
+def render_fund_data_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
+    """渲染基金数据卡片"""
+    return fac.AntdCard(
+        fac.AntdRow(
+            [
+                fac.AntdCol(
+                    html.H2(
+                        str(initial_stats["fund_count"]),
+                        id="fund-count",
+                        style={
+                            "color": "#1890ff",
+                            "fontSize": "96px",
+                            "margin": "-13px 15px",
+                            "lineHeight": "1",
+                        },
+                    ),
+                    span=12,
+                ),
+                fac.AntdCol(
+                    fac.AntdStatistic(
+                        title="基金净值数",
+                        titleTooltip="基金净值总记录数",
+                        value=initial_stats["fund_nav_count"],
+                        valueStyle={"color": "#52c41a"},
+                    ),
+                    span=12,
+                ),
+            ],
+            gutter=10,
+            style={
+                "width": "100%",
+                "height": "70px",
+            },
+        ),
+        title="基金数据",
+        hoverable=True,
+        style=CARD_STYLES,
+    )
+
+
+def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
+    """渲染今日基金数据卡片"""
+    return fac.AntdCard(
+        fac.AntdRow(
+            [
+                fac.AntdCol(
+                    html.Span(
+                        str(initial_stats["fund_count"]),
+                        id="fund-count",
+                        style={
+                            "color": "#1890ff",
+                            "fontSize": "96px",
+                            "fontWeight": "700",
+                            "height": "96px",
+                            "margin": "-13px 15px",
+                            "lineHeight": "1",
+                        },
+                    ),
+                    # html.Span(
+                    #     [
+                    #         html.Span(
+                    #             f"{initial_stats['today_fund_nav_count']}",
+                    #             id="today-fund-count",
+                    #             style={
+                    #                 "color": "#1890ff",
+                    #                 "fontSize": "96px",
+                    #                 "margin": "-13px 15px",
+                    #                 "lineHeight": "1",
+                    #             },
+                    #         ),
+                    #         html.Span(
+                    #             f"/{initial_stats['fund_count']}",
+                    #             id="today-fund-count",
+                    #             style={
+                    #                 "color": "#1890ff",
+                    #             },
+                    #         ),
+                    #     ]
+                    # ),
+                    span=12,
+                ),
+                fac.AntdCol(
+                    fac.AntdStatistic(
+                        title="基金净值更新",
+                        titleTooltip="今天更新的基金净值数量",
+                        value=initial_stats["today_update_fund_nav_count"],
+                        valueStyle={"color": "#52c41a"},
+                    ),
+                    span=12,
+                ),
+            ],
+            gutter=10,
+            style={
+                "width": "100%",
+                "height": "70px",
+            },
+        ),
+        title="今日更新基金",
+        hoverable=True,
+        style=CARD_STYLES,
+    )
