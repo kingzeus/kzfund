@@ -178,7 +178,7 @@ def get_task_detail_items(task: Dict[str, Any]) -> List[Dict[str, Any]]:
         {"label": "任务名称", "value": task["name"]},
         {"label": "状态", "value": create_status_tag(task["status"])},
         {"label": "进度", "value": f"{task['progress']}%"},
-        {"label": "优先级", "value": task["priority"]},
+        {"label": "延迟时间", "value": task["delay"]},
         {"label": "创建时间", "value": task["created_at"]},
         {
             "label": "开始时间",

@@ -26,6 +26,7 @@ from pages.home.overview import (
     render_fund_data_card,
     render_return_rate_card,
     render_today_fund_card,
+    render_today_task_card,
     render_total_assets_card,
 )
 
@@ -100,6 +101,11 @@ def render_home_page() -> html.Div:
                     # 今日更新基金数据
                     fac.AntdCol(
                         render_today_fund_card(initial_stats),
+                        span=6,
+                        style={"padding": "8px"},
+                    ),
+                    fac.AntdCol(
+                        render_today_task_card(initial_stats),
                         span=6,
                         style={"padding": "8px"},
                     ),

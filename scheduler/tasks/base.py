@@ -74,7 +74,6 @@ class BaseTask(ABC):
             - name: 任务名称
             - description: 任务描述
             - timeout: 超时时间(秒)
-            - priority: 优先级(1-10)
             - params: 参数配置列表,每个参数包含:
                 - name: 参数名称
                 - key: 参数键名

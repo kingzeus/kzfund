@@ -222,7 +222,7 @@ class ModelFundNav(BaseModel):
     # 赎回状态
     redemption_status = CharField(max_length=20)
     # 分红
-    dividend = DecimalField(max_digits=10, decimal_places=4, null=True)
+    dividend = TextField(null=True)
     # 数据来源
     data_source = CharField(max_length=20)
     # 数据来源版本

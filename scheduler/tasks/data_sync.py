@@ -17,7 +17,6 @@ class DataSyncTask(BaseTask):
             "name": "数据同步",
             "description": "同步基金数据",
             "timeout": 7200,  # 2小时
-            "priority": 2,
             "params": [
                 # {
                 #     "name": "同步类型",

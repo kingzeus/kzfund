@@ -8,14 +8,14 @@ class ModelTask(BaseModel):
     parent_task_id = CharField(max_length=36, null=True)  # 父任务ID
     name = CharField(max_length=100)
     type = CharField(max_length=50)  # 任务类型
-    priority = IntegerField(default=0)  # 优先级：数字越大优先级越高
+    delay = IntegerField(default=0)  # 延迟时间（秒）
     status = CharField(max_length=20)
     progress = IntegerField(default=0)
     input_params = TextField(null=True)  # 输入参数
     result = TextField(null=True)
     error = TextField(null=True)
-    start_time = DateTimeField(null=True)
-    end_time = DateTimeField(null=True)
+    start_time = DateTimeField(null=True)  # 任务开始执行的时间
+    end_time = DateTimeField(null=True)  # 结束时间
     timeout = IntegerField(default=3600)  # 超时时间（秒）
 
     class Meta:
@@ -38,7 +38,7 @@ class ModelTask(BaseModel):
                 "type": self.type,
                 "status": self.status,
                 "progress": self.progress,
-                "priority": self.priority,
+                "delay": self.delay,
                 "timeout": self.timeout,
                 "start_time": (
                     self.start_time.strftime("%Y-%m-%d %H:%M:%S") if self.start_time else None

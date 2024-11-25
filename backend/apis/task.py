@@ -22,7 +22,7 @@ task_base = api.model(
     {
         "task_id": fields.String(required=True, description="任务ID"),
         "name": fields.String(required=True, description="任务名称"),
-        "priority": fields.Integer(required=True, description="优先级"),
+        "delay": fields.Integer(required=True, description="延迟时间(秒)"),
         "status": fields.String(required=True, description="任务状态"),
         "progress": fields.Integer(required=True, description="进度"),
         "result": fields.String(description="执行结果"),
@@ -47,7 +47,7 @@ task_input = api.model(
             description="任务类型",
             enum=list(TaskFactory().get_task_types().keys()),
         ),
-        "priority": fields.Integer(description="优先级"),
+        "delay": fields.Integer(description="延迟时间(秒)"),
         "timeout": fields.Integer(description="超时时间(秒)"),
         "params": fields.Raw(description="任务参数"),
     },
@@ -84,7 +84,7 @@ class TaskList(Resource):
 
             task_id = self.job_manager.add_task(
                 task_type=task_type,
-                priority=data.get("priority"),
+                delay=data.get("delay"),
                 timeout=data.get("timeout"),
                 **(data.get("params", {})),
             )

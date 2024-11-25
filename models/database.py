@@ -1,11 +1,10 @@
 import logging
-import uuid
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from peewee import JOIN, fn
 from playhouse.shortcuts import update_model_from_dict
+
 
 from utils.datetime_helper import format_datetime
 from utils.string_helper import get_uuid
@@ -114,6 +113,8 @@ def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
 
 def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
+    from scheduler.tasks import TaskStatus
+
     with db_connection():
         # 获取账户总数
         account_count = ModelAccount.select().count()  # pylint: disable=E1120
@@ -139,6 +140,26 @@ def get_statistics() -> Dict[str, int]:
         # 获取基金持仓总数
         position_count = ModelFundPosition.select().count()  # pylint: disable=E1120
 
+        # 获取今日任务总数
+        today_task_count = (
+            ModelTask.select().where(ModelTask.updated_at >= datetime.now().date()).count()
+        )  # pylint: disable=E1120
+        today_pending_task_count = (
+            ModelTask.select()
+            .where(
+                ModelTask.updated_at >= datetime.now().date(),
+                ModelTask.status == TaskStatus.PENDING,
+            )
+            .count()
+        )  # pylint: disable=E1120
+        today_failed_task_count = (
+            ModelTask.select()
+            .where(
+                ModelTask.updated_at >= datetime.now().date(),
+                ModelTask.status == TaskStatus.FAILED,
+            )
+            .count()
+        )  # pylint: disable=E1120
         return {
             "account_count": account_count,  # 账户总数
             "portfolio_count": portfolio_count,  # 组合总数
@@ -147,6 +168,9 @@ def get_statistics() -> Dict[str, int]:
             "today_fund_nav_count": today_fund_nav_count,  # 今日更新基金净值数量
             "today_update_fund_nav_count": today_update_fund_nav_count,  # 今天更新的基金净值数量
             "position_count": position_count,  # 基金持仓总数
+            "today_task_count": today_task_count,  # 今日任务总数
+            "today_pending_task_count": today_pending_task_count,  # 今日待处理任务数量
+            "today_failed_task_count": today_failed_task_count,  # 今日失败任务数量
         }
 
 
@@ -597,4 +621,4 @@ def update_record(
             return True
     except Exception as e:
         logger.error("更新记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
-        return False
+        raise

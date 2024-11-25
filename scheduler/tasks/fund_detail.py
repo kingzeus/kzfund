@@ -24,7 +24,6 @@ class FundDetailTask(BaseTask):
             "name": "基金详情更新",
             "description": "更新基金详情信息",
             "timeout": 30,
-            "priority": 2,
             "params": [
                 {
                     "name": "基金代码",

@@ -26,7 +26,6 @@ class SyncFundNavTask(BaseTask):
             "name": "基金净值同步",
             "description": "同步基金净值",
             "timeout": 300,
-            "priority": 2,
             "params": [
                 {
                     "name": "基金代码",

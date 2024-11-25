@@ -47,6 +47,7 @@ class JobManager:
         self.scheduler.init_app(app)
         self.scheduler.start()
         logger.info("任务调度器初始化成功")
+        self.restore_tasks()
 
     def _task_wrapper(self, task_type: str, task_id: str, **kwargs):
         """任务执行包装器
@@ -112,6 +113,71 @@ class JobManager:
                 logger.error("保存任务最终状态失败: %s", str(e))
                 raise TaskUpdateError(f"保存任务状态失败: {str(e)}") from e
 
+    def restore_tasks(self):
+        """恢复任务
+
+        从数据库中恢复未完成的任务
+        """
+        try:
+            # 查询所有未完成的任务
+            unfinished_tasks = ModelTask.select().where(
+                ModelTask.status.in_([TaskStatus.PENDING, TaskStatus.RUNNING])
+            )
+
+            restored_count = 0
+
+            # 获取延迟最小值
+            min_delay = min(
+                task.delay
+                for task in unfinished_tasks
+                if task.status == TaskStatus.PENDING and task.delay > 0
+            )
+
+            for task in unfinished_tasks:
+                try:
+                    # 解析任务参数
+                    args = json.loads(task.input_params)
+
+                    args["timeout"] = task.timeout
+
+                    if task.status == TaskStatus.RUNNING:
+                        # 如果任务是运行状态,则改成超时失败
+                        task.status = TaskStatus.FAILED
+                        task.error = "任务超时"
+
+                        task.save()
+                    elif task.status == TaskStatus.PENDING:
+
+                        # 重新添加到调度器
+                        task.delay = task.delay - min_delay
+                        if task.delay < 0:
+                            task.delay = 0
+                        task.save()
+                        self.scheduler.add_job(
+                            func=self._task_wrapper,
+                            args=(task.type, task.task_id),
+                            kwargs=args,
+                            id=task.task_id,
+                            name=task.name,
+                            trigger="date",
+                            next_run_time=datetime.now() + timedelta(seconds=task.delay + 1),
+                            misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"][
+                                "misfire_grace_time"
+                            ],
+                        )
+                    restored_count += 1
+                    logger.debug("恢复任务: %s", task.task_id)
+
+                except Exception as e:
+                    logger.error("恢复任务失败 %s: %s", task.task_id, str(e))
+                    continue
+
+            if restored_count > 0:
+                logger.info("成功恢复 %d 个任务", restored_count)
+
+        except Exception as e:
+            logger.error("恢复任务失败: %s", str(e))
+
     def add_task(self, task_type: str, delay: int = 0, parent_task_id=None, **kwargs) -> str:
         """添加新任务
         为了保证任务正常执行，延时1+delay秒执行
@@ -120,7 +186,7 @@ class JobManager:
             task_type: 任务类型
             delay: 延迟执行时间(秒),默认0秒.
             parent_task_id: 父任务ID
-            **kwargs: 任务参数(包含 priority、timeout 等)
+            **kwargs: 任务参数(包含 timeout 等)
 
         Returns:
             task_id: 新创建的任务ID
@@ -139,7 +205,6 @@ class JobManager:
 
         # 过滤掉已单独保存的参数
         input_params = kwargs.copy()
-        input_params.pop("priority", None)
         input_params.pop("timeout", None)
 
         # 创建任务记录
@@ -148,7 +213,7 @@ class JobManager:
             parent_task_id=parent_task_id,
             type=task_type,  # 设置任务类型
             name=task_config.get("name", task_type),
-            priority=kwargs.get("priority", task_config.get("priority", 0)),
+            delay=delay,
             status=TaskStatus.PENDING,
             timeout=kwargs.get(
                 "timeout",
@@ -178,14 +243,13 @@ class JobManager:
             new_task_id = get_uuid()
 
             args = json.loads(task.input_params)
-            args["priority"] = task.priority
             args["timeout"] = task.timeout
 
             ModelTask.create(
                 task_id=new_task_id,
                 type=task.type,
                 name=task.name,
-                priority=task.priority,
+                delay=task.delay,
                 status=TaskStatus.PENDING,
                 timeout=task.timeout,
                 input_params=task.input_params,
@@ -308,7 +372,7 @@ class JobManager:
             return {
                 "task_id": task.task_id,
                 "name": task.name,
-                "priority": task.priority,
+                "delay": task.delay,
                 "status": current_status,
                 "progress": progress,
                 "result": task.result,

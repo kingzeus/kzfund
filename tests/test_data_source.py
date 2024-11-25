@@ -134,9 +134,9 @@ class TestDataSource(unittest.TestCase):
 
     def test_get_fund_nav_history(self):
         """测试获取基金净值历史功能"""
-        fund_code = "012348"
-        start_date = datetime(2024, 3, 5)
-        end_date = datetime(2024, 3, 30)
+        fund_code = "161725"
+        start_date = datetime(2021, 8, 31)
+        end_date = datetime(2021, 9, 8)
         nav_history = self.data_source.get_fund_nav_history(fund_code, start_date, end_date)
 
         # 打印完整的返回数据，方便调试

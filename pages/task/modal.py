@@ -63,13 +63,12 @@ def render_task_modal() -> fac.AntdModal:
                     html.Div(id="task-params-container"),
                     # 基础配置项
                     fac.AntdFormItem(
-                        label="优先级",
-                        tooltip="任务执行的优先级(0-10),数字越大优先级越高",
+                        label="延迟时间",
+                        tooltip="任务延迟执行的时间(秒)",
                         children=fac.AntdInputNumber(
-                            id="priority-input",
-                            placeholder="请输入优先级",
+                            id="delay-input",
+                            placeholder="请输入延迟时间(秒)",
                             min=0,
-                            max=10,
                             style={"width": "100%"},
                         ),
                     ),
@@ -188,8 +187,8 @@ def generate_param_items(task_type: str, use_pattern_id: bool = True) -> List[An
         Output("task-modal", "visible"),
         Output("task-params-container", "children", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
-        Output("priority-input", "value"),  # 添加优先级输出
-        Output("timeout-input", "value"),  # 添加超时时间输出
+        Output("delay-input", "value"),
+        Output("timeout-input", "value"),
     ],
     [
         Input("add-task-btn", "nClicks"),
@@ -219,7 +218,7 @@ def show_task_modal(n_clicks, task_type):
                     True,
                     param_items,
                     default_task_type,
-                    task_config.get("priority"),
+                    task_config.get("delay", 0),
                     task_config.get("timeout"),
                 )
             return True, [], None, None, None
@@ -234,7 +233,7 @@ def show_task_modal(n_clicks, task_type):
             dash.no_update,
             param_items,
             dash.no_update,
-            task_config.get("priority"),
+            task_config.get("delay", 0),
             task_config.get("timeout"),
         )
 
@@ -246,7 +245,7 @@ def show_task_modal(n_clicks, task_type):
         Output("task-store", "data"),
         Output("task-modal", "visible", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
-        Output("priority-input", "value", allow_duplicate=True),
+        Output("delay-input", "value", allow_duplicate=True),
         Output("timeout-input", "value", allow_duplicate=True),
     ],
     Input("task-modal", "okCounts"),
@@ -254,7 +253,7 @@ def show_task_modal(n_clicks, task_type):
         State("task-type-select", "value"),
         State({"type": "task-param", "param": ALL}, "value"),
         State(FundCodeAIO.ids.select("task-param-fund_code"), "value"),
-        State("priority-input", "value"),
+        State("delay-input", "value"),
         State("timeout-input", "value"),
     ],
     prevent_initial_call=True,
@@ -264,7 +263,7 @@ def handle_task_create(
     task_type: str,
     param_values: List[Any],
     fund_code: Optional[str],
-    priority: Optional[int],
+    delay: Optional[int],
     timeout: Optional[int],
 ):  # pylint: R0917
     """处理任务创建"""
@@ -296,9 +295,7 @@ def handle_task_create(
 
     # 创建任务
     try:
-        JobManager().add_task(
-            task_type=task_type, priority=priority, timeout=timeout, **task_params
-        )
+        JobManager().add_task(task_type=task_type, delay=delay, timeout=timeout, **task_params)
         logger.info("创建任务成功: %s", task_type)
     except Exception as e:
         logger.error("创建任务失败: %s", str(e), exc_info=True)

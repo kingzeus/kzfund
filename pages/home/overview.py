@@ -253,38 +253,32 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
             [
                 fac.AntdCol(
                     html.Span(
-                        str(initial_stats["fund_count"]),
-                        id="today-fund-count",
+                        [
+                            html.Span(
+                                str(initial_stats["today_fund_nav_count"]),
+                                id="today-fund-count",
+                                style={
+                                    "color": "#1890ff",
+                                    "fontSize": "96px",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1",
+                                },
+                            ),
+                            html.Span(
+                                f"/{initial_stats['fund_count']}",
+                                style={
+                                    "color": "#52c41a",
+                                    "fontSize": "36px",
+                                    "fontWeight": "700",
+                                },
+                            ),
+                        ],
                         style={
-                            "color": "#1890ff",
-                            "fontSize": "96px",
-                            "fontWeight": "700",
+                            "display": "inline-block",
                             "height": "96px",
                             "margin": "-13px 15px",
-                            "lineHeight": "1",
                         },
                     ),
-                    # html.Span(
-                    #     [
-                    #         html.Span(
-                    #             f"{initial_stats['today_fund_nav_count']}",
-                    #             id="today-fund-count",
-                    #             style={
-                    #                 "color": "#1890ff",
-                    #                 "fontSize": "96px",
-                    #                 "margin": "-13px 15px",
-                    #                 "lineHeight": "1",
-                    #             },
-                    #         ),
-                    #         html.Span(
-                    #             f"/{initial_stats['fund_count']}",
-                    #             id="today-fund-count",
-                    #             style={
-                    #                 "color": "#1890ff",
-                    #             },
-                    #         ),
-                    #     ]
-                    # ),
                     span=12,
                 ),
                 fac.AntdCol(
@@ -304,6 +298,62 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
             },
         ),
         title="今日更新基金",
+        hoverable=True,
+        style=CARD_STYLES,
+    )
+
+
+def render_today_task_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
+    """渲染今日任务卡片"""
+    return fac.AntdCard(
+        fac.AntdRow(
+            [
+                fac.AntdCol(
+                    html.Span(
+                        [
+                            html.Span(
+                                str(initial_stats["today_pending_task_count"]),
+                                style={
+                                    "color": "#1890ff",
+                                    "fontSize": "96px",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1",
+                                },
+                            ),
+                            html.Span(
+                                f"{initial_stats['today_failed_task_count']}",
+                                style={
+                                    "color": "#f5222d",
+                                    "fontSize": "24px",
+                                    "fontWeight": "700",
+                                },
+                            ),
+                        ],
+                        style={
+                            "display": "inline-block",
+                            "height": "96px",
+                            "margin": "-13px 15px",
+                        },
+                    ),
+                    span=12,
+                ),
+                fac.AntdCol(
+                    fac.AntdStatistic(
+                        title="今日任务总数",
+                        titleTooltip="今天开始的任务总数",
+                        value=initial_stats["today_task_count"],
+                        valueStyle={"color": "#52c41a"},
+                    ),
+                    span=12,
+                ),
+            ],
+            gutter=10,
+            style={
+                "width": "100%",
+                "height": "70px",
+            },
+        ),
+        title="排队任务",
         hoverable=True,
         style=CARD_STYLES,
     )

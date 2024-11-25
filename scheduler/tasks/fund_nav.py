@@ -25,7 +25,6 @@ class FundNavTask(BaseTask):
             "name": "基金净值更新",
             "description": "更新基金净值",
             "timeout": 300,
-            "priority": 2,
             "params": [
                 {
                     "name": "基金代码",
