@@ -23,7 +23,9 @@ from pages.home.charts import render_asset_allocation_chart, render_performance_
 from pages.home.overview import (
     render_account_count_card,
     render_fund_count_card,
+    render_fund_data_card,
     render_return_rate_card,
+    render_today_fund_card,
     render_total_assets_card,
 )
 
@@ -75,17 +77,29 @@ def render_home_page() -> html.Div:
                         style={"padding": "12px"},
                     ),
                     fac.AntdCol(
-                        render_fund_count_card(),
-                        span=6,
-                        style={"padding": "8px"},
-                    ),
-                    fac.AntdCol(
                         render_return_rate_card(),
                         span=6,
                         style={"padding": "8px"},
                     ),
                     fac.AntdCol(
                         render_account_count_card(initial_stats),
+                        span=6,
+                        style={"padding": "8px"},
+                    ),
+                ]
+            ),
+            # 系统数据概览卡片
+            fac.AntdRow(
+                [
+                    # 当前系统基金数据
+                    fac.AntdCol(
+                        render_fund_data_card(initial_stats),
+                        span=6,
+                        style={"padding": "8px"},
+                    ),
+                    # 今日更新基金数据
+                    fac.AntdCol(
+                        render_today_fund_card(initial_stats),
                         span=6,
                         style={"padding": "8px"},
                     ),

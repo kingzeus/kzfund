@@ -5,7 +5,7 @@ from typing import Any, Dict
 from data_source.proxy import DataSourceProxy
 from models.database import update_record
 from models.fund import ModelFundNav
-from utils.datetime_helper import get_date_str_after_days
+from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
 
 from .base import BaseTask
 
@@ -79,6 +79,12 @@ class FundNavTask(BaseTask):
             if not end_date:
                 # 默认结束日期是 开始日期
                 end_date = get_date_str_after_days(start_date, nav_history_size_response["data"])
+            else:
+                size = get_days_between_dates(start_date, end_date)
+                if size < 0:
+                    raise ValueError("结束日期不能早于开始日期")
+                if size > nav_history_size_response["data"]:
+                    raise ValueError("查询日期数量过大")
 
             # 更新进度
             self.update_progress(50)

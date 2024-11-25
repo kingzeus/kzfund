@@ -91,6 +91,39 @@ def get_date_str_after_days(start_date: Union[str, date], days: int) -> str:
     return format_date(get_date_after_days(start_date, days))
 
 
+def get_days_between_dates(start_date: Union[str, date], end_date: Union[str, date]) -> int:
+    """计算两个日期之间的天数差值
+
+    Args:
+        start_date: 开始日期,可以是date对象或ISO格式字符串
+        end_date: 结束日期,可以是date对象或ISO格式字符串
+
+    Returns:
+        int: 两个日期之间的天数差值(end_date - start_date)
+
+    Examples:
+        >>> get_days_between_dates('2024-03-01', '2024-03-02')
+        1
+        >>> get_days_between_dates(date(2024, 3, 1), date(2024, 2, 29))
+        -1
+    """
+    try:
+        if isinstance(start_date, str):
+            start_date = date.fromisoformat(start_date.strip())
+        if isinstance(end_date, str):
+            end_date = date.fromisoformat(end_date.strip())
+
+        if not isinstance(start_date, date) or not isinstance(end_date, date):
+            logger.error("无效的日期格式: start_date=%s, end_date=%s", start_date, end_date)
+            raise ValueError("无效的日期格式")
+
+        return (end_date - start_date).days
+
+    except (ValueError, TypeError) as e:
+        logger.error("计算日期差值失败: %s", str(e))
+        raise
+
+
 def get_date_after_days(start_date: Union[str, date], days: int) -> date:
     """获取开始日期后几天的日期
 

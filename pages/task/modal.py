@@ -266,7 +266,7 @@ def handle_task_create(
     fund_code: Optional[str],
     priority: Optional[int],
     timeout: Optional[int],
-):
+):  # pylint: R0917
     """处理任务创建"""
     if not ok_counts or not task_type:
         raise PreventUpdate

@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 from flask_apscheduler import APScheduler
@@ -115,11 +115,13 @@ class JobManager:
                 logger.error("保存任务最终状态失败: %s", str(e))
                 raise TaskUpdateError(f"保存任务状态失败: {str(e)}") from e
 
-    def add_task(self, task_type: str, **kwargs) -> str:
+    def add_task(self, task_type: str, delay: int = 0, **kwargs) -> str:
         """添加新任务
+        为了保证任务正常执行，延时1+delay秒执行
 
         Args:
             task_type: 任务类型
+            delay: 延迟执行时间(秒),默认0秒.
             **kwargs: 任务参数(包含 priority、timeout 等)
 
         Returns:
@@ -164,6 +166,7 @@ class JobManager:
             id=task_id,
             name=task_config.get("name", task_type),
             trigger="date",
+            next_run_time=datetime.now() + timedelta(seconds=delay + 1),
             misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"]["misfire_grace_time"],
         )
 

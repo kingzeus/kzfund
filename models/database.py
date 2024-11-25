@@ -120,13 +120,32 @@ def get_statistics() -> Dict[str, int]:
         # 获取组合总数
         portfolio_count = ModelPortfolio.select().count()  # pylint: disable=E1120
 
+        # 获取基金总数
+        fund_count = ModelFund.select().count()  # pylint: disable=E1120
+
+        # 获取基金净值总数
+        fund_nav_count = ModelFundNav.select().count()  # pylint: disable=E1120
+        # 基金今日净值更新数量
+        today_fund_nav_count = (
+            ModelFundNav.select().where(ModelFundNav.nav_date == datetime.now().date()).count()
+        )  # pylint: disable=E1120
+
+        # 今天更新的基金净值数量
+        today_update_fund_nav_count = (
+            ModelFundNav.select().where(ModelFundNav.updated_at >= datetime.now().date()).count()
+        )  # pylint: disable=E1120
+
         # 获取基金持仓总数
         position_count = ModelFundPosition.select().count()  # pylint: disable=E1120
 
         return {
-            "account_count": account_count,
-            "portfolio_count": portfolio_count,
-            "position_count": position_count,
+            "account_count": account_count,  # 账户总数
+            "portfolio_count": portfolio_count,  # 组合总数
+            "fund_count": fund_count,  # 基金总数
+            "fund_nav_count": fund_nav_count,  # 基金净值总数
+            "today_fund_nav_count": today_fund_nav_count,  # 今日更新基金净值数量
+            "today_update_fund_nav_count": today_update_fund_nav_count,  # 今天更新的基金净值数量
+            "position_count": position_count,  # 基金持仓总数
         }
 
 
@@ -267,7 +286,7 @@ def update_transaction(
     nav: Optional[float] = None,
     shares: Optional[float] = None,
     fee: Optional[float] = 0.0,
-) -> bool:
+) -> bool:  # pylint: R0917
     """更新交易记录"""
     try:
         with db_connection():
@@ -302,7 +321,7 @@ def update_position_after_transaction(
     amount: float,
     shares: float,
     nav: float,
-) -> None:
+) -> None:  # pylint: R0917
     """更新交易后的持仓信息"""
     try:
         # 查找现有持仓
