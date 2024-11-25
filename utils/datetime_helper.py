@@ -1,7 +1,9 @@
-from datetime import date, datetime, timedelta
 import logging
+from datetime import date, datetime, timedelta
 from typing import Optional, Union
+
 logger = logging.getLogger(__name__)
+
 
 def format_datetime(
     dt: Union[str, datetime, None],

@@ -1,4 +1,5 @@
 from scheduler.tasks.fund_nav import FundNavTask
+
 from .data_sync import DataSyncTask
 from .fund_detail import FundDetailTask
 from .fund_info import FundInfoTask

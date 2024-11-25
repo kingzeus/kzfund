@@ -2,7 +2,7 @@
 #
 # 页面结构:
 # 1. Store组件
-#    - task-store: 存储任务数据
+#    - task-store: 存储任务数据, task数据模型转成dict
 #    - viewing-task-id: 存储正在查看的任务ID
 #    - task-loading-state: 存储任务加载状态
 #
@@ -24,8 +24,7 @@ from dash import dcc, html
 from pages.task.detail_modal import render_task_detail_modal
 from pages.task.modal import render_task_modal
 from pages.task.task_table import render_task_table
-from pages.task.utils import ICON_STYLES, PAGE_PADDING
-from scheduler.job_manager import JobManager
+from pages.task.task_utils import ICON_STYLES, PAGE_PADDING, get_task_store_data
 
 
 def render_task_page() -> html.Div:
@@ -34,8 +33,7 @@ def render_task_page() -> html.Div:
     Returns:
         包含完整页面结构的Div组件
     """
-    tasks = JobManager().get_task_history()
-    initial_tasks = [task.to_dict() for task in tasks]
+    initial_tasks = get_task_store_data()
 
     return html.Div(
         [

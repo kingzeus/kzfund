@@ -1,5 +1,5 @@
-from typing import Optional, Tuple
 import uuid
+from typing import Optional, Tuple
 
 import feffery_antd_components as fac
 from dash import Input, Output, State, callback, dcc

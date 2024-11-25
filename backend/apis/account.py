@@ -1,14 +1,10 @@
 import uuid
+
 from flask_restx import Namespace, Resource, fields
 
 from backend.apis.common import create_list_response_model, create_response_model
 from models.account import ModelAccount, update_account
-from models.database import (
-    delete_record,
-    get_record,
-    get_record_list,
-    update_record,
-)
+from models.database import delete_record, get_record, get_record_list, update_record
 from utils.response import format_response
 
 api = Namespace("accounts", description="账户相关操作")
@@ -54,9 +50,7 @@ class AccountList(Resource):
         """创建新账户"""
         data = api.payload
         account_id = update_account(str(uuid.uuid4()), data)
-        return format_response(
-            data=get_record(ModelAccount, {"id": account_id}), message="账户创建成功"
-        )
+        return format_response(data=get_record(ModelAccount, {"id": account_id}), message="账户创建成功")
 
 
 @api.route("/<string:account_id>")

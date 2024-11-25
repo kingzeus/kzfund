@@ -9,7 +9,7 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from pages.task.utils import get_task_detail_items
+from pages.task.task_utils import get_task_detail_items
 
 
 def render_task_detail_modal() -> fac.AntdModal:

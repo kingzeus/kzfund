@@ -1,12 +1,11 @@
-from collections.abc import Callable
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from peewee import JOIN, fn
 from playhouse.shortcuts import update_model_from_dict
-
 
 from utils.datetime_helper import format_datetime
 
@@ -531,13 +530,9 @@ def delete_record(
                 if callback_before:
                     callback_before(record)
                 record.delete_instance()
-                logger.info(
-                    "成功删除记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
-                )
+                logger.info("成功删除记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields))
                 return True
-            logger.warning(
-                "未找到要删除的记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
-            )
+            logger.warning("未找到要删除的记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields))
             return False
     except Exception as e:
         logger.error(

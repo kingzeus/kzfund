@@ -13,7 +13,7 @@ import feffery_antd_components as fac
 from dash import html
 from feffery_utils_components import FefferyJsonViewer
 
-from scheduler.job_manager import TaskStatus
+from scheduler.job_manager import JobManager, TaskStatus
 from utils.datetime_helper import format_datetime
 
 # ============= 状态常量 =============
@@ -40,6 +40,10 @@ ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
 
 
 # ============= 工具函数 =============
+def get_task_store_data() -> List[Dict[str, Any]]:
+    """获取任务store数据"""
+    tasks = JobManager().get_task_history()
+    return [task.to_dict() for task in tasks]
 
 
 def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
@@ -124,6 +128,15 @@ def create_operation_buttons(task: Dict[str, Any]) -> fac.AntdSpace:
                 "type": "task-action",
                 "index": task["task_id"],
                 "action": "view",
+            },
+        ),
+        fac.AntdButton(
+            fac.AntdIcon(icon="antd-reload"),
+            type="link",
+            id={
+                "type": "task-action",
+                "index": task["task_id"],
+                "action": "copy",
             },
         ),
     ]

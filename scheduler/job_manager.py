@@ -169,6 +169,42 @@ class JobManager:
 
         return task_id
 
+    def copy_task(self, task_id: str) -> str:
+        """复制任务"""
+        try:
+            task = ModelTask.get(ModelTask.task_id == task_id)
+            new_task_id = self._create_job_id()
+
+            args = json.loads(task.input_params)
+            args["priority"] = task.priority
+            args["timeout"] = task.timeout
+
+            ModelTask.create(
+                task_id=new_task_id,
+                type=task.type,
+                name=task.name,
+                priority=task.priority,
+                status=TaskStatus.PENDING,
+                timeout=task.timeout,
+                input_params=task.input_params,
+            )
+            logger.info("任务复制成功: %s -> %s", task_id, new_task_id)
+
+            # 添加到调度器立即执行
+            self.scheduler.add_job(
+                func=self._task_wrapper,
+                args=(task.type, new_task_id),
+                kwargs=args,
+                id=new_task_id,
+                name=task.name,
+                trigger="date",
+                misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"]["misfire_grace_time"],
+            )
+            return new_task_id
+        except (DatabaseError, IntegrityError) as e:
+            logger.error("复制任务失败: %s", str(e), exc_info=True)
+            return ""
+
     def pause_task(self, task_id: str) -> bool:
         """暂停指定任务"""
         try:

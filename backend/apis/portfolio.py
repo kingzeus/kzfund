@@ -1,14 +1,10 @@
 import uuid
+
 from flask_restx import Namespace, Resource, fields
 
 from backend.apis.common import create_list_response_model, create_response_model
 from models.account import ModelPortfolio
-from models.database import (
-    delete_record,
-    get_record,
-    get_record_list,
-    update_record,
-)
+from models.database import delete_record, get_record, get_record_list, update_record
 from utils.response import format_response
 
 api = Namespace("portfolios", description="投资组合相关操作")

@@ -8,6 +8,7 @@
 
 import json
 import logging
+from copy import deepcopy
 from typing import Any, Dict, List
 
 import dash
@@ -15,7 +16,11 @@ import feffery_antd_components as fac
 from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from pages.task.utils import TABLE_STYLES, prepare_task_for_display
+from pages.task.task_utils import (
+    TABLE_STYLES,
+    get_task_store_data,
+    prepare_task_for_display,
+)
 from scheduler.job_manager import JobManager, TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -138,10 +143,12 @@ def handle_task_action(action_clicks, current_data):
                 JobManager().pause_task(task_id)
             else:
                 JobManager().resume_task(task_id)
+        elif action == "copy":
+            logger.info("复制任务: %s", task_id)
+            JobManager().copy_task(task_id)
 
-            # 获取最新任务列表
-            tasks = JobManager().get_task_history()
-            return tasks
+        # 获取最新任务列表
+        return get_task_store_data()
 
     except Exception as e:
         logger.error("处理任务操作失败: %s", str(e))

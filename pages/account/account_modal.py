@@ -195,7 +195,6 @@ def handle_account_create_or_edit(
             - 账户描述输入框值
     """
     if ok_counts and name and validate_status == "success":
-
         update_account(
             editing_id,
             {"name": name, "description": description},

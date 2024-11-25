@@ -1,5 +1,6 @@
-from typing import Any, Dict, Optional
 import uuid
+from typing import Any, Dict, Optional
+
 from peewee import BooleanField, CharField, ForeignKeyField
 
 from models.base import BaseModel
