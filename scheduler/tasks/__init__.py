@@ -1,4 +1,5 @@
 from scheduler.tasks.fund_nav import FundNavTask
+from scheduler.tasks.sync_fund_nav import SyncFundNavTask
 
 from .data_sync import DataSyncTask
 from .fund_detail import FundDetailTask
@@ -26,6 +27,7 @@ def init_tasks():
     factory.register(FundInfoTask)
     factory.register(FundDetailTask)
     factory.register(FundNavTask)
+    factory.register(SyncFundNavTask)  # 同步基金净值
 
 
 __all__ = ["TaskFactory", "TaskStatus", "init_tasks"]

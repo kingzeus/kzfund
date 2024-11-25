@@ -8,6 +8,7 @@ from peewee import JOIN, fn
 from playhouse.shortcuts import update_model_from_dict
 
 from utils.datetime_helper import format_datetime
+from utils.string_helper import get_uuid
 
 from .account import ModelAccount, ModelPortfolio
 from .base import BaseModel, Database, db_connection
@@ -63,7 +64,7 @@ def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
 def add_fund_position(data: Dict[str, Any]) -> str:
     """添加基金持仓"""
     with db_connection():
-        position_id = str(uuid.uuid4())
+        position_id = get_uuid()
         market_value = float(data["shares"]) * float(data["nav"])
         return_rate = (market_value - float(data["cost"])) / float(data["cost"])
 
@@ -247,7 +248,7 @@ def add_transaction(
 
             # 4. 添加交易记录
             transaction = ModelFundTransaction.create(
-                id=str(uuid.uuid4()),
+                id=get_uuid(),
                 portfolio=portfolio_id,
                 fund_code=fund_code,  # 确保使用正确的字段名
                 type=transaction_type,
@@ -359,7 +360,7 @@ def update_position_after_transaction(
             # 创建新持仓（仅限买入）
             if transaction_type == "buy":
                 ModelFundPosition.create(
-                    id=str(uuid.uuid4()),
+                    id=get_uuid(),
                     portfolio=portfolio_id,
                     code=fund.code,
                     name=fund.name,
@@ -418,7 +419,7 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                 return_rate = (market_value - total_cost) / total_cost if total_cost > 0 else 0
 
                 ModelFundPosition.create(
-                    id=str(uuid.uuid4()),
+                    id=get_uuid(),
                     portfolio=portfolio_id,
                     code=fund_code,
                     name=fund_name,

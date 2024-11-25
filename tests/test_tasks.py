@@ -5,6 +5,7 @@ import uuid
 from data_source.data_source_factory import DataSourceFactory
 from data_source.implementations.eastmoney import EastMoneyDataSource
 from scheduler.tasks.fund_detail import FundDetailTask
+from utils.string_helper import get_uuid
 
 
 class TestFundDetailTasks(unittest.TestCase):
@@ -16,7 +17,7 @@ class TestFundDetailTasks(unittest.TestCase):
         # 注册数据源
         DataSourceFactory.register(EastMoneyDataSource)
 
-        self.task = FundDetailTask(str(uuid.uuid4()))
+        self.task = FundDetailTask(get_uuid())
 
     def assertTaskResult(self, result: dict, expected_fields: list):
         """

@@ -6,6 +6,7 @@ from backend.apis.common import create_list_response_model, create_response_mode
 from models.account import ModelPortfolio
 from models.database import delete_record, get_record, get_record_list, update_record
 from utils.response import format_response
+from utils.string_helper import get_uuid
 
 api = Namespace("portfolios", description="投资组合相关操作")
 
@@ -59,7 +60,7 @@ class PortfolioList(Resource):
     def post(self):
         """创建新投资组合"""
         data = api.payload
-        portfolio_id = str(uuid.uuid4())
+        portfolio_id = get_uuid()
         update_record(ModelPortfolio, {"id": portfolio_id}, data)
 
         return format_response(

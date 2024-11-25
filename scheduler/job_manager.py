@@ -11,6 +11,7 @@ from config import SCHEDULER_CONFIG
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
 from utils.singleton import Singleton
+from utils.string_helper import get_uuid
 
 # 创建调度器实例
 scheduler = APScheduler()
@@ -46,10 +47,6 @@ class JobManager:
         self.scheduler.init_app(app)
         self.scheduler.start()
         logger.info("任务调度器初始化成功")
-
-    def _create_job_id(self) -> str:
-        """生成UUID格式的任务ID"""
-        return str(uuid.uuid4())
 
     def _task_wrapper(self, task_type: str, task_id: str, **kwargs):
         """任务执行包装器
@@ -115,13 +112,14 @@ class JobManager:
                 logger.error("保存任务最终状态失败: %s", str(e))
                 raise TaskUpdateError(f"保存任务状态失败: {str(e)}") from e
 
-    def add_task(self, task_type: str, delay: int = 0, **kwargs) -> str:
+    def add_task(self, task_type: str, delay: int = 0, parent_task_id=None, **kwargs) -> str:
         """添加新任务
         为了保证任务正常执行，延时1+delay秒执行
 
         Args:
             task_type: 任务类型
             delay: 延迟执行时间(秒),默认0秒.
+            parent_task_id: 父任务ID
             **kwargs: 任务参数(包含 priority、timeout 等)
 
         Returns:
@@ -136,7 +134,7 @@ class JobManager:
             logger.error("任务参数验证失败: %s", error_message)
             raise ValueError(error_message)
 
-        task_id = self._create_job_id()
+        task_id = get_uuid()
         task_config = TaskFactory().get_task_types().get(task_type, {})
 
         # 过滤掉已单独保存的参数
@@ -147,6 +145,7 @@ class JobManager:
         # 创建任务记录
         ModelTask.create(
             task_id=task_id,
+            parent_task_id=parent_task_id,
             type=task_type,  # 设置任务类型
             name=task_config.get("name", task_type),
             priority=kwargs.get("priority", task_config.get("priority", 0)),
@@ -176,7 +175,7 @@ class JobManager:
         """复制任务"""
         try:
             task = ModelTask.get(ModelTask.task_id == task_id)
-            new_task_id = self._create_job_id()
+            new_task_id = get_uuid()
 
             args = json.loads(task.input_params)
             args["priority"] = task.priority

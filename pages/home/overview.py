@@ -254,7 +254,7 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                 fac.AntdCol(
                     html.Span(
                         str(initial_stats["fund_count"]),
-                        id="fund-count",
+                        id="today-fund-count",
                         style={
                             "color": "#1890ff",
                             "fontSize": "96px",

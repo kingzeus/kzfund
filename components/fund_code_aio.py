@@ -8,6 +8,7 @@ from requests.exceptions import RequestException
 
 from config import DATA_SOURCE_DEFAULT
 from data_source.proxy import DataSourceProxy
+from utils.string_helper import get_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class FundCodeAIO(html.Div):
             debounce_wait: 防抖等待时间(ms)
         """
         if aio_id is None:
-            aio_id = str(uuid.uuid4())
+            aio_id = get_uuid()
 
         select_props = {
             "placeholder": placeholder or "请输入基金代码",

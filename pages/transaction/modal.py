@@ -28,6 +28,7 @@ from models.fund import ModelFundNav, ModelFundTransaction
 from scheduler import job_manager
 from scheduler.job_manager import JobManager
 from utils.fac_helper import show_message
+from utils.string_helper import get_uuid
 
 from .utils import build_cascader_options
 
@@ -403,7 +404,7 @@ def handle_transaction_save(
             "transaction_date": trade_time,
         }
 
-        condition = {"id": editing_id if editing_id else str(uuid.uuid4())}
+        condition = {"id": editing_id if editing_id else get_uuid()}
         success = update_record(ModelFundTransaction, condition, transaction_data)
 
         if success:

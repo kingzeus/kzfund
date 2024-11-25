@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 from peewee import BooleanField, CharField, ForeignKeyField
 
 from models.base import BaseModel
+from utils.string_helper import get_uuid
 
 
 class ModelAccount(BaseModel):
@@ -61,12 +62,12 @@ def update_account(account_id: Optional[str], data: Dict[str, Any]) -> bool:
     from models.database import update_record
 
     if not account_id:
-        account_id = str(uuid.uuid4())
+        account_id = get_uuid()
 
     def on_created(result):
         # 创建默认投资组合
         ModelPortfolio.create(
-            id=str(uuid.uuid4()),
+            id=get_uuid(),
             account=account_id,
             name=f"{data['name']}-默认组合",
             description=f"{data['name']}的默认投资组合",

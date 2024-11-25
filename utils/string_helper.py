@@ -2,6 +2,7 @@ import json
 import random
 import re
 import string
+import uuid
 
 
 def extract_number_with_unit(
@@ -85,3 +86,8 @@ def get_json_from_jsonp_simple(jsonp_str):
         json_str = jsonp_str[start:end]
         return json.loads(json_str)
     return None
+
+
+def get_uuid():
+    """生成UUID"""
+    return str(uuid.uuid4())
