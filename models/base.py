@@ -1,7 +1,7 @@
 import logging
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 
 from peewee import DatabaseError, DateTimeField, Model, SqliteDatabase
 
@@ -15,52 +15,45 @@ logger = logging.getLogger(__name__)
 class Database:
     def __init__(self):
         # 初始化属性
-        self.db: Optional[SqliteDatabase] = None
-        self.db_path: Optional[str] = None
+        self.databases: Dict[str, Optional[SqliteDatabase]] = {
+            "main": None,  # 主数据库(账户、组合等基础数据)
+            "task": None,  # 任务数据库
+        }
+        self.db_paths: Dict[str, Optional[str]] = {
+            "main": None,
+            "task": None,
+        }
 
-    def connect(self):
-        if self.db.is_closed():
-            self.db.connect()
+    def connect(self, db_name: str = "main"):
+        if self.databases[db_name] and self.databases[db_name].is_closed():
+            self.databases[db_name].connect()
 
-    def open(self, db_path: str):
-        new_db_path = db_path or DATABASE_CONFIG["path"]
-        if self.db is not None and new_db_path == self.db_path:
+    def open(self, db_path: str, db_name: str = "main"):
+        new_db_path = db_path or DATABASE_CONFIG["paths"][db_name]
+        if self.databases[db_name] is not None and new_db_path == self.db_paths[db_name]:
             return
 
-        if self.db is not None:
-            self.close()
+        if self.databases[db_name] is not None:
+            self.close(db_name)
 
-        self.db_path = new_db_path
-        self.db = SqliteDatabase(self.db_path)
-        logger.debug("初始化数据库连接: %s", self.db_path)
+        self.db_paths[db_name] = new_db_path
+        self.databases[db_name] = SqliteDatabase(self.db_paths[db_name])
+        logger.debug("初始化数据库连接[%s]: %s", db_name, self.db_paths[db_name])
 
-    def close(self):
-        if self.db is not None:
-            if not self.db.is_closed():
-                logger.debug("关闭数据库连接")
-                self.db.close()
-                self.db_path = None
-                self.db = None
+    def close(self, db_name: str = "main"):
+        if self.databases[db_name] is not None:
+            if not self.databases[db_name].is_closed():
+                logger.debug("关闭数据库连接[%s]", db_name)
+                self.databases[db_name].close()
+                self.db_paths[db_name] = None
+                self.databases[db_name] = None
 
-    def get_db(self):
-        if self.db is None:
-            error_msg = "数据库未初始化"
+    def get_db(self, db_name: str = "main"):
+        if self.databases[db_name] is None:
+            error_msg = f"数据库[{db_name}]未初始化"
             logger.error(error_msg)
             raise DatabaseError(error_msg)
-        return self.db
-
-
-def init_db(db_path: str = None):
-    """初始化数据库连接"""
-    try:
-        Database().open(db_path)
-        # pylint: disable=W0212,E1101
-        BaseModel._meta.database = Database().get_db()
-        logger.info("数据库初始化成功: %s", db_path or DATABASE_CONFIG["path"])
-        return Database().get_db()
-    except Exception as e:
-        logger.error("数据库初始化失败: %s", str(e), exc_info=True)
-        raise
+        return self.databases[db_name]
 
 
 class BaseModel(Model):
@@ -71,6 +64,15 @@ class BaseModel(Model):
 
     class Meta:
         database = None  # 将在初始化时设置
+        db_name = "main"  # 默认使用主数据库
+
+    @classmethod
+    def get_database(cls):
+        """获取模型对应的数据库连接"""
+        db = Database().get_db(cls._meta.db_name)
+        if cls._meta.database is None:
+            cls._meta.database = db
+        return db
 
     def save(self, *args, **kwargs):
         self.updated_at = datetime.now()
@@ -93,19 +95,32 @@ class BaseModel(Model):
 
 
 @contextmanager
-def db_connection(db_path: str = None):
+def db_connection(db_path: str = None, db_name: str = "main"):
     """数据库连接上下文管理器"""
     try:
-        Database().open(db_path)
-        Database().connect()
-        logger.debug("打开数据库连接")
-        yield Database().get_db()
+        Database().open(db_path, db_name)
+        Database().connect(db_name)
+        logger.debug("打开数据库连接[%s]", db_name)
+        yield Database().get_db(db_name)
     except Exception as e:
-        logger.error("数据库操作失败: %s", str(e), exc_info=True)
+        logger.error("数据库操作失败[%s]: %s", db_name, str(e), exc_info=True)
         raise
     finally:
-        Database().close()
-        logger.debug("关闭数据库连接")
+        Database().close(db_name)
+        logger.debug("关闭数据库连接[%s]", db_name)
+
+
+def init_db(db_paths: Dict[str, str] = None):
+    """初始化数据库连接"""
+    try:
+        paths = db_paths or DATABASE_CONFIG["paths"]
+        for db_name, path in paths.items():
+            Database().open(path, db_name)
+            logger.info("数据库[%s]初始化成功: %s", db_name, path)
+        return Database()
+    except Exception as e:
+        logger.error("数据库初始化失败: %s", str(e), exc_info=True)
+        raise
 
 
 # 初始化默认数据库连接

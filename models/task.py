@@ -20,6 +20,7 @@ class ModelTask(BaseModel):
 
     class Meta:
         table_name = "task"
+        db_name = "task"
 
     def to_dict(self) -> dict:
         """将任务实例转换为可JSON序列化的字典

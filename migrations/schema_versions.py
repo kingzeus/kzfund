@@ -1377,7 +1377,8 @@ SCHEMA_VERSIONS = {
                     "updated_at": "DATETIME NOT NULL",
                     "name": "VARCHAR(255) NOT NULL",
                     "description": "VARCHAR(255)",
-                }
+                },
+                "db_name": "main",
             },
             "portfolio": {
                 "fields": {
@@ -1391,6 +1392,7 @@ SCHEMA_VERSIONS = {
                 },
                 "foreign_keys": {"account_id": "account(id)"},
                 "indexes": ["account_id"],
+                "db_name": "main",
             },
             "fund": {
                 "fields": {
@@ -1419,7 +1421,8 @@ SCHEMA_VERSIONS = {
                     "data_source_version": "VARCHAR(20)",
                     "created_at": "DATETIME NOT NULL",
                     "updated_at": "DATETIME NOT NULL",
-                }
+                },
+                "db_name": "main",
             },
             "fund_transaction": {
                 "fields": {
@@ -1437,6 +1440,7 @@ SCHEMA_VERSIONS = {
                 },
                 "foreign_keys": {"portfolio_id": "portfolio(id)", "fund_code": "fund(code)"},
                 "indexes": ["portfolio_id", "fund_code"],
+                "db_name": "main",
             },
             "fund_positions": {
                 "fields": {
@@ -1454,6 +1458,7 @@ SCHEMA_VERSIONS = {
                 },
                 "foreign_keys": {"portfolio_id": "portfolio(id)", "code": "fund(code)"},
                 "indexes": ["portfolio_id", "code"],
+                "db_name": "main",
             },
             "fund_nav_history": {
                 "fields": {
@@ -1473,6 +1478,7 @@ SCHEMA_VERSIONS = {
                 "primary_key": ["fund_code", "nav_date"],
                 "foreign_keys": {"fund_code": "fund(code)"},
                 "indexes": ["fund_code"],
+                "db_name": "main",
             },
             "task": {
                 "fields": {
@@ -1493,6 +1499,7 @@ SCHEMA_VERSIONS = {
                     "type": "VARCHAR(50) NOT NULL DEFAULT 'unknown'",
                 },
                 "indexes": ["name", "status", "created_at"],
+                "db_name": "task",
             },
         },
     },

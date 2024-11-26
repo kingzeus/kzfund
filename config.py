@@ -96,7 +96,10 @@ SERVER_CONFIG = {
 # 数据库配置
 DATABASE_CONFIG = {
     # SQLite数据库文件路径
-    "path": os.path.join(ROOT_DIR, "database", "fund_analysis.v11.db")
+    "paths": {
+        "main": os.path.join(ROOT_DIR, "database", "main.v11.db"),
+        "task": os.path.join(ROOT_DIR, "database", "task.v11.db"),
+    }
 }
 
 # API配置

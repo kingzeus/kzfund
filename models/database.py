@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 
 from playhouse.shortcuts import update_model_from_dict
 
-
 from utils.datetime_helper import format_datetime
 from utils.string_helper import get_uuid
 
@@ -19,24 +18,123 @@ logger = logging.getLogger(__name__)
 
 def init_database():
     """初始化数据库"""
-    with db_connection():
-        Database().get_db().create_tables(
-            [
-                ModelAccount,
-                ModelPortfolio,
-                ModelFundPosition,
-                ModelFundTransaction,
-                ModelFundNav,
-                ModelFund,
-                ModelTask,
-            ]
+    # 定义数据库模型列表
+    models = {
+        ModelAccount,
+        ModelPortfolio,
+        ModelFundPosition,
+        ModelFundTransaction,
+        ModelFundNav,
+        ModelFund,
+        ModelTask,
+    }
+
+    # 初始化数据库表
+    # 按数据库名称分组模型
+    db_models = {}
+    for model in models:
+        db_name = model._meta.db_name
+        if db_name not in db_models:
+            db_models[db_name] = []
+        db_models[db_name].append(model)
+
+    # 为每个数据库创建表
+    for db_name, model_list in db_models.items():
+        with db_connection(db_name=db_name):
+            db = Database().get_db(db_name)
+            # 设置数据库模型的数据库连接
+            for model in model_list:
+                model._meta.database = db
+            # 创建表
+            db.create_tables(model_list)
+
+
+def get_record(model_class, search_fields: Dict[str, Any]) -> Optional[BaseModel]:
+    """通用的获取记录函数"""
+    try:
+        with db_connection(db_name=model_class._meta.db_name):
+            return model_class.get_or_none(**search_fields)
+    except Exception as e:
+        logger.error("获取记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        return None
+
+
+def get_record_list(model_class, search_fields: Optional[Dict[str, Any]] = None) -> List[BaseModel]:
+    """通用的获取记录列表函数"""
+    try:
+        with db_connection(db_name=model_class._meta.db_name):
+            query = model_class.select()
+            if search_fields:
+                query = query.where(
+                    *[
+                        getattr(model_class, field) == value
+                        for field, value in search_fields.items()
+                    ]
+                )
+            return list(query)
+    except Exception as e:
+        logger.error("获取记录列表失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        return []
+
+
+def delete_record(
+    model_class,
+    search_fields: Dict[str, Any],
+    callback_before: Optional[Callable[[BaseModel], None]] = None,
+) -> bool:
+    """通用的删除记录函数"""
+    try:
+        with db_connection(db_name=model_class._meta.db_name):
+            record = model_class.get_or_none(**search_fields)
+            if record:
+                if callback_before:
+                    callback_before(record)
+                record.delete_instance()
+                logger.info(
+                    "成功删除记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
+                )
+                return True
+            logger.warning(
+                "未找到要删除的记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields)
+            )
+            return False
+    except Exception as e:
+        logger.error(
+            "删除记录失败 - 模型: %s, 条件: %s, 错误: %s",
+            model_class.__name__,
+            str(search_fields),
+            str(e),
         )
+        return False
+
+
+def update_record(
+    model_class,
+    search_fields: Dict[str, Any],
+    update_data: Dict[str, Any],
+    callback_created: Optional[Callable[[BaseModel], None]] = None,
+) -> bool:
+    """通用的更新或创建记录函数"""
+    try:
+        with db_connection(db_name=model_class._meta.db_name):
+            existing_record, created = model_class.get_or_create(
+                **search_fields, defaults=update_data
+            )
+            if not created:
+                update_model_from_dict(existing_record, update_data)
+            existing_record.save()
+            if created and callback_created:
+                callback_created(existing_record)
+            return True
+    except Exception as e:
+        logger.error("更新记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        raise
 
 
 # 基金持仓相关操作
 def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
     """获取组合的基金持仓"""
-    with db_connection():
+    with db_connection(db_name=ModelFundPosition._meta.db_name):
         positions = ModelFundPosition.select().where(ModelFundPosition.portfolio == portfolio_id)
 
         if not positions:
@@ -62,7 +160,7 @@ def get_fund_positions(portfolio_id: str) -> List[Dict[str, Any]]:
 
 def add_fund_position(data: Dict[str, Any]) -> str:
     """添加基金持仓"""
-    with db_connection():
+    with db_connection(db_name=ModelFundPosition._meta.db_name):
         position_id = get_uuid()
         market_value = float(data["shares"]) * float(data["nav"])
         return_rate = (market_value - float(data["cost"])) / float(data["cost"])
@@ -85,7 +183,7 @@ def add_fund_position(data: Dict[str, Any]) -> str:
 
 def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
     """获取基金交易记录"""
-    with db_connection():
+    with db_connection(db_name=ModelFundTransaction._meta.db_name):
         transactions = (
             ModelFundTransaction.select()
             .where(ModelFundTransaction.portfolio == portfolio_id)
@@ -489,136 +587,3 @@ def check_database_content():
                     }
                 ),
             )
-
-
-########################################
-# 通用函数
-########################################
-def get_record(model_class, search_fields: Dict[str, Any]) -> Optional[BaseModel]:
-    """通用的获取记录函数
-
-    Args:
-        model_class: Peewee 模型类
-        search_fields: 用于查找记录的字段和值的字典
-
-    Example:
-        get_record(
-            ModelFundNav,
-            {"fund_code": "000001", "nav_date": "2024-01-01"}
-        )
-    """
-    try:
-        with db_connection():
-            return model_class.get_or_none(**search_fields)
-    except Exception as e:
-        logger.error("获取记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
-        return None
-
-
-def get_record_list(model_class, search_fields: Optional[Dict[str, Any]] = None) -> List[BaseModel]:
-    """通用的获取记录列表函数
-
-    Args:
-        model_class: Peewee 模型类
-        search_fields: 用于过滤记录的字段和值的字典,为空时返回所有记录
-
-    Returns:
-        List[BaseModel]: 记录列表
-
-    Example:
-        get_record_list(
-            ModelFundNav,
-            {"fund_code": "000001"}
-        )
-    """
-    try:
-        with db_connection():
-            query = model_class.select()
-            if search_fields:
-                query = query.where(
-                    *[
-                        getattr(model_class, field) == value
-                        for field, value in search_fields.items()
-                    ]
-                )
-            return list(query)
-    except Exception as e:
-        logger.error("获取记录列表失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
-        return []
-
-
-def delete_record(
-    model_class,
-    search_fields: Dict[str, Any],
-    callback_before: Optional[Callable[[BaseModel], None]] = None,
-) -> bool:
-    """通用的删除记录函数
-
-    Args:
-        model_class: Peewee 模型类
-        search_fields: 用于查找记录的字段和值的字典
-        callback_before: 删除记录前的回调函数
-    Returns:
-        bool: 删除是否成功
-
-    Example:
-        delete_record(
-            ModelFundNav,
-            {"fund_code": "000001", "nav_date": "2024-01-01"}
-        )
-    """
-    try:
-        with db_connection():
-            record = model_class.get_or_none(**search_fields)
-            if record:
-                if callback_before:
-                    callback_before(record)
-                record.delete_instance()
-                logger.info("成功删除记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields))
-                return True
-            logger.warning("未找到要删除的记录 - 模型: %s, 条件: %s", model_class.__name__, str(search_fields))
-            return False
-    except Exception as e:
-        logger.error(
-            "删除记录失败 - 模型: %s, 条件: %s, 错误: %s",
-            model_class.__name__,
-            str(search_fields),
-            str(e),
-        )
-        return False
-
-
-def update_record(
-    model_class,
-    search_fields: Dict[str, Any],
-    update_data: Dict[str, Any],
-    callback_created: Optional[Callable[[BaseModel], None]] = None,
-) -> bool:
-    """通用的更新或创建记录函数
-
-    Args:
-        model_class: Peewee 模型类
-        search_fields: 用于查找记录的字段和值的字典
-        update_data: 需要更新的数据字典
-        callback_created: 创建记录后的回调函数
-    Example:
-        _update_record(
-            ModelFundNav,
-            {"fund_code": "000001", "nav_date": "2024-01-01"},
-            {"nav": 1.234, "acc_nav": 2.345}
-        )
-    """
-    try:
-        with db_connection():
-            existing_record, created = model_class.get_or_create(
-                **search_fields, defaults=update_data
-            )
-            if not created:
-                update_model_from_dict(existing_record, update_data)
-            existing_record.save()
-            if created and callback_created:
-                callback_created(existing_record)
-            return True
-    except Exception as e:
-        logger.error("更新记录失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
-        raise

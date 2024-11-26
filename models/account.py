@@ -16,6 +16,7 @@ class ModelAccount(BaseModel):
 
     class Meta:
         table_name = "account"
+        db_name = "main"
 
     def to_dict(self) -> dict:
         """将账户实例转换为可JSON序列化的字典"""
@@ -41,6 +42,7 @@ class ModelPortfolio(BaseModel):
 
     class Meta:
         table_name = "portfolio"
+        db_name = "main"
 
     def to_dict(self) -> dict:
         """将投资组合实例转换为可JSON序列化的字典"""

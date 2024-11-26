@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Optional
+from typing import Dict
 
 from config import DATABASE_CONFIG
 from migrations.version_manager import SchemaManager
@@ -15,6 +15,7 @@ def ensure_db_dir():
         print(f"创建数据库目录: {db_dir}")
     return db_dir
 
+
 def migrate_database():
     """执行数据库迁移"""
     try:
@@ -27,64 +28,89 @@ def migrate_database():
         version_manager = SchemaManager()
 
         # 获取当前版本和目标版本
-        current_version = version_manager.get_current_version()
+        current_versions = {
+            db_name: version_manager.get_current_version(db_path)
+            for db_name, db_path in DATABASE_CONFIG["paths"].items()
+        }
         latest_version = max(version_manager.versions.keys())
 
-        print(f"当前数据库版本: {current_version}")
+        print("当前数据库版本:")
+        for db_name, version in current_versions.items():
+            print(f"  {db_name}: {version}")
         print(f"最新数据库版本: {latest_version}")
 
-        if current_version == latest_version and os.path.exists(
-            DATABASE_CONFIG["path"]
+        # 检查是否需要迁移
+        if all(v == latest_version for v in current_versions.values()) and all(
+            os.path.exists(path) for path in DATABASE_CONFIG["paths"].values()
         ):
-            print("数据库已经是最新版本")
+            print("所有数据库已经是最新版本")
             return True
 
         # 构建新的数据库文件路径
-        new_db_path = get_new_db_path(latest_version)
+        new_db_paths = {
+            db_name: get_new_db_path(db_name, latest_version)
+            for db_name in DATABASE_CONFIG["paths"].keys()
+        }
 
-        # 如果存在旧的迁移文件，先删除
-        if os.path.exists(new_db_path):
-            os.remove(new_db_path)
-            print(f"删除旧的迁移文件: {new_db_path}")
+        # 删除旧的迁移文件
+        for db_path in new_db_paths.values():
+            if os.path.exists(db_path):
+                os.remove(db_path)
+                print(f"删除旧的迁移文件: {db_path}")
 
         # 备份当前配置
-        old_db_path = DATABASE_CONFIG["path"]
+        old_db_paths = DATABASE_CONFIG["paths"].copy()
 
         try:
-            # 如果存在当前数据库文件，则复制
-            if os.path.exists(old_db_path):
-                shutil.copy2(old_db_path, new_db_path)
-                print(f"创建数据库副本: {new_db_path}")
+            # 复制现有数据库文件
+            for db_name, old_path in old_db_paths.items():
+                if os.path.exists(old_path):
+                    shutil.copy2(old_path, new_db_paths[db_name])
+                    print(f"创建数据库副本: {new_db_paths[db_name]}")
 
             # 临时更新配置指向新数据库文件
-            DATABASE_CONFIG["path"] = new_db_path
+            DATABASE_CONFIG["paths"].update(new_db_paths)
             # 重新初始化数据库连接
-            init_db(new_db_path)
+            init_db(new_db_paths)
 
-            # 执行迁移（使用原始版本号）
-            if version_manager.migrate_to_version(latest_version, current_version):
-                print(f"数据库已成功迁移到版本 {latest_version}")
-                print(f"新的数据库文件: {new_db_path}")
+            # 执行迁移
+            success = True
+            for db_name, current_version in current_versions.items():
+                print(f"\n迁移数据库 {db_name}...")
+                if not version_manager.migrate_to_version(latest_version, current_version, db_name):
+                    success = False
+                    break
+
+            if success:
+                print(f"\n所有数据库已成功迁移到版本 {latest_version}")
+                print("\n新的数据库文件:")
+                for db_name, path in new_db_paths.items():
+                    print(f"  {db_name}: {path}")
                 print("\n请更新配置文件中的数据库路径:")
-                print(f'DATABASE_CONFIG["path"] = "{new_db_path}"')
+                print('DATABASE_CONFIG["paths"] = {')
+                for db_name, path in new_db_paths.items():
+                    print(f'    "{db_name}": "{path}",')
+                print("}")
                 return True
             else:
                 # 迁移失败，恢复配置和数据库连接
-                DATABASE_CONFIG["path"] = old_db_path
-                init_db(old_db_path)
-                if os.path.exists(new_db_path):
-                    os.remove(new_db_path)
-                    print(f"迁移失败，已删除新数据库文件: {new_db_path}")
+                DATABASE_CONFIG["paths"] = old_db_paths
+                init_db(old_db_paths)
+                for path in new_db_paths.values():
+                    if os.path.exists(path):
+                        os.remove(path)
+                        print(f"迁移失败，已删除新数据库文件: {path}")
                 return False
 
         except Exception as e:
             print(f"迁移过程中出错: {e}")
             # 恢复配置和数据库连接
-            DATABASE_CONFIG["path"] = old_db_path
-            init_db(old_db_path)
-            if os.path.exists(new_db_path):
-                os.remove(new_db_path)
-                print(f"迁移失败，已删除新数据库文件: {new_db_path}")
+            DATABASE_CONFIG["paths"] = old_db_paths
+            init_db(old_db_paths)
+            for path in new_db_paths.values():
+                if os.path.exists(path):
+                    os.remove(path)
+                    print(f"迁移失败，已删除新数据库文件: {path}")
             raise e
 
     except Exception as e:
@@ -95,10 +121,10 @@ def migrate_database():
         return False
 
 
-def get_new_db_path(version: int) -> str:
+def get_new_db_path(db_name: str, version: int) -> str:
     """获取新版本数据库文件路径"""
     db_dir = ensure_db_dir()
-    current_path = DATABASE_CONFIG["path"]
+    current_path = DATABASE_CONFIG["paths"][db_name]
     basename = os.path.basename(current_path)
 
     # 从当前文件名中提取基础名称（移除版本号）

@@ -41,13 +41,14 @@ class SchemaManager:
             return 0
 
     def migrate_to_version(
-        self, target_version: int, original_version: Optional[int] = None
+        self, target_version: int, original_version: Optional[int] = None, db_name: str = "main"
     ) -> bool:
         """迁移到指定版本
 
         Args:
             target_version: 目标版本号
             original_version: 原始版本号，如果为None则自动获取
+            db_name: 数据库名称
 
         Returns:
             bool: 迁移是否成功
@@ -55,17 +56,17 @@ class SchemaManager:
         current_version = (
             original_version
             if original_version is not None
-            else self.get_current_version()
+            else self.get_current_version(DATABASE_CONFIG["paths"][db_name])
         )
 
-        print(f"开始迁移: 当前版本 {current_version} -> 目标版本 {target_version}")
-        print(f"使用数据库: {DATABASE_CONFIG['path']}")
+        print(f"开始迁移数据库[{db_name}]: 当前版本 {current_version} -> 目标版本 {target_version}")
+        print(f"使用数据库: {DATABASE_CONFIG['paths'][db_name]}")
 
         try:
-            with db_connection(DATABASE_CONFIG["path"]) as db:
+            with db_connection(db_name=db_name) as db:
                 with db.atomic():
-                    self._execute_migration(current_version, target_version, db)
-                    self.validate_database(db, target_version)
+                    self._execute_migration(current_version, target_version, db, db_name)
+                    self.validate_database(db, target_version, db_name)
                     return True
         except Exception as e:
             print(f"迁移失败: {e}")
@@ -74,37 +75,31 @@ class SchemaManager:
             traceback.print_exc()
             return False
 
-    def _execute_migration(self, current_version: int, target_version: int, db):
-        """执行版本迁移
-
-        Args:
-            current_version: 当前版本
-            target_version: 目标版本
-            db: 数据库连接
-        """
+    def _execute_migration(self, current_version: int, target_version: int, db, db_name: str):
+        """执行版本迁移"""
         if current_version < target_version:
-            self._migrate_up(current_version, target_version, db)
+            self._migrate_up(current_version, target_version, db, db_name)
         else:
-            self._migrate_down(current_version, target_version, db)
+            self._migrate_down(current_version, target_version, db, db_name)
         print("\n迁移完成")
 
-    def _migrate_up(self, current_version: int, target_version: int, db):
+    def _migrate_up(self, current_version: int, target_version: int, db, db_name: str):
         """升级到更高版本"""
         for version in range(current_version + 1, target_version + 1):
             if version in self.versions:
                 print(f"\n执行版本 {version} 的迁移...")
-                self._apply_version(version, db)
+                self._apply_version(version, db, db_name)
                 print(f"版本 {version} 迁移完成")
 
-    def _migrate_down(self, current_version: int, target_version: int, db):
+    def _migrate_down(self, current_version: int, target_version: int, db, db_name: str):
         """回滚到更低版本"""
         for version in range(current_version, target_version, -1):
             if version in self.versions:
                 print(f"\n执行版本 {version} 的回滚...")
-                self._revert_version(version, db)
+                self._revert_version(version, db, db_name)
                 print(f"版本 {version} 回滚完成")
 
-    def _apply_version(self, version: int, db):
+    def _apply_version(self, version: int, db, db_name: str):
         """应用指定版本的变更"""
         version_info = self.versions[version]
         print(f"升级到版本 {version}: {version_info['description']}")
@@ -124,23 +119,23 @@ class SchemaManager:
                 changes["drop_tables"] = []
 
             # 1. 处理表重命名
-            self._handle_table_renames(version_info, db)
+            self._handle_table_renames(version_info, db, db_name)
 
             # 2. 处理新表创建
-            self._handle_new_tables(version_info, db)
+            self._handle_new_tables(version_info, db, db_name)
 
             # 3. 处理表修改
-            self._handle_table_modifications(version_info, db)
+            self._handle_table_modifications(version_info, db, db_name)
 
             # 4. 处理表删除
-            self._handle_table_drops(version_info, db)
+            self._handle_table_drops(version_info, db, db_name)
 
             print(f"\n版本 {version} 的所有变更已应用")
         except Exception as e:
             print(f"应用版本 {version} 失败: {e}")
             raise e
 
-    def _handle_table_renames(self, version_info: Dict[str, Any], db):
+    def _handle_table_renames(self, version_info: Dict[str, Any], db, db_name: str):
         """处理表重命名操作"""
         for table_name, changes in version_info["changes"]["alter_tables"].items():
             if "rename_to" in changes:
@@ -149,14 +144,14 @@ class SchemaManager:
                 sql = f"ALTER TABLE {table_name} RENAME TO {new_table_name}"
                 db.execute_sql(sql)
 
-    def _handle_new_tables(self, version_info: Dict[str, Any], db):
+    def _handle_new_tables(self, version_info: Dict[str, Any], db, db_name: str):
         """处理新表创建"""
         for table_name in version_info["changes"]["new_tables"]:
             table_info = version_info["schema"][table_name]
             print(f"\n创建新表: {table_name}")
-            self._create_table(table_name, table_info, db)
+            self._create_table(table_name, table_info, db, db_name)
 
-    def _handle_table_modifications(self, version_info: Dict[str, Any], db):
+    def _handle_table_modifications(self, version_info: Dict[str, Any], db, db_name: str):
         """处理表修改"""
         for table_name, changes in version_info["changes"]["alter_tables"].items():
             if "rename_to" in changes:
@@ -168,6 +163,7 @@ class SchemaManager:
                         version_info["schema"][new_table_name],
                         changes,
                         db,
+                        db_name,
                     )
             else:
                 print(f"\n修改表: {table_name}")
@@ -176,18 +172,19 @@ class SchemaManager:
                     version_info["schema"][table_name],
                     changes,
                     db,
+                    db_name,
                 )
 
-    def _handle_table_drops(self, version_info: Dict[str, Any], db):
+    def _handle_table_drops(self, version_info: Dict[str, Any], db, db_name: str):
         """处理表删除"""
         # 获取drop_tables列表，如果不存在则使用空列表
         drop_tables = version_info.get("changes", {}).get("drop_tables", [])
 
         for table_name in drop_tables:
             print(f"\n删除表: {table_name}")
-            self._drop_table(table_name, db)
+            self._drop_table(table_name, db, db_name)
 
-    def _create_table(self, table_name: str, table_info: Dict[str, Any], db):
+    def _create_table(self, table_name: str, table_info: Dict[str, Any], db, db_name: str):
         """创建表
 
         Args:
@@ -197,7 +194,7 @@ class SchemaManager:
         """
         try:
             # 检查表是否已存在
-            if self._table_exists(table_name, db):
+            if self._table_exists(table_name, db, db_name):
                 print(f"表 {table_name} 已存在，跳过创建")
                 return
 
@@ -210,7 +207,7 @@ class SchemaManager:
             db.execute_sql(sql)
 
             # 创建索引
-            self._create_indexes(table_name, table_info, db)
+            self._create_indexes(table_name, table_info, db, db_name)
 
             print(f"表 {table_name} 创建成功")
 
@@ -218,7 +215,7 @@ class SchemaManager:
             print(f"创建表 {table_name} 失败: {e}")
             raise e
 
-    def _table_exists(self, table_name: str, db) -> bool:
+    def _table_exists(self, table_name: str, db, db_name: str) -> bool:
         """检查表是否存在"""
         cursor = db.execute_sql(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -242,7 +239,7 @@ class SchemaManager:
 
         return field_defs
 
-    def _create_indexes(self, table_name: str, table_info: Dict[str, Any], db):
+    def _create_indexes(self, table_name: str, table_info: Dict[str, Any], db, db_name: str):
         """创建表索引"""
         if "indexes" in table_info:
             for index_field in table_info["indexes"]:
@@ -252,7 +249,7 @@ class SchemaManager:
                 db.execute_sql(sql)
 
     def _rebuild_table(
-        self, table_name: str, new_schema: Dict[str, Any], changes: Dict[str, Any], db
+        self, table_name: str, new_schema: Dict[str, Any], changes: Dict[str, Any], db, db_name: str
     ):
         """重建表（用于SQLite不支持的ALTER TABLE操作）"""
         print(f"重建表 {table_name}")
@@ -263,7 +260,7 @@ class SchemaManager:
             db.execute_sql(f"ALTER TABLE {table_name} RENAME TO {temp_table}")
 
             # 2. 使用新结构创建表
-            self._create_table(table_name, new_schema, db)
+            self._create_table(table_name, new_schema, db, db_name)
 
             # 3. 获取需要迁移的字段
             common_fields = self._get_common_fields(temp_table, new_schema["fields"], db)
@@ -349,23 +346,19 @@ class SchemaManager:
         old_fields = [row[1] for row in cursor.fetchall()]
         return [field for field in old_fields if field in new_fields]
 
-    def _drop_table(self, table_name: str, db):
+    def _drop_table(self, table_name: str, db, db_name: str):
         """删除表"""
         db.execute_sql(f"DROP TABLE IF EXISTS {table_name}")
 
-    def validate_database(self, db, target_version: int):
-        """验证数据库结构是否符合预期
-
-        Args:
-            db: 数据库连接
-            target_version: 目标版本号
-
-        Raises:
-            Exception: 当验证失败时抛出异常
-        """
-        print("\n开始验证数据库结构...")
+    def validate_database(self, db, target_version: int, db_name: str):
+        """验证数据库结构是否符合预期"""
+        print(f"\n开始验证数据库[{db_name}]结构...")
         version = self.versions[target_version]
         for table_name, table_info in version["schema"].items():
+            # 检查表是否属于当前数据库
+            if table_info.get("db_name", "main") != db_name:
+                continue
+
             try:
                 cursor = db.execute_sql(f"PRAGMA table_info({table_name})")
                 existing_fields = {row[1] for row in cursor.fetchall()}

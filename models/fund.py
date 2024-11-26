@@ -66,6 +66,7 @@ class ModelFund(BaseModel):
 
     class Meta:
         table_name = "fund"
+        db_name = "main"
 
     def to_dict(self) -> dict:
         """将基金实例转换为可JSON序列化的字典"""
@@ -132,6 +133,7 @@ class ModelFundPosition(BaseModel):
 
     class Meta:
         table_name = "fund_positions"
+        db_name = "main"
 
     def to_dict(self) -> dict:
         """将基金持仓实例转换为可JSON序列化的字典"""
@@ -183,6 +185,7 @@ class ModelFundTransaction(BaseModel):
 
     class Meta:
         table_name = "fund_transaction"
+        db_name = "main"
 
     def to_dict(self) -> dict:
         """将交易记录转换为字典"""
@@ -230,6 +233,7 @@ class ModelFundNav(BaseModel):
 
     class Meta:
         table_name = "fund_nav_history"
+        db_name = "main"
         primary_key = CompositeKey("fund", "nav_date")
 
     def to_dict(self) -> dict:
