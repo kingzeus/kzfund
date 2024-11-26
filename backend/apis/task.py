@@ -7,6 +7,8 @@ from flask import request
 from flask_restx import Namespace, Resource, fields
 
 from backend.apis.common import create_list_response_model, create_response_model
+from models.database import get_record_list
+from models.task import ModelTask
 from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskFactory
 from utils.response import format_response
@@ -64,8 +66,10 @@ class TaskList(Resource):
     def get(self):
         """获取任务历史列表"""
         try:
-            limit = request.args.get("limit", 100, type=int)
-            return format_response(data=self.job_manager.get_task_history(limit))
+            tasks = get_record_list(
+                ModelTask, {"parent_task_id__null": False}, order_by=["-created_at"]
+            )
+            return format_response(data=tasks)
         except (ValueError, KeyError) as e:
             logger.error("获取任务历史失败: %s", str(e))
             return format_response(message=f"获取任务历史失败: {str(e)}", code=500)

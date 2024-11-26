@@ -21,7 +21,7 @@ class FundDetailTask(BaseTask):
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         return {
-            "name": "基金详情更新",
+            "name": "【更新】基金详情",
             "description": "更新基金详情信息",
             "timeout": 30,
             "params": [

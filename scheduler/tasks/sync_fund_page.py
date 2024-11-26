@@ -13,43 +13,54 @@ from .base import BaseTask
 logger = logging.getLogger(__name__)
 
 
-class SyncFundNavTask(BaseTask):
-    """基金净值更新任务"""
+class SyncFundListTask(BaseTask):
+    """基金列表更新任务"""
 
     @classmethod
     def get_type(cls) -> str:
-        return "sync_fund_nav"
+        return "sync_fund_page"
 
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         return {
-            "name": "【同步】基金历史净值",
-            "description": "同步单个基金历史净值",
+            "name": "【同步】基金最新净值列表页",
+            "description": "基金最新净值列表页",
             "timeout": 300,
             "params": [
                 {
-                    "name": "基金代码",
-                    "key": "fund_code",
-                    "type": "fund-code-aio",  # 使用基金选择器组件
+                    "name": "类型",
+                    "key": "sync_type",
+                    "type": "select",
                     "required": True,
-                    "description": "要更新的基金代码",
-                }
+                    "description": "选择要同步的数据类型",
+                    "default": 1,
+                    "options": [
+                        {"label": "全部数据", "value": 1},
+                        {"label": "股票型", "value": 2},
+                        {"label": "混合型", "value": 3},
+                        {"label": "指数型", "value": 5},
+                        {"label": "QDII", "value": 6},
+                        {"label": "LOF", "value": 8},
+                        {"label": "债券型", "value": 13},
+                        {"label": "FOF", "value": 15},
+                    ],
+                },
             ],
         }
 
     @classmethod
     def get_description(cls) -> str:
-        return "同步单个基金历史净值"
+        return "基金最新净值列表"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         from scheduler.job_manager import JobManager
 
-        logger.info("[%s] 开始同步基金净值 %s", datetime.now(), self.task_id)
+        logger.info("[%s] 开始同步基金净值列表 %s", datetime.now(), self.task_id)
 
         # 获取参数
-        fund_code = kwargs.get("fund_code")
-        if not fund_code:
-            raise ValueError("fund_code 不能为空")
+        type = kwargs.get("sync_type")
+        if not type:
+            raise ValueError("sync_type 不能为空")
 
         try:
             # 初始化数据源

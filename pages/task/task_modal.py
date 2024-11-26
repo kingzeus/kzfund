@@ -15,6 +15,7 @@ from dash import ALL, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
+from pages.task.task_utils import get_tasks
 from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskFactory
 
@@ -28,7 +29,7 @@ def render_task_modal() -> fac.AntdModal:
         title="新建任务",
         visible=False,
         maskClosable=False,
-        width=500,
+        width=700,
         renderFooter=True,
         okText="确定",
         cancelText="取消",
@@ -302,6 +303,6 @@ def handle_task_create(
         raise PreventUpdate from e
 
     # 更新任务列表并关闭对话框
-    tasks = JobManager().get_task_history()
+    tasks = get_tasks()
     task_list = [task.to_dict() for task in tasks]
     return task_list, False, None, None, None

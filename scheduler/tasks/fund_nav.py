@@ -22,8 +22,8 @@ class FundNavTask(BaseTask):
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         return {
-            "name": "基金净值更新",
-            "description": "更新基金净值",
+            "name": "【更新】基金历史净值",
+            "description": "更新单个基金历史净值",
             "timeout": 300,
             "params": [
                 {
@@ -51,7 +51,7 @@ class FundNavTask(BaseTask):
 
     @classmethod
     def get_description(cls) -> str:
-        return "更新基金净值"
+        return "更新单个基金历史净值"
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         logger.info("[%s] 开始更新基金净值 %s", datetime.now(), self.task_id)

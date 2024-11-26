@@ -21,8 +21,8 @@
 import feffery_antd_components as fac
 from dash import dcc, html
 
-from pages.task.detail_modal import render_task_detail_modal
-from pages.task.modal import render_task_modal
+from pages.task.task_detail import render_task_detail_modal
+from pages.task.task_modal import render_task_modal
 from pages.task.task_table import render_task_table
 from pages.task.task_utils import ICON_STYLES, PAGE_PADDING, get_task_store_data
 

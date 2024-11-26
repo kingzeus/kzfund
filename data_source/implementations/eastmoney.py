@@ -215,7 +215,7 @@ class EastMoneyDataSource(IDataSource):
         Returns:
             int: 历史净值数据大小
         """
-        return 25
+        return 24
 
     def get_fund_nav_history(
         self,

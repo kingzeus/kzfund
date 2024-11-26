@@ -80,7 +80,7 @@ class JobManager:
 
             # 任务成功完成
             task_history.status = TaskStatus.COMPLETED
-            task_history.result = str(result)
+            task_history.result = json.dumps(result, ensure_ascii=False, default=str)
             logger.info("任务执行完成: %s (ID: %s)", task_type, task_id)
 
         except TaskExecutionError as e:
@@ -146,7 +146,6 @@ class JobManager:
 
                         task.save()
                     elif task.status == TaskStatus.PENDING:
-
                         # 重新添加到调度器
                         task.delay = task.delay - min_delay
                         if task.delay < 0:
@@ -177,15 +176,18 @@ class JobManager:
         except Exception as e:
             logger.error("恢复任务失败: %s", str(e), exc_info=True)
 
-    def add_task(self, task_type: str, delay: int = 0, parent_task_id=None, **kwargs) -> str:
+    def add_task(
+        self, task_type: str, delay: int = 0, timeout=0, parent_task_id=None, **kwargs
+    ) -> str:
         """添加新任务
         为了保证任务正常执行，延时1+delay秒执行
 
         Args:
             task_type: 任务类型
             delay: 延迟执行时间(秒),默认0秒.
+            timeout: 任务超时时间(秒),默认0，采用任务类型对应的默认超时时间
             parent_task_id: 父任务ID
-            **kwargs: 任务参数(包含 timeout 等)
+            **kwargs: 任务参数
 
         Returns:
             task_id: 新创建的任务ID
@@ -201,10 +203,11 @@ class JobManager:
 
         task_id = get_uuid()
         task_config = TaskFactory().get_task_types().get(task_type, {})
+        if timeout == 0:
+            timeout = task_config.get("timeout", SCHEDULER_CONFIG["DEFAULT_TIMEOUT"])
 
         # 过滤掉已单独保存的参数
         input_params = kwargs.copy()
-        input_params.pop("timeout", None)
 
         # 创建任务记录
         ModelTask.create(
@@ -214,10 +217,7 @@ class JobManager:
             name=task_config.get("name", task_type),
             delay=delay,
             status=TaskStatus.PENDING,
-            timeout=kwargs.get(
-                "timeout",
-                task_config.get("timeout", SCHEDULER_CONFIG["DEFAULT_TIMEOUT"]),
-            ),
+            timeout=timeout,
             input_params=json.dumps(input_params),  # 将参数转换为JSON字符串
         )
 
@@ -242,7 +242,6 @@ class JobManager:
             new_task_id = get_uuid()
 
             args = json.loads(task.input_params)
-            args["timeout"] = task.timeout
 
             ModelTask.create(
                 task_id=new_task_id,
@@ -293,23 +292,6 @@ class JobManager:
         except (DatabaseError, IntegrityError) as e:
             logger.error("恢复任务失败: %s: %s", task_id, str(e), exc_info=True)
             return False
-
-    def get_task_history(self, limit: int = 100) -> List[ModelTask]:
-        """获取最近的任务历史记录
-
-        Args:
-            limit: 返回的最大记录数,默认100条
-
-        Returns:
-            任务历史记录列表,每条记录为ModelTask实例
-        """
-        try:
-            return list(
-                ModelTask.select().order_by(ModelTask.created_at.desc()).limit(limit).execute()
-            )
-        except DatabaseError as e:
-            logger.error("获取任务历史记录失败: %s", e)
-            return []
 
     def update_task_progress(self, task_id: str, progress: int):
         """更新任务进度到缓存"""

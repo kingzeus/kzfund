@@ -19,6 +19,7 @@ from dash.exceptions import PreventUpdate
 from pages.task.task_utils import (
     TABLE_STYLES,
     get_task_store_data,
+    get_tasks,
     prepare_task_for_display,
 )
 from scheduler.job_manager import JobManager, TaskStatus
@@ -146,6 +147,9 @@ def handle_task_action(action_clicks, current_data):
         elif action == "copy":
             logger.info("复制任务: %s", task_id)
             JobManager().copy_task(task_id)
+        elif action == "view":
+            # 查看任务详情时不需要更新 task-store
+            return dash.no_update
 
         # 获取最新任务列表
         return get_task_store_data()
@@ -205,7 +209,7 @@ def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
 
         if should_full_refresh:
             # 获取最新的完整任务列表
-            latest_tasks = [task.to_dict() for task in JobManager().get_task_history()]
+            latest_tasks = [task.to_dict() for task in get_tasks()]
 
             # 更新任务状态和其他信息
             for i, task in enumerate(updated_tasks):

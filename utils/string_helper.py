@@ -91,3 +91,12 @@ def get_json_from_jsonp_simple(jsonp_str):
 def get_uuid():
     """生成UUID"""
     return str(uuid.uuid4())
+
+
+def json_str_to_dict(data: str) -> dict:
+    """将数据转换为dict"""
+    try:
+        if isinstance(data, str):
+            return json.loads(data)
+    except json.JSONDecodeError:
+        return {"error": "无法解析的参数"}

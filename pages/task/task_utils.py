@@ -13,7 +13,10 @@ import feffery_antd_components as fac
 from dash import html
 from feffery_utils_components import FefferyJsonViewer
 
+from models.database import get_record_list
+from models.task import ModelTask
 from scheduler.job_manager import JobManager, TaskStatus
+from dash.development.base_component import Component
 from utils.datetime_helper import format_datetime
 
 # ============= 状态常量 =============
@@ -40,10 +43,19 @@ ICON_STYLES = {"fontSize": "24px", "marginRight": "8px"}
 
 
 # ============= 工具函数 =============
+def get_tasks() -> List[ModelTask]:
+    """获取任务列表"""
+    return get_record_list(ModelTask, {"parent_task_id__null": True}, order_by=["-created_at"])
+
+
+def get_sub_tasks(task_id: str) -> List[ModelTask]:
+    """获取子任务列表"""
+    return get_record_list(ModelTask, {"parent_task_id": task_id}, order_by=["-created_at"])
+
+
 def get_task_store_data() -> List[Dict[str, Any]]:
     """获取任务store数据"""
-    tasks = JobManager().get_task_history()
-    return [task.to_dict() for task in tasks]
+    return [task.to_dict() for task in get_tasks()]
 
 
 def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
@@ -73,40 +85,39 @@ def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
     return {
         **task,
         "created_at": format_datetime(task["created_at"]) if task["created_at"] else "-",
-        "status_tag": fac.AntdTag(
-            content=STATUS_LABELS.get(task["status"], "未知"),
-            color=STATUS_COLORS.get(task["status"], "default"),
-        ),
+        "status_tag": create_status_tag(task),
         "progress_bar": fac.AntdProgress(
             percent=task["progress"],
             size="small",
         ),
-        "input_params": html.Div(
-            [
-                FefferyJsonViewer(
-                    data=input_params,
-                    quotesOnKeys=False,
-                    enableClipboard=False,
-                    displayDataTypes=False,
-                    displayObjectSize=False,
-                    style={
-                        "fontSize": "12px",
-                        "backgroundColor": "transparent",
-                        "padding": "0",
-                        "textAlign": "left",
-                    },
-                    collapseStringsAfterLength=False,
-                ),
-            ],
-            style={
-                "maxHeight": "200px",
-                "overflow": "auto",
-                "textAlign": "left",
-                "padding": "4px",
-            },
-        )
-        if input_params
-        else "-",
+        "input_params": (
+            html.Div(
+                [
+                    FefferyJsonViewer(
+                        data=input_params,
+                        quotesOnKeys=False,
+                        enableClipboard=False,
+                        displayDataTypes=False,
+                        displayObjectSize=False,
+                        style={
+                            "fontSize": "12px",
+                            "backgroundColor": "transparent",
+                            "padding": "0",
+                            "textAlign": "left",
+                        },
+                        collapseStringsAfterLength=False,
+                    ),
+                ],
+                style={
+                    "maxHeight": "200px",
+                    "overflow": "auto",
+                    "textAlign": "left",
+                    "padding": "4px",
+                },
+            )
+            if input_params
+            else "-"
+        ),
         "actions": create_operation_buttons(task),
     }
 
@@ -164,45 +175,18 @@ def create_operation_buttons(task: Dict[str, Any]) -> fac.AntdSpace:
     return fac.AntdSpace(buttons)
 
 
-def get_task_detail_items(task: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """生成任务详情项
-
-    Args:
-        task: 任务数据
-
-    Returns:
-        详情项列表
-    """
-    return [
-        {"label": "任务ID", "value": task["task_id"]},
-        {"label": "任务名称", "value": task["name"]},
-        {"label": "状态", "value": create_status_tag(task["status"])},
-        {"label": "进度", "value": f"{task['progress']}%"},
-        {"label": "延迟时间", "value": task["delay"]},
-        {"label": "创建时间", "value": task["created_at"]},
-        {
-            "label": "开始时间",
-            "value": format_datetime(task["start_time"]) if task["start_time"] else "-",
-        },
-        {
-            "label": "结束时间",
-            "value": format_datetime(task["end_time"]) if task["end_time"] else "-",
-        },
-        {"label": "执行结果", "value": task.get("result", "-")},
-        {"label": "错误信息", "value": task.get("error", "-")},
-    ]
-
-
-def create_status_tag(status: str) -> Dict[str, str]:
-    """创建状态标签配置
-
-    Args:
-        status: 任务状态
-
-    Returns:
-        包含标签文本和颜色的字典
-    """
-    return {
-        "tag": STATUS_LABELS.get(status, "未知"),
-        "color": STATUS_COLORS.get(status, "default"),
-    }
+def create_status_tag(task: dict, show_error: bool = True) -> Component:
+    """创建状态标签配置"""
+    if show_error and task["status"] == TaskStatus.FAILED:
+        return fac.AntdTooltip(
+            fac.AntdTag(
+                content="失败",
+                color="error",
+            ),
+            title=task.get("error") or "未知错误",
+        )
+    else:
+        return fac.AntdTag(
+            content=STATUS_LABELS.get(task["status"], "未知"),
+            color=STATUS_COLORS.get(task["status"], "default"),
+        )
