@@ -127,11 +127,10 @@ class JobManager:
             restored_count = 0
 
             # 获取延迟最小值
-            min_delay = min(
-                task.delay
-                for task in unfinished_tasks
-                if task.status == TaskStatus.PENDING and task.delay > 0
-            )
+            min_delay = 3600
+            for task in unfinished_tasks:
+                if task.status == TaskStatus.PENDING and task.delay > 0:
+                    min_delay = min(min_delay, task.delay)
 
             for task in unfinished_tasks:
                 try:
@@ -169,14 +168,14 @@ class JobManager:
                     logger.debug("恢复任务: %s", task.task_id)
 
                 except Exception as e:
-                    logger.error("恢复任务失败 %s: %s", task.task_id, str(e))
+                    logger.error("恢复任务失败 %s: %s", task.task_id, str(e), exc_info=True)
                     continue
 
             if restored_count > 0:
                 logger.info("成功恢复 %d 个任务", restored_count)
 
         except Exception as e:
-            logger.error("恢复任务失败: %s", str(e))
+            logger.error("恢复任务失败: %s", str(e), exc_info=True)
 
     def add_task(self, task_type: str, delay: int = 0, parent_task_id=None, **kwargs) -> str:
         """添加新任务
