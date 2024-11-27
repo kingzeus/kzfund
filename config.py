@@ -97,8 +97,8 @@ SERVER_CONFIG = {
 DATABASE_CONFIG = {
     # SQLite数据库文件路径
     "paths": {
-        "main": os.path.join(ROOT_DIR, "database", "main.v11.db"),
-        "task": os.path.join(ROOT_DIR, "database", "task.v11.db"),
+        "main": os.path.join(ROOT_DIR, "database", "main.v12.db"),
+        "task": os.path.join(ROOT_DIR, "database", "task.v12.db"),
     }
 }
 

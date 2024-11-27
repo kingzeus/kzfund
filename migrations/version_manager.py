@@ -255,6 +255,17 @@ class SchemaManager:
         print(f"重建表 {table_name}")
 
         try:
+            # 检查表是否属于当前数据库
+            if new_schema.get("db_name") and new_schema.get("db_name") != db_name:
+                print(f"表 {table_name} 不属于数据库 {db_name}，跳过重建")
+                return
+
+            # 检查表是否存在
+            if not self._table_exists(table_name, db, db_name):
+                print(f"表 {table_name} 不存在，直接创建新表")
+                self._create_table(table_name, new_schema, db, db_name)
+                return
+
             # 1. 重命名原表为临时表
             temp_table = f"{table_name}_old"
             db.execute_sql(f"ALTER TABLE {table_name} RENAME TO {temp_table}")
