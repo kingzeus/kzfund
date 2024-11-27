@@ -2,7 +2,7 @@
 
 页面结构:
 1. Store组件
-   - statistics-store: 存储统计数据
+   - home-statistics-store: 存储统计数据
 
 2. 页面标题
    - 图标 + 文字标题
@@ -17,12 +17,13 @@
 
 import feffery_antd_components as fac
 from dash import dcc, html
+from dash import Input, Output, callback
 
+from config import PAGE_CONFIG
 from models.database import get_statistics
 from pages.home.charts import render_asset_allocation_chart, render_performance_chart
-from pages.home.overview import (
+from pages.home.home_overview import (
     render_account_count_card,
-    render_fund_count_card,
     render_fund_data_card,
     render_return_rate_card,
     render_today_fund_card,
@@ -30,7 +31,6 @@ from pages.home.overview import (
     render_total_assets_card,
 )
 
-from . import callbacks  # 添加这行导入
 from .utils import ICON_STYLES
 
 
@@ -46,7 +46,12 @@ def render_home_page() -> html.Div:
     return html.Div(
         [
             # Store 组件
-            dcc.Store(id="statistics-store", data=initial_stats),
+            dcc.Store(id="home-statistics-store", data=initial_stats),
+            # 添加30秒定时刷新组件
+            dcc.Interval(
+                id="home-interval",
+                interval=PAGE_CONFIG["HOME_INTERVAL_TIME"],
+            ),
             # 页面标题
             fac.AntdRow(
                 fac.AntdCol(
@@ -129,3 +134,20 @@ def render_home_page() -> html.Div:
         ],
         style={"padding": "24px"},
     )
+
+
+@callback(
+    Output("home-statistics-store", "data"),
+    Input("home-interval", "n_intervals"),
+)
+def update_statistics_store(n: int) -> dict:
+    """定时更新统计数据
+
+    Args:
+        n: 定时器触发次数
+
+    Returns:
+        更新后的统计数据字典
+    """
+
+    return get_statistics()

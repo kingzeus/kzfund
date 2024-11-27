@@ -11,6 +11,7 @@ from typing import Any, Dict
 
 import feffery_antd_components as fac
 from dash import html
+from dash import Input, Output, callback, clientside_callback
 
 from .utils import CARD_HEAD_STYLES, CARD_STYLES
 
@@ -187,6 +188,7 @@ def render_account_count_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                 ),
                 fac.AntdCol(
                     fac.AntdStatistic(
+                        id="portfolio-count",
                         title="组合数",
                         value=initial_stats["portfolio_count"],
                         valueStyle={"color": "#52c41a"},
@@ -213,8 +215,8 @@ def render_fund_data_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
             [
                 fac.AntdCol(
                     html.H2(
-                        str(initial_stats["fund_count"]),
                         id="fund-count",
+                        children=str(initial_stats["fund_count"]),
                         style={
                             "color": "#1890ff",
                             "fontSize": "96px",
@@ -228,6 +230,7 @@ def render_fund_data_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                     fac.AntdStatistic(
                         title="基金净值数",
                         titleTooltip="基金净值总记录数",
+                        id="fund-nav-count",
                         value=initial_stats["fund_nav_count"],
                         valueStyle={"color": "#52c41a"},
                     ),
@@ -255,8 +258,8 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                     html.Span(
                         [
                             html.Span(
-                                str(initial_stats["today_fund_nav_count"]),
-                                id="today-fund-count",
+                                id="today_fund_nav_count",
+                                children=str(initial_stats["today_fund_nav_count"]),
                                 style={
                                     "color": "#1890ff",
                                     "fontSize": "96px",
@@ -265,7 +268,8 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                                 },
                             ),
                             html.Span(
-                                f"/{initial_stats['fund_count']}",
+                                id="today-fund-count",
+                                children=f"/{initial_stats['fund_count']}",
                                 style={
                                     "color": "#52c41a",
                                     "fontSize": "36px",
@@ -283,6 +287,7 @@ def render_today_fund_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                 ),
                 fac.AntdCol(
                     fac.AntdStatistic(
+                        id="today-update-fund-nav-count",
                         title="基金净值更新",
                         titleTooltip="今天更新的基金净值数量",
                         value=initial_stats["today_update_fund_nav_count"],
@@ -312,7 +317,8 @@ def render_today_task_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                     html.Span(
                         [
                             html.Span(
-                                str(initial_stats["today_pending_task_count"]),
+                                id="today-pending-task-count",
+                                children=str(initial_stats["today_pending_task_count"]),
                                 style={
                                     "color": "#1890ff",
                                     "fontSize": "96px",
@@ -321,7 +327,8 @@ def render_today_task_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                                 },
                             ),
                             html.Span(
-                                f"{initial_stats['today_failed_task_count']}",
+                                id="today-failed-task-count",
+                                children=f"{initial_stats['today_failed_task_count']}",
                                 style={
                                     "color": "#f5222d",
                                     "fontSize": "24px",
@@ -340,6 +347,7 @@ def render_today_task_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
                 fac.AntdCol(
                     fac.AntdStatistic(
                         title="今日任务总数",
+                        id="today-task-count",
                         titleTooltip="今天开始的任务总数",
                         value=initial_stats["today_task_count"],
                         valueStyle={"color": "#52c41a"},
@@ -357,3 +365,39 @@ def render_today_task_card(initial_stats: Dict[str, Any]) -> fac.AntdCard:
         hoverable=True,
         style=CARD_STYLES,
     )
+
+
+clientside_callback(
+    """
+    function(data) {
+        return [
+            data.today_pending_task_count,
+            data.today_failed_task_count,
+            data.today_task_count,
+            data.today_fund_nav_count,
+            data.fund_count,
+            data.today_update_fund_nav_count,
+            data.fund_count,
+            data.fund_nav_count,
+            data.account_count,
+            data.portfolio_count,
+        ];
+    }
+    """,
+    # render_today_task_card
+    Output("today-pending-task-count", "children"),  # 今日待处理任务数
+    Output("today-failed-task-count", "children"),  # 今日失败任务数
+    Output("today-task-count", "value"),  # 今日任务总数
+    # render_today_fund_card
+    Output("today_fund_nav_count", "children"),  # 今日基金净值数
+    Output("today-fund-count", "children"),  # 基金总数
+    Output("today-update-fund-nav-count", "value"),  # 今日更新基金净值数
+    # render_fund_data_card
+    Output("fund-count", "children"),  # 基金总数
+    Output("fund-nav-count", "value"),  # 基金净值数
+    # render_account_count_card
+    Output("account-count", "children"),  # 账户数
+    Output("portfolio-count", "value"),  # 组合数
+    Input("home-statistics-store", "data"),
+    prevent_initial_call=True,
+)

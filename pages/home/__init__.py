@@ -7,11 +7,11 @@
 
 文件结构:
 - task_page.py: 页面主渲染函数
-- overview.py: 数据概览卡片相关
+- home_overview.py: 数据概览卡片相关
 - charts.py: 图表相关组件
 - utils.py: 通用工具函数
 """
 
-from .page import render_home_page
+from .home_page import render_home_page
 
 __all__ = ["render_home_page"]

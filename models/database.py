@@ -40,8 +40,7 @@ def init_database():
 
     # 为每个数据库创建表
     for db_name, model_list in db_models.items():
-        with db_connection(db_name=db_name):
-            db = Database().get_db(db_name)
+        with db_connection(db_name=db_name) as db:
             # 设置数据库模型的数据库连接
             for model in model_list:
                 model._meta.database = db
@@ -282,68 +281,61 @@ def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
     from scheduler.tasks import TaskStatus
 
-    with db_connection():
-        # 获取账户总数
-        account_count = ModelAccount.select().count()  # pylint: disable=E1120
+    stats = {
+        # main db
+        "account_count": 0,  # 账户总数
+        "portfolio_count": 0,  # 组合总数
+        "fund_count": 0,  # 基金总数
+        "fund_nav_count": 0,  # 基金净值总数
+        "today_fund_nav_count": 0,  # 今日更新基金净值数量
+        "today_update_fund_nav_count": 0,  # 今天更新的基金净值数量
+        "position_count": 0,  # 基金持仓总数 todo: 需要优化
+        # task db
+        "today_task_count": 0,  # 今日任务总数
+        "today_pending_task_count": 0,  # 今日待处理任务数量
+        "today_failed_task_count": 0,  # 今日失败任务数量
+    }
 
-        # 获取组合总数
-        portfolio_count = ModelPortfolio.select().count()  # pylint: disable=E1120
+    # 使用单个连接处理 main 数据库的查询
+    with db_connection(db_name="main"):
+        stats.update(
+            {
+                "account_count": ModelAccount.select().count(),
+                "portfolio_count": ModelPortfolio.select().count(),
+                "fund_count": ModelFund.select().count(),
+                "fund_nav_count": ModelFundNav.select().count(),
+                "today_fund_nav_count": ModelFundNav.select()
+                .where(ModelFundNav.nav_date == datetime.now().date())
+                .count(),
+                "today_update_fund_nav_count": ModelFundNav.select()
+                .where(ModelFundNav.updated_at >= datetime.now().date())
+                .count(),
+                "position_count": ModelFundPosition.select().count(),
+            }
+        )
 
-        # 获取基金总数
-        fund_count = ModelFund.select().count()  # pylint: disable=E1120
+    with db_connection(db_name="task"):
+        today = datetime.now().date()
+        base_query = ModelTask.select().where(ModelTask.updated_at >= today)
 
-        # 获取基金净值总数
-        fund_nav_count = ModelFundNav.select().count()  # pylint: disable=E1120
-        # 基金今日净值更新数量
-        today_fund_nav_count = (
-            ModelFundNav.select().where(ModelFundNav.nav_date == datetime.now().date()).count()
-        )  # pylint: disable=E1120
+        stats.update(
+            {
+                "today_task_count": base_query.count(),
+                "today_pending_task_count": base_query.where(
+                    ModelTask.status == TaskStatus.PENDING
+                ).count(),
+                "today_failed_task_count": base_query.where(
+                    ModelTask.status == TaskStatus.FAILED
+                ).count(),
+            }
+        )
 
-        # 今天更新的基金净值数量
-        today_update_fund_nav_count = (
-            ModelFundNav.select().where(ModelFundNav.updated_at >= datetime.now().date()).count()
-        )  # pylint: disable=E1120
-
-        # 获取基金持仓总数
-        position_count = ModelFundPosition.select().count()  # pylint: disable=E1120
-
-        # 获取今日任务总数
-        today_task_count = (
-            ModelTask.select().where(ModelTask.updated_at >= datetime.now().date()).count()
-        )  # pylint: disable=E1120
-        today_pending_task_count = (
-            ModelTask.select()
-            .where(
-                ModelTask.updated_at >= datetime.now().date(),
-                ModelTask.status == TaskStatus.PENDING,
-            )
-            .count()
-        )  # pylint: disable=E1120
-        today_failed_task_count = (
-            ModelTask.select()
-            .where(
-                ModelTask.updated_at >= datetime.now().date(),
-                ModelTask.status == TaskStatus.FAILED,
-            )
-            .count()
-        )  # pylint: disable=E1120
-        return {
-            "account_count": account_count,  # 账户总数
-            "portfolio_count": portfolio_count,  # 组合总数
-            "fund_count": fund_count,  # 基金总数
-            "fund_nav_count": fund_nav_count,  # 基金净值总数
-            "today_fund_nav_count": today_fund_nav_count,  # 今日更新基金净值数量
-            "today_update_fund_nav_count": today_update_fund_nav_count,  # 今天更新的基金净值数量
-            "position_count": position_count,  # 基金持仓总数
-            "today_task_count": today_task_count,  # 今日任务总数
-            "today_pending_task_count": today_pending_task_count,  # 今日待处理任务数量
-            "today_failed_task_count": today_failed_task_count,  # 今日失败任务数量
-        }
+    return stats
 
 
 def get_transactions() -> List[Dict[str, Any]]:
     """获取所有交易记录"""
-    with db_connection():
+    with db_connection(db_name=ModelFundTransaction._meta.db_name):
         try:
             transactions = (
                 ModelFundTransaction.select(

@@ -25,34 +25,51 @@ class Database:
         }
 
     def connect(self, db_name: str = "main"):
-        if self.databases[db_name] and self.databases[db_name].is_closed():
+        """连接数据库"""
+        if self.databases[db_name] is None:
+            # 如果连接不存在,先初始化
+            self.open(None, db_name)
+        elif self.databases[db_name].is_closed():
+            # 如果连接已关闭,重新打开
             self.databases[db_name].connect()
 
     def open(self, db_path: str, db_name: str = "main"):
+        """打开数据库连接"""
         new_db_path = db_path or DATABASE_CONFIG["paths"][db_name]
+
+        # 如果连接存在且路径相同,直接返回
         if self.databases[db_name] is not None and new_db_path == self.db_paths[db_name]:
             return
 
+        # 如果连接存在但路径不同,先关闭
         if self.databases[db_name] is not None:
             self.close(db_name)
 
+        # 创建新连接
         self.db_paths[db_name] = new_db_path
         self.databases[db_name] = SqliteDatabase(self.db_paths[db_name])
         logger.debug("初始化数据库连接[%s]: %s", db_name, self.db_paths[db_name])
 
     def close(self, db_name: str = "main"):
-        if self.databases[db_name] is not None:
-            if not self.databases[db_name].is_closed():
-                logger.debug("关闭数据库连接[%s]", db_name)
-                self.databases[db_name].close()
-                self.db_paths[db_name] = None
-                self.databases[db_name] = None
+        """关闭数据库连接"""
+        if self.databases[db_name] is not None and not self.databases[db_name].is_closed():
+            logger.debug("关闭数据库连接[%s]", db_name)
+            self.databases[db_name].close()
+            # 不再将连接设为 None
+            # self.databases[db_name] = None
+            # self.db_paths[db_name] = None
 
     def get_db(self, db_name: str = "main"):
+        """获取数据库连接"""
+        if self.databases[db_name] is None:
+            # 如果连接不存在,尝试初始化
+            self.connect(db_name)
+
         if self.databases[db_name] is None:
             error_msg = f"数据库[{db_name}]未初始化"
             logger.error(error_msg)
             raise DatabaseError(error_msg)
+
         return self.databases[db_name]
 
 

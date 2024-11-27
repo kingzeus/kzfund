@@ -120,6 +120,10 @@ THEME_CONFIG: Dict[str, Any] = {
     "card_shadow": "0 2px 8px rgba(0, 0, 0, 0.09)",  # 卡片阴影效果
 }
 
+# 定时刷新间隔时间
+PAGE_CONFIG = {"HOME_INTERVAL_TIME": 5 * 1000}  # 首页自动刷新时间
+
+
 # 数据源配置
 DATA_SOURCE_DEFAULT = "eastmoney"  # 默认数据源（东方财富）
 

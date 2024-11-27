@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from dash import Input, Output, callback
 from dash.exceptions import PreventUpdate
 
+from models.database import get_statistics
 from .utils import format_money, format_percent
 
 # 添加日志配置
@@ -34,7 +35,7 @@ CHART_LAYOUT = {
         Output("account-count", "children"),
         Output("daily-return", "children"),
     ],
-    Input("statistics-store", "data"),
+    Input("home-statistics-store", "data"),
     prevent_initial_call=True,
 )
 def update_statistics(data: Dict[str, Any]) -> Tuple[str, str, str, str, str]:
@@ -73,7 +74,7 @@ def update_statistics(data: Dict[str, Any]) -> Tuple[str, str, str, str, str]:
 
 @callback(
     Output("asset-allocation-pie", "figure"),
-    Input("statistics-store", "data"),
+    Input("home-statistics-store", "data"),
     prevent_initial_call=True,
 )
 def update_asset_allocation(data: Dict[str, Any]):
@@ -94,7 +95,7 @@ def update_asset_allocation(data: Dict[str, Any]):
 
 @callback(
     Output("performance-line", "figure"),
-    Input("statistics-store", "data"),
+    Input("home-statistics-store", "data"),
     prevent_initial_call=True,
 )
 def update_performance_chart(data: Dict[str, Any]):
