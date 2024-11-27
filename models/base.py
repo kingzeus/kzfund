@@ -1,7 +1,7 @@
 import logging
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from peewee import DatabaseError, DateTimeField, Model, SqliteDatabase
 

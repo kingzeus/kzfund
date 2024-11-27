@@ -1,11 +1,11 @@
-from peewee import CharField, DateTimeField, IntegerField, TextField
+from peewee import CharField, DateTimeField, ForeignKeyField, IntegerField, TextField
 
 from .base import BaseModel
 
 
 class ModelTask(BaseModel):
     task_id = CharField(max_length=36, primary_key=True)
-    parent_task_id = CharField(max_length=36, null=True)  # 父任务ID
+    parent_task = ForeignKeyField("self", backref="sub_tasks", null=True)  # 父任务
     name = CharField(max_length=100)
     type = CharField(max_length=50)  # 任务类型
     delay = IntegerField(default=0)  # 延迟时间（秒）

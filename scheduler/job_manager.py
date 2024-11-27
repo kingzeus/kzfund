@@ -8,6 +8,7 @@ from flask_apscheduler import APScheduler
 from peewee import DatabaseError, DoesNotExist, IntegrityError
 
 from config import SCHEDULER_CONFIG
+from models.database import get_record, get_record_list
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
 from utils.singleton import Singleton
@@ -49,6 +50,44 @@ class JobManager:
         logger.info("任务调度器初始化成功")
         self.restore_tasks()
 
+    def _update_task_status(self, task: ModelTask):
+        """更新任务状态
+        1. 如果是普通任务,则直接任务状态设置成完成
+        2. 如果是父任务,
+            * 如果存在子任务,则根据子任务状态设置状态
+            * 根据子任务设置错误信息
+        3. 如果存在父任务,则根据子任务状态设置父任务状态
+        """
+
+        # 如果存在子任务，则任务状态设置成运行中
+        if len(task.sub_tasks) > 0:
+            # 统计子任务状态
+            sub_task_status_count = {
+                TaskStatus.RUNNING: 0,
+                TaskStatus.COMPLETED: 0,
+                TaskStatus.FAILED: 0,
+            }
+            for sub_task in task.sub_tasks:
+                if sub_task.status in sub_task_status_count:
+                    sub_task_status_count[sub_task.status] += 1
+
+            # 计算任务进度
+            # 默认进度10%为任务启动,90%为子任务进度
+            task.progress = (
+                sub_task_status_count[TaskStatus.COMPLETED]
+                + sub_task_status_count[TaskStatus.FAILED]
+                + sub_task_status_count[TaskStatus.RUNNING] / 2
+            ) * 90 / len(task.sub_tasks) + 10
+            if sub_task_status_count[TaskStatus.FAILED] > 0:
+                task.status = TaskStatus.FAILED
+                task.error = "子任务错误"
+            elif sub_task_status_count[TaskStatus.COMPLETED] == len(task.sub_tasks):
+                task.status = TaskStatus.COMPLETED
+            else:
+                task.status = TaskStatus.RUNNING
+        else:
+            task.status = TaskStatus.COMPLETED
+
     def _task_wrapper(self, task_type: str, task_id: str, **kwargs):
         """任务执行包装器
 
@@ -67,7 +106,7 @@ class JobManager:
 
             task_history.status = TaskStatus.RUNNING
             task_history.start_time = datetime.now()
-            task_history.save()
+
             logger.info("开始执行任务: %s (ID: %s)", task_type, task_id)
 
             # 执行具体任务
@@ -78,10 +117,17 @@ class JobManager:
             except Exception as e:
                 raise TaskExecutionError(f"任务执行失败: {str(e)}") from e
 
-            # 任务成功完成
-            task_history.status = TaskStatus.COMPLETED
+            # 更新任务状态
+            self._update_task_status(task_history)
             task_history.result = json.dumps(result, ensure_ascii=False, default=str)
-            logger.info("任务执行完成: %s (ID: %s)", task_type, task_id)
+
+            # 处理父任务
+            if task_history.parent_task:
+                task_history.save()
+                self._update_task_status(task_history.parent_task)
+                task_history.parent_task.save()
+
+            logger.info("任务执行更新: %s (ID: %s)->%d%%", task_type, task_id, task_history.progress)
 
         except TaskExecutionError as e:
             # 任务执行失败
@@ -120,8 +166,8 @@ class JobManager:
         """
         try:
             # 查询所有未完成的任务
-            unfinished_tasks = ModelTask.select().where(
-                ModelTask.status.in_([TaskStatus.PENDING, TaskStatus.RUNNING])
+            unfinished_tasks = get_record_list(
+                ModelTask, {"status__in": [TaskStatus.PENDING, TaskStatus.RUNNING]}
             )
 
             restored_count = 0
@@ -137,34 +183,50 @@ class JobManager:
                     # 解析任务参数
                     args = json.loads(task.input_params)
 
-                    args["timeout"] = task.timeout
+                    # 单独处理父任务
+                    if len(task.sub_tasks) > 0:
+                        # 统计子任务状态
+                        sub_task_status_count = {
+                            TaskStatus.RUNNING: 0,
+                            TaskStatus.PENDING: 0,
+                        }
+                        for sub_task in task.sub_tasks:
+                            if sub_task.status in sub_task_status_count:
+                                sub_task_status_count[sub_task.status] += 1
 
-                    if task.status == TaskStatus.RUNNING:
-                        # 如果任务是运行状态,则改成超时失败
-                        task.status = TaskStatus.FAILED
-                        task.error = "任务超时"
+                        if sub_task_status_count[TaskStatus.PENDING] > 0:
+                            task.status = TaskStatus.RUNNING
+                        elif sub_task_status_count[TaskStatus.RUNNING] > 0:
+                            task.status = TaskStatus.FAILED
+                            task.error = "子任务超时"
+                        task.save()
+                    else:
+                        if task.status == TaskStatus.RUNNING:
+                            # 如果任务是运行状态,则改成超时失败
+                            task.status = TaskStatus.FAILED
+                            task.error = "任务超时"
 
-                        task.save()
-                    elif task.status == TaskStatus.PENDING:
-                        # 重新添加到调度器
-                        task.delay = task.delay - min_delay
-                        if task.delay < 0:
-                            task.delay = 0
-                        task.save()
-                        self.scheduler.add_job(
-                            func=self._task_wrapper,
-                            args=(task.type, task.task_id),
-                            kwargs=args,
-                            id=task.task_id,
-                            name=task.name,
-                            trigger="date",
-                            next_run_time=datetime.now() + timedelta(seconds=task.delay + 1),
-                            misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"][
-                                "misfire_grace_time"
-                            ],
-                        )
-                    restored_count += 1
-                    logger.debug("恢复任务: %s", task.task_id)
+                            task.save()
+                        elif task.status == TaskStatus.PENDING:
+                            # 重新添加到调度器
+                            task.delay = task.delay - min_delay
+                            if task.delay < 0:
+                                task.delay = 0
+                            task.save()
+                            self.scheduler.add_job(
+                                func=self._task_wrapper,
+                                args=(task.type, task.task_id),
+                                kwargs=args,
+                                id=task.task_id,
+                                name=task.name,
+                                trigger="date",
+                                next_run_time=datetime.now() + timedelta(seconds=task.delay + 1),
+                                misfire_grace_time=SCHEDULER_CONFIG["SCHEDULER_JOB_DEFAULTS"][
+                                    "misfire_grace_time"
+                                ],
+                            )
+                            restored_count += 1
+                            logger.debug("恢复任务: %s", task.task_id)
 
                 except Exception as e:
                     logger.error("恢复任务失败 %s: %s", task.task_id, str(e), exc_info=True)

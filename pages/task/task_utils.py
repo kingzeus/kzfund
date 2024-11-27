@@ -11,12 +11,12 @@ from typing import Any, Dict, List
 
 import feffery_antd_components as fac
 from dash import html
+from dash.development.base_component import Component
 from feffery_utils_components import FefferyJsonViewer
 
 from models.database import get_record_list
 from models.task import ModelTask
 from scheduler.job_manager import JobManager, TaskStatus
-from dash.development.base_component import Component
 from utils.datetime_helper import format_datetime
 
 # ============= 状态常量 =============

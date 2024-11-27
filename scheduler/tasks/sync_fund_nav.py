@@ -64,7 +64,7 @@ class SyncFundNavTask(BaseTask):
                     "fund_detail", self.task_id, fund_code=fund_code
                 )
                 start_date = result.get("establishment_date")
-
+            self.update_progress(5)
             # 获取基金历史净值数据大小
             nav_history_size_response = data_source.get_fund_nav_history_size()
             if nav_history_size_response["code"] != 200:
@@ -102,6 +102,7 @@ class SyncFundNavTask(BaseTask):
                 current_date = get_date_str_after_days(end_date, 1)
                 delay += 5  # 每个任务间隔5秒
 
+            self.update_progress(10)
             logger.info("成功添加 %d 个任务", len(tasks))
             return {"tasks": tasks}
 

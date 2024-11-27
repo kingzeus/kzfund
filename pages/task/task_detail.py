@@ -5,16 +5,21 @@
 - 处理详情查看操作
 """
 
-import feffery_antd_components as fac
-from dash import ALL, MATCH, Input, Output, State, callback, callback_context
-from dash import html
-from dash.exceptions import PreventUpdate
-from feffery_utils_components import FefferyJsonViewer
 import json
 import logging
 from collections import Counter
 
-from pages.task.task_utils import STATUS_COLORS, STATUS_LABELS, create_status_tag, get_sub_tasks
+import feffery_antd_components as fac
+from dash import ALL, MATCH, Input, Output, State, callback, callback_context, html
+from dash.exceptions import PreventUpdate
+from feffery_utils_components import FefferyJsonViewer
+
+from pages.task.task_utils import (
+    STATUS_COLORS,
+    STATUS_LABELS,
+    create_status_tag,
+    get_sub_tasks,
+)
 from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskStatus
 from utils.datetime_helper import format_datetime
