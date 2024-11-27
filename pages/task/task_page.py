@@ -3,7 +3,6 @@
 # 页面结构:
 # 1. Store组件
 #    - task-store: 存储任务数据, task数据模型转成dict
-#    - viewing-task-id: 存储正在查看的任务ID
 #    - task-loading-state: 存储任务加载状态
 #
 # 2. 页面标题
@@ -39,7 +38,6 @@ def render_task_page() -> html.Div:
         [
             # Store 组件
             dcc.Store(id="task-store", data=initial_tasks),
-            dcc.Store(id="viewing-task-id", data=""),
             dcc.Store(id="task-loading-state", data=False),
             # 添加定时器组件
             dcc.Interval(

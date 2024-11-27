@@ -10,8 +10,7 @@
 from typing import Any, Dict
 
 import feffery_antd_components as fac
-from dash import html
-from dash import Input, Output, callback, clientside_callback
+from dash import Input, Output, callback, clientside_callback, html
 
 from .utils import CARD_HEAD_STYLES, CARD_STYLES
 

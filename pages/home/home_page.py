@@ -16,8 +16,7 @@
 """
 
 import feffery_antd_components as fac
-from dash import dcc, html
-from dash import Input, Output, callback
+from dash import Input, Output, callback, dcc, html
 
 from config import PAGE_CONFIG
 from models.database import get_statistics

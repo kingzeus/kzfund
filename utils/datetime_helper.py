@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 def format_datetime(
     dt: Union[str, datetime, None],
-    output_format: str = "%Y-%m-%d %H:%M",
+    output_format: str = "%Y-%m-%d %H:%M:%S",
     default: str = "未知时间",
 ) -> str:
     """
@@ -15,7 +15,7 @@ def format_datetime(
 
     Args:
         dt: 要格式化的日期时间，可以是datetime对象或ISO格式的字符串
-        output_format: 输出格式，默认为 "%Y-%m-%d %H:%M"
+        output_format: 输出格式，默认为 "%Y-%m-%d %H:%M:%S"
         default: 当无法格式化时返回的默认值
 
     Returns:

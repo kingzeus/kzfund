@@ -13,6 +13,7 @@ from dash import Input, Output, callback
 from dash.exceptions import PreventUpdate
 
 from models.database import get_statistics
+
 from .utils import format_money, format_percent
 
 # 添加日志配置

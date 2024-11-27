@@ -1,19 +1,35 @@
-"""任务详情弹窗模块
+# 任务详情弹窗模块
+# 1. Store组件
+#    - task-detail-task-id: 存储正在查看的任务ID
+# 提供任务详情查看功能:
+# - 渲染任务详情弹窗
+# - 处理详情查看操作
 
-提供任务详情查看功能:
-- 渲染任务详情弹窗
-- 处理详情查看操作
-"""
 
 import json
 import logging
 from collections import Counter
 
 import feffery_antd_components as fac
-from dash import ALL, MATCH, Input, Output, State, callback, callback_context, html
+from dash import (
+    ALL,
+    Input,
+    Output,
+    State,
+    callback,
+    callback_context,
+    dcc,
+    html,
+    Patch,
+    no_update,
+)
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from feffery_utils_components import FefferyJsonViewer
 
+from config import PAGE_CONFIG
+from models.database import get_record
+from models.task import ModelTask
 from pages.task.task_utils import (
     STATUS_COLORS,
     STATUS_LABELS,
@@ -28,31 +44,44 @@ from utils.string_helper import json_str_to_dict
 logger = logging.getLogger(__name__)
 
 
-def render_task_detail_modal() -> fac.AntdModal:
+def render_task_detail_modal() -> Component:
     """渲染任务详情对话框"""
-    return fac.AntdModal(
-        id="task-detail-modal",
-        title="任务详情",
-        visible=False,
-        width=1000,
-        okText="关闭",
-        cancelText=None,
-        maskClosable=True,
-        centered=True,
-        children=html.Div(id="task-detail-content"),  # 使用独立的内容容器
-        bodyStyle={
-            "padding": "24px",
-            "maxHeight": "80vh",
-            "overflowY": "auto",
-        },
+    return fac.Fragment(
+        [
+            dcc.Store(id="task-detail-task-id", data=""),
+            fac.AntdModal(
+                id="task-detail-modal",
+                title="任务详情",
+                visible=False,
+                width=1000,
+                okText="关闭",
+                cancelText=None,
+                maskClosable=True,
+                centered=True,
+                children=[
+                    # 添加30秒定时刷新组件
+                    dcc.Interval(
+                        id="task-detail-interval",
+                        interval=PAGE_CONFIG["TASK_DETAIL_INTERVAL_TIME"],
+                    ),
+                    html.Div(id="task-detail-content"),  # 使用独立的内容容器
+                ],
+                bodyStyle={
+                    "padding": "24px",
+                    "maxHeight": "80vh",
+                    "overflowY": "auto",
+                },
+            ),
+        ]
     )
 
 
 @callback(
     [
         Output("task-detail-modal", "visible"),
-        Output("task-detail-content", "children"),  # 修改为更新content
-        Output("viewing-task-id", "data"),
+        Output("task-detail-content", "children", allow_duplicate=True),
+        Output("task-detail-task-id", "data", allow_duplicate=True),
+        Output("task-detail-interval", "disabled", allow_duplicate=True),
     ],
     [
         Input({"type": "task-action", "index": ALL, "action": ALL}, "nClicks"),
@@ -81,6 +110,61 @@ def handle_task_detail(action_clicks, tasks_data):
             logger.warning("未找到任务: %s", task_id)
             raise PreventUpdate
 
+        # 是否更新任务详情内容
+        is_update = task["status"] == TaskStatus.RUNNING or task["status"] == TaskStatus.PENDING
+
+        content = get_task_detail(task)
+        logger.info("显示任务详情: %s", task_id)
+        return True, content, task_id, not is_update
+
+    except Exception as e:
+        logger.error("处理任务详情失败: %s", str(e), exc_info=True)
+        raise PreventUpdate
+
+
+@callback(
+    Output("task-detail-task-id", "data", allow_duplicate=True),
+    Input("task-detail-modal", "visible"),
+    prevent_initial_call=True,
+)
+def update_task_detail_task_id(visible: bool) -> str:
+    """更新正在查看的任务ID"""
+    if visible:
+        return no_update
+    else:
+        return ""
+
+
+# 添加回调函数
+@callback(
+    Output("message-container", "children"),
+    [
+        Input("subtask-table", "nClicksButton"),
+        State("subtask-table", "recentlyButtonClickedRow"),
+    ],
+    prevent_initial_call=True,
+)
+def handle_copy_task(nClicks, recentlyButtonClickedRow):
+    """处理复制任务ID的回调"""
+    if not nClicks:
+        raise PreventUpdate
+
+    task_id = recentlyButtonClickedRow["task_id"]
+    JobManager().copy_task(task_id)
+    return fac.AntdMessage(content="任务重新运行", type="success")
+
+
+def get_task_detail(task: dict) -> list:
+    """获取任务详情内容
+
+    Args:
+        task_id: 任务ID
+
+    Returns:
+        list: 任务详情内容组件列表
+    """
+
+    try:
         # 构建详情内容
         content = [
             # 基本信息描述列表
@@ -196,7 +280,7 @@ def handle_task_detail(action_clicks, tasks_data):
         ]
 
         # 添加子任务表格(如果有子任务)
-        subtasks = [sub_task.to_dict() for sub_task in get_sub_tasks(task_id)]
+        subtasks = [sub_task.to_dict() for sub_task in get_sub_tasks(task["task_id"])]
 
         if subtasks:
             content.extend(
@@ -238,7 +322,7 @@ def handle_task_detail(action_clicks, tasks_data):
                                 "title": "状态",
                                 "dataIndex": "status_tag",
                                 "key": "status",
-                                "width": "15%",
+                                "width": "11%",
                             },
                             {
                                 "title": "进度",
@@ -250,13 +334,13 @@ def handle_task_detail(action_clicks, tasks_data):
                                 "title": "开始时间",
                                 "dataIndex": "start_time",
                                 "key": "start_time",
-                                "width": "16%",
+                                "width": "18%",
                             },
                             {
                                 "title": "结束时间",
                                 "dataIndex": "end_time",
                                 "key": "end_time",
-                                "width": "16%",
+                                "width": "18%",
                             },
                             {
                                 "title": "操作",
@@ -280,12 +364,12 @@ def handle_task_detail(action_clicks, tasks_data):
                                 "start_time": (
                                     format_datetime(subtask["start_time"])
                                     if subtask.get("start_time")
-                                    else "-"
+                                    else ""
                                 ),
                                 "end_time": (
                                     format_datetime(subtask["end_time"])
                                     if subtask.get("end_time")
-                                    else "-"
+                                    else ""
                                 ),
                                 "action": {
                                     "icon": "antd-reload",
@@ -302,28 +386,41 @@ def handle_task_detail(action_clicks, tasks_data):
                 ]
             )
 
-        logger.info("显示任务详情: %s", task_id)
-        return True, content, task_id
+        return content
 
     except Exception as e:
-        logger.error("处理任务详情失败: %s", str(e), exc_info=True)
-        raise PreventUpdate
+        logger.error("获取任务详情失败: %s", str(e), exc_info=True)
+        return []
 
 
-# 添加回调函数
+# 修改定时更新回调
 @callback(
-    Output("message-container", "children"),
+    Output("task-detail-content", "children", allow_duplicate=True),
+    Output("task-detail-interval", "disabled", allow_duplicate=True),
     [
-        Input("subtask-table", "nClicksButton"),
-        State("subtask-table", "recentlyButtonClickedRow"),
+        Input("task-detail-interval", "n_intervals"),
+        State("task-detail-task-id", "data"),
     ],
     prevent_initial_call=True,
 )
-def handle_copy_task(nClicks, recentlyButtonClickedRow):
-    """处理复制任务ID的回调"""
-    if not nClicks:
+def update_task_detail(n: int, task_id: str) -> list:
+    """定时更新任务详情
+
+    Args:
+        n: 定时器触发次数
+        task_id: 当前查看的任务ID
+
+    Returns:
+        list: 更新后的任务详情内容
+    """
+    if not task_id or len(task_id) < 1:
         raise PreventUpdate
 
-    task_id = recentlyButtonClickedRow["task_id"]
-    JobManager().copy_task(task_id)
-    return fac.AntdMessage(content="任务重新运行", type="success")
+    task = get_record(ModelTask, {"task_id": task_id})
+    if not task:
+        raise PreventUpdate
+
+    logger.info("定时更新任务详情: %s", task_id)
+    is_update = task.status == TaskStatus.RUNNING or task.status == TaskStatus.PENDING
+
+    return get_task_detail(task.to_dict()), not is_update
