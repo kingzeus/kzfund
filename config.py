@@ -122,8 +122,9 @@ THEME_CONFIG: Dict[str, Any] = {
 
 # 定时刷新间隔时间
 PAGE_CONFIG = {
-    "HOME_INTERVAL_TIME": 5 * 1000,  # 首页自动刷新时间
-    "TASK_DETAIL_INTERVAL_TIME": 5 * 1000,  # 任务详情对话框自动刷新时间
+    "HOME_INTERVAL_TIME": 1 * 1000,  # 首页自动刷新时间
+    "TASK_DETAIL_INTERVAL_TIME": 1 * 1000,  # 任务详情对话框自动刷新时间
+    "TASK_LIST_INTERVAL_TIME": 1 * 1000,  # 任务列表分页刷新时间
 }
 
 

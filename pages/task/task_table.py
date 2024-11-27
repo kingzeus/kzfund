@@ -8,18 +8,19 @@
 
 import json
 import logging
-from copy import deepcopy
 from typing import Any, Dict, List
 
 import dash
 import feffery_antd_components as fac
-from dash import ALL, Input, Output, State, callback
+from dash import ALL, Input, Output, State, callback, dcc, no_update
 from dash.exceptions import PreventUpdate
 
+from config import PAGE_CONFIG
 from pages.task.task_utils import (
     TABLE_STYLES,
-    get_task_store_data,
-    get_tasks,
+    STATUS_LABELS,
+    TASK_PAGE_SIZE,
+    get_tasks_with_pagination,
     prepare_task_for_display,
 )
 from scheduler.job_manager import JobManager, TaskStatus
@@ -27,11 +28,8 @@ from scheduler.job_manager import JobManager, TaskStatus
 logger = logging.getLogger(__name__)
 
 
-def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
+def render_task_table() -> fac.AntdCard:
     """渲染任务表格
-
-    Args:
-        initial_data: 初始任务数据列表，字典格式
 
     Returns:
         任务表格卡片组件
@@ -48,6 +46,12 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
             ),
         ],
         children=[
+            # 添加定时器组件
+            dcc.Interval(
+                id="task-list-interval",
+                interval=PAGE_CONFIG["TASK_LIST_INTERVAL_TIME"],
+                disabled=True,  # 默认禁用
+            ),
             fac.AntdTable(
                 id="task-list",
                 columns=[
@@ -56,7 +60,6 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
                         "dataIndex": "task_id",
                         "key": "task_id",
                         "width": "15%",
-                        "copyable": True,
                     },
                     {
                         "title": "任务名称",
@@ -87,22 +90,38 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
                         "dataIndex": "created_at",
                         "key": "created_at",
                         "width": "15%",
+                        "sorter": True,
                     },
                     {
                         "title": "操作",
                         "dataIndex": "actions",
-                        "key": "operation",
-                        "width": "15%",
+                        "key": "actions",
+                        "width": "10%",
+                        "renderOptions": {
+                            "renderType": "button",
+                        },
                     },
                 ],
-                data=[prepare_task_for_display(task) for task in initial_data],
+                data=[],  # 初始为空，由回调函数加载数据
                 bordered=True,
                 size="small",
                 pagination={
-                    "pageSize": 10,
+                    "pageSize": TASK_PAGE_SIZE,
                     "showSizeChanger": True,
                     "showQuickJumper": True,
+                    "total": 0,  # 初始为0，由回调函数更新
+                    "hideOnSinglePage": True,
                 },
+                mode="server-side",  # 使用服务端模式
+                sortOptions={"sortDataIndexes": ["name", "created_at"]},
+                # filterOptions={
+                #     "status_tag": {
+                #         "filterCustomItems": [
+                #             {"label": label, "value": status}
+                #             for status, label in STATUS_LABELS.items()
+                #         ],
+                #     }
+                # },
                 style=TABLE_STYLES,
             ),
         ],
@@ -112,159 +131,77 @@ def render_task_table(initial_data: List[Dict[str, Any]]) -> fac.AntdCard:
 
 
 @callback(
-    Output("task-list", "data"),
-    Input("task-store", "data"),
-    prevent_initial_call=True,
-)
-def update_task_list(store_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """更新任务列表"""
-    return [prepare_task_for_display(task) for task in store_data]
-
-
-@callback(
-    Output("task-store", "data", allow_duplicate=True),
-    Input({"type": "task-action", "index": ALL, "action": ALL}, "nClicks"),
-    State("task-list", "data"),
-    prevent_initial_call=True,
-)
-def handle_task_action(action_clicks, current_data):
-    """处理任务操作"""
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        raise PreventUpdate
-
-    try:
-        button_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
-        task_id = button_id["index"]
-        action = button_id["action"]
-
-        if action in ["pause", "resume"]:
-            logger.info("执行任务%s操作: %s", action, task_id)
-            if action == "pause":
-                JobManager().pause_task(task_id)
-            else:
-                JobManager().resume_task(task_id)
-        elif action == "copy":
-            logger.info("复制任务: %s", task_id)
-            JobManager().copy_task(task_id)
-        elif action == "view":
-            # 查看任务详情时不需要更新 task-store
-            return dash.no_update
-
-        # 获取最新任务列表
-        return get_task_store_data()
-
-    except Exception as e:
-        logger.error("处理任务操作失败: %s", str(e))
-
-    return dash.no_update
-
-
-@callback(
-    Output("task-refresh-interval", "disabled"),
-    [Input("task-store", "data")],
-)
-def toggle_refresh_interval(tasks_data: List[Dict[str, Any]]) -> bool:
-    """根据任务状态控制定时器"""
-    has_running_tasks = any(
-        task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING] for task in tasks_data
-    )
-    return not has_running_tasks
-
-
-@callback(
     [
-        Output("task-store", "data", allow_duplicate=True),
-        Output("task-table-spin", "spinning", allow_duplicate=True),
-        Output("task-loading-state", "data", allow_duplicate=True),
+        Output("task-list", "data"),
+        Output("task-list", "pagination"),
+        Output("task-list-interval", "disabled", allow_duplicate=True),
     ],
-    Input("task-refresh-interval", "n_intervals"),
-    State("task-store", "data"),
+    [
+        Input("task-list", "pagination"),
+        Input("task-list", "sorter"),
+        Input("task-list", "filters"),
+        Input("task-list-interval", "n_intervals"),
+    ],
     prevent_initial_call=True,
 )
-def refresh_tasks(n_intervals: int, current_tasks: List[Dict[str, Any]]):
-    """定期刷新任务列表"""
-    if n_intervals is None:
-        raise PreventUpdate
+def update_task_list(pagination, sorter, filters, n_intervals):
+    """更新任务列表"""
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
-    try:
-        # 获取需要更新的任务ID列表
-        unfinished_task_ids = [
-            task["task_id"]
-            for task in current_tasks
-            if task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED]
-        ]
+    # 获取当前页码和每页数量
+    current_page = pagination.get("current", 1) if pagination else 1
+    page_size = pagination.get("pageSize", TASK_PAGE_SIZE) if pagination else TASK_PAGE_SIZE
 
-        if not unfinished_task_ids:
-            return dash.no_update, False, False
+    # 获取最新数据
+    result = get_tasks_with_pagination(
+        page=current_page,
+        page_size=page_size,
+        filters=filters,
+        sorter=sorter,
+    )
 
-        # 获取最新进度
-        latest_progress = JobManager().get_tasks_progress(unfinished_task_ids)
+    # 准备显示数据
+    display_data = [prepare_task_for_display(task) for task in result["data"]]
 
-        # 每隔N次刷新才获取完整任务信息
-        should_full_refresh = (n_intervals % 5) == 0
+    # 更新分页信息
+    pagination_info = {
+        "current": current_page,
+        "pageSize": page_size,
+        "total": result["total"],
+        "showSizeChanger": True,
+        "showQuickJumper": True,
+    }
 
-        # 创建任务数据的深拷贝
-        updated_tasks = current_tasks.copy()
+    # 检查是否有运行中的任务
+    has_running_tasks = any(
+        task["status"] in [TaskStatus.PENDING, TaskStatus.RUNNING] for task in result["data"]
+    )
 
-        if should_full_refresh:
-            # 获取最新的完整任务列表
-            latest_tasks = [task.to_dict() for task in get_tasks()]
-
-            # 更新任务状态和其他信息
-            for i, task in enumerate(updated_tasks):
-                latest_task = next(
-                    (t for t in latest_tasks if t["task_id"] == task["task_id"]), None
-                )
-                if latest_task:
-                    # 保持当前进度，除非有更新的进度
-                    current_progress = task.get("progress", 0)
-                    new_progress = latest_progress.get(
-                        task["task_id"], latest_task.get("progress", current_progress)
-                    )
-                    # 只在进度增加时更新
-                    if new_progress > current_progress:
-                        latest_task["progress"] = new_progress
-                    else:
-                        latest_task["progress"] = current_progress
-
-                    updated_tasks[i] = latest_task
-        else:
-            # 只更新进度
-            for i, task in enumerate(updated_tasks):
-                if task["status"] == TaskStatus.RUNNING:
-                    if task["task_id"] in latest_progress:
-                        current_progress = task.get("progress", 0)
-                        new_progress = latest_progress[task["task_id"]]
-                        # 只在进度增加时更新
-                        if new_progress > current_progress:
-                            task["progress"] = new_progress
-
-        logger.debug(
-            "%s刷新任务列表，更新了 %d 个任务的进度",
-            "完整" if should_full_refresh else "进度",
-            len(latest_progress),
-        )
-        return updated_tasks, False, False
-
-    except Exception as e:
-        logger.error("刷新任务列表失败: %s", str(e))
-        # todo 错误message实现
-        # 发生错误时，显示错误提示
-        # fac.AntdMessage.error(f"刷新任务列表失败: {str(e)}")
-        return dash.no_update, False, False
+    return display_data, pagination_info, not has_running_tasks
 
 
+# 添加回调函数
 @callback(
-    Output("task-table-spin", "spinning"),
-    Output("task-loading-state", "data"),
-    Input("task-refresh-interval", "n_intervals"),
+    Output("message-container", "children", allow_duplicate=True),
+    [
+        Input("task-list", "nClicksButton"),
+        State("task-list", "clickedCustom"),
+        State("task-list", "recentlyButtonClickedRow"),
+    ],
     prevent_initial_call=True,
 )
-def update_loading_state(n_intervals):
-    """更新加载状态"""
-    if n_intervals is None:
+def handle_task_list_action(nClicks, custom, recentlyButtonClickedRow):
+    """处理任务列表操作的回调"""
+    if not nClicks:
         raise PreventUpdate
 
-    # 开始刷新时显示加载状态
-    return True, True
+    task_id = recentlyButtonClickedRow["task_id"]
+    if custom == "view":
+        # 查看任务详情，已单独处理
+        return no_update
+    elif custom == "copy":
+        JobManager().copy_task(task_id)
+        return fac.AntdMessage(content="任务重新运行", type="success")
+
+    return no_update

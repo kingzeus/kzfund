@@ -243,11 +243,11 @@ def show_task_modal(n_clicks, task_type):
 
 @callback(
     [
-        Output("task-store", "data"),
         Output("task-modal", "visible", allow_duplicate=True),
         Output("task-type-select", "value", allow_duplicate=True),
         Output("delay-input", "value", allow_duplicate=True),
         Output("timeout-input", "value", allow_duplicate=True),
+        Output("task-list-interval", "disabled", allow_duplicate=True),
     ],
     Input("task-modal", "okCounts"),
     [
@@ -302,7 +302,5 @@ def handle_task_create(
         logger.error("创建任务失败: %s", str(e), exc_info=True)
         raise PreventUpdate from e
 
-    # 更新任务列表并关闭对话框
-    tasks = get_tasks()
-    task_list = [task.to_dict() for task in tasks]
-    return task_list, False, None, None, None
+    # 关闭对话框并清空表单
+    return False, None, None, None, False

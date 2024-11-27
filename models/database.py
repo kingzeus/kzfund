@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from playhouse.shortcuts import update_model_from_dict
 
@@ -58,10 +58,85 @@ def get_record(model_class, search_fields: Dict[str, Any]) -> Optional[BaseModel
         return None
 
 
+def _build_query(
+    model_class,
+    search_fields: Optional[Dict[str, Any]] = None,
+    order_by: Optional[List[str]] = None,
+    offset: Optional[int] = None,
+    limit: Optional[int] = None,
+):
+    """构建查询对象的内部函数
+
+    Args:
+        model_class: 数据库模型类
+        search_fields: 查询条件字典,支持以下格式:
+            - field: value 表示相等
+            - field__null: True/False 表示是否为空
+            - field__gt: value 表示大于
+            - field__gte: value 表示大于等于
+            - field__lt: value 表示小于
+            - field__lte: value 表示小于等于
+            - field__in: list 表示在列表中
+            - field__contains: value 表示包含
+        order_by: 排序字段列表,字段名前加-表示降序,如['-created_at','name']
+        offset: 分页偏移量
+        limit: 分页大小
+
+
+    Returns:
+        构建好的查询对象
+    """
+    query = model_class.select()
+
+    if search_fields:
+        conditions = []
+        for key, value in search_fields.items():
+            if "__" in key:
+                field, op = key.split("__")
+                field_obj = getattr(model_class, field)
+
+                if op == "null":
+                    conditions.append(field_obj.is_null(value))
+                elif op == "gt":
+                    conditions.append(field_obj > value)
+                elif op == "gte":
+                    conditions.append(field_obj >= value)
+                elif op == "lt":
+                    conditions.append(field_obj < value)
+                elif op == "lte":
+                    conditions.append(field_obj <= value)
+                elif op == "in":
+                    conditions.append(field_obj.in_(value))
+                elif op == "contains":
+                    conditions.append(field_obj.contains(value))
+            else:
+                conditions.append(getattr(model_class, key) == value)
+
+        query = query.where(*conditions)
+
+        if order_by:
+            order_expressions = []
+            for field in order_by:
+                if field.startswith("-"):
+                    order_expressions.append(getattr(model_class, field[1:]).desc())
+                else:
+                    order_expressions.append(getattr(model_class, field).asc())
+            query = query.order_by(*order_expressions)
+
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
+
+    return query
+
+
 def get_record_list(
     model_class,
     search_fields: Optional[Dict[str, Any]] = None,
     order_by: Optional[List[str]] = None,
+    offset: Optional[int] = None,
+    limit: Optional[int] = None,
 ) -> List[BaseModel]:
     """通用的获取记录列表函数
 
@@ -77,6 +152,8 @@ def get_record_list(
             - field__in: list 表示在列表中
             - field__contains: value 表示包含
         order_by: 排序字段列表,字段名前加-表示降序,如['-created_at','name']
+        offset: 分页偏移量
+        limit: 分页大小
 
     Returns:
         记录列表
@@ -89,13 +166,15 @@ def get_record_list(
             order_by=["-created_at"]
         )
 
-        # 获取进度大于50且未完成的任务
+        # 获取进度大于50且未完成的任务，分页获取第2页，每页10条
         tasks = get_record_list(
             ModelTask,
             search_fields={
                 "progress__gt": 50,
                 "status__in": ["pending", "running"]
-            }
+            },
+            offset=10,
+            limit=10
         )
 
         # 获取名称包含"test"的任务
@@ -106,47 +185,49 @@ def get_record_list(
     """
     try:
         with db_connection(db_name=model_class._meta.db_name):
-            query = model_class.select()
-
-            if search_fields:
-                conditions = []
-                for key, value in search_fields.items():
-                    if "__" in key:
-                        field, op = key.split("__")
-                        field_obj = getattr(model_class, field)
-
-                        if op == "null":
-                            conditions.append(field_obj.is_null(value))
-                        elif op == "gt":
-                            conditions.append(field_obj > value)
-                        elif op == "gte":
-                            conditions.append(field_obj >= value)
-                        elif op == "lt":
-                            conditions.append(field_obj < value)
-                        elif op == "lte":
-                            conditions.append(field_obj <= value)
-                        elif op == "in":
-                            conditions.append(field_obj.in_(value))
-                        elif op == "contains":
-                            conditions.append(field_obj.contains(value))
-                    else:
-                        conditions.append(getattr(model_class, key) == value)
-
-                query = query.where(*conditions)
-
-            if order_by:
-                order_expressions = []
-                for field in order_by:
-                    if field.startswith("-"):
-                        order_expressions.append(getattr(model_class, field[1:]).desc())
-                    else:
-                        order_expressions.append(getattr(model_class, field).asc())
-                query = query.order_by(*order_expressions)
+            query = _build_query(model_class, search_fields, order_by, offset, limit)
 
             return list(query)
     except Exception as e:
         logger.error("获取记录列表失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
         return []
+
+
+def get_record_count(
+    model_class,
+    search_fields: Optional[Dict[str, Any]] = None,
+) -> int:
+    """通用的获取记录数量函数
+
+    Args:
+        model_class: 数据库模型类
+        search_fields: 查询条件字典,支持以下格式:
+            - field: value 表示相等
+            - field__null: True/False 表示是否为空
+            - field__gt: value 表示大于
+            - field__gte: value 表示大于等于
+            - field__lt: value 表示小于
+            - field__lte: value 表示小于等于
+            - field__in: list 表示在列表中
+            - field__contains: value 表示包含
+
+    Returns:
+        符合条件的记录数量
+
+    Examples:
+        # 获取所有pending状态的任务数量
+        count = get_record_count(
+            ModelTask,
+            search_fields={"status": "pending"}
+        )
+    """
+    try:
+        with db_connection(db_name=model_class._meta.db_name):
+            query = _build_query(model_class, search_fields)
+            return query.count()
+    except Exception as e:
+        logger.error("获取记录数量失败 - 模型: %s, 错误: %s", model_class.__name__, str(e))
+        return 0
 
 
 def delete_record(

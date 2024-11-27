@@ -199,6 +199,8 @@ class JobManager:
                         elif sub_task_status_count[TaskStatus.RUNNING] > 0:
                             task.status = TaskStatus.FAILED
                             task.error = "子任务超时"
+                        else:
+                            task.status = TaskStatus.COMPLETED
                         task.save()
                     else:
                         if task.status == TaskStatus.RUNNING:

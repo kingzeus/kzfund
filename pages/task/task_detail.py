@@ -84,36 +84,33 @@ def render_task_detail_modal() -> Component:
         Output("task-detail-interval", "disabled", allow_duplicate=True),
     ],
     [
-        Input({"type": "task-action", "index": ALL, "action": ALL}, "nClicks"),
-    ],
-    [
-        State("task-store", "data"),
+        Input("task-list", "nClicksButton"),
+        State("task-list", "clickedCustom"),
+        State("task-list", "recentlyButtonClickedRow"),
     ],
     prevent_initial_call=True,
 )
-def handle_task_detail(action_clicks, tasks_data):
+def handle_task_detail(nClicks, custom, recentlyButtonClickedRow):
     """处理任务详情查看"""
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
 
     try:
-        button_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
-        task_id = button_id["index"]
-        action = button_id["action"]
+        task_id = recentlyButtonClickedRow["task_id"]
 
-        if action != "view":
+        if custom != "view":
             raise PreventUpdate
 
-        task = next((t for t in tasks_data if t["task_id"] == task_id), None)
+        task = get_record(ModelTask, {"task_id": task_id})
         if not task:
             logger.warning("未找到任务: %s", task_id)
             raise PreventUpdate
 
         # 是否更新任务详情内容
-        is_update = task["status"] == TaskStatus.RUNNING or task["status"] == TaskStatus.PENDING
+        is_update = task.status == TaskStatus.RUNNING or task.status == TaskStatus.PENDING
 
-        content = get_task_detail(task)
+        content = get_task_detail(task.to_dict())
         logger.info("显示任务详情: %s", task_id)
         return True, content, task_id, not is_update
 
@@ -137,7 +134,7 @@ def update_task_detail_task_id(visible: bool) -> str:
 
 # 添加回调函数
 @callback(
-    Output("message-container", "children"),
+    Output("message-container", "children", allow_duplicate=True),
     [
         Input("subtask-table", "nClicksButton"),
         State("subtask-table", "recentlyButtonClickedRow"),

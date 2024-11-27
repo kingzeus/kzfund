@@ -1,9 +1,6 @@
 # 任务管理页面主渲染模块
 #
 # 页面结构:
-# 1. Store组件
-#    - task-store: 存储任务数据, task数据模型转成dict
-#    - task-loading-state: 存储任务加载状态
 #
 # 2. 页面标题
 #    - 图标 + 文字标题
@@ -23,7 +20,7 @@ from dash import dcc, html
 from pages.task.task_detail import render_task_detail_modal
 from pages.task.task_modal import render_task_modal
 from pages.task.task_table import render_task_table
-from pages.task.task_utils import ICON_STYLES, PAGE_PADDING, get_task_store_data
+from pages.task.task_utils import ICON_STYLES, PAGE_PADDING
 
 
 def render_task_page() -> html.Div:
@@ -32,19 +29,8 @@ def render_task_page() -> html.Div:
     Returns:
         包含完整页面结构的Div组件
     """
-    initial_tasks = get_task_store_data()
-
     return html.Div(
         [
-            # Store 组件
-            dcc.Store(id="task-store", data=initial_tasks),
-            dcc.Store(id="task-loading-state", data=False),
-            # 添加定时器组件
-            dcc.Interval(
-                id="task-refresh-interval",
-                interval=500,  # 每500毫秒刷新一次
-                disabled=True,  # 默认禁用
-            ),
             # 页面标题
             fac.AntdRow(
                 fac.AntdCol(
@@ -72,11 +58,7 @@ def render_task_page() -> html.Div:
                 [
                     fac.AntdCol(
                         [
-                            fac.AntdSpin(
-                                render_task_table(initial_tasks),
-                                id="task-table-spin",
-                                spinning=False,  # 初始状态不显示加载
-                            ),
+                            render_task_table(),
                         ],
                         span=24,
                         style={"padding": f"{PAGE_PADDING}px"},
