@@ -1,5 +1,6 @@
 from scheduler.tasks.fund_nav import FundNavTask
 from scheduler.tasks.sync_fund_nav import SyncFundNavTask
+from scheduler.tasks.sync_fund_page import SyncFundListPageTask
 
 from .data_sync import DataSyncTask
 from .fund_detail import FundDetailTask
@@ -28,6 +29,7 @@ def init_tasks():
     factory.register(FundDetailTask)
     factory.register(FundNavTask)
     factory.register(SyncFundNavTask)  # 同步基金净值
+    factory.register(SyncFundListPageTask)  # 同步基金净值列表页面
 
 
 __all__ = ["TaskFactory", "TaskStatus", "init_tasks"]

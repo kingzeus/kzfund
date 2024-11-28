@@ -8,7 +8,7 @@ from models.fund import ModelFund
 from scheduler.tasks.task_factory import TaskFactory
 from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
 
-from .base import BaseTask
+from .base import PARAM_FUND_TYPE, BaseTask
 
 logger = logging.getLogger(__name__)
 
@@ -27,24 +27,7 @@ class SyncFundListTask(BaseTask):
             "description": "基金最新净值列表",
             "timeout": 300,
             "params": [
-                {
-                    "name": "类型",
-                    "key": "sync_type",
-                    "type": "select",
-                    "required": True,
-                    "description": "选择要同步的数据类型",
-                    "default": 1,
-                    "options": [
-                        {"label": "全部数据", "value": 1},
-                        {"label": "股票型", "value": 2},
-                        {"label": "混合型", "value": 3},
-                        {"label": "指数型", "value": 5},
-                        {"label": "QDII", "value": 6},
-                        {"label": "LOF", "value": 8},
-                        {"label": "债券型", "value": 13},
-                        {"label": "FOF", "value": 15},
-                    ],
-                },
+                PARAM_FUND_TYPE,
             ],
         }
 
@@ -65,6 +48,7 @@ class SyncFundListTask(BaseTask):
         try:
             # 初始化数据源
             data_source = DataSourceProxy()
+            # 1. 访问基金列表入口
 
             # 1.获取基金信息,确定基金起始日期
             fund_info = get_record(ModelFund, {"code": fund_code})

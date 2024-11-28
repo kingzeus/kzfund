@@ -2,12 +2,15 @@ import logging
 import urllib.parse
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+import json
+import execjs
 
 import requests
 from bs4 import BeautifulSoup
 
 from data_source.interface import IDataSource
-from utils.datetime_helper import format_date, get_timestamp
+from scheduler.tasks.base import FundType
+from utils.datetime_helper import format_date, get_timestamp, get_timestamp_ms
 from utils.string_helper import (
     extract_number_with_unit,
     generate_random_string,
@@ -306,3 +309,125 @@ class EastMoneyDataSource(IDataSource):
         except Exception as e:
             logger.error("获取基金历史净值失败: %s", str(e), exc_info=True)
             raise ValueError(f"获取基金历史净值失败: {str(e)}")
+
+    def get_fund_type(self, type: int) -> int:
+        """转换基金类型"""
+        if type == FundType.ALL:
+            return 1
+        elif type == FundType.STOCK:
+            return 2
+        elif type == FundType.MIXED:
+            return 3
+        elif type == FundType.INDEX:
+            return 5
+        elif type == FundType.QDII:
+            return 6
+        elif type == FundType.LOF:
+            return 8
+        elif type == FundType.BOND:
+            return 13
+        elif type == FundType.FOF:
+            return 15
+        return 0
+
+    def get_fund_nav_list(
+        self,
+        page: int = 1,
+        page_size: int = 200,
+        type: int = 1,
+    ) -> Dict[str, Any]:
+        """获取基金最新净值列表
+
+        Args:
+            page: 页码,从1开始
+            page_size: 每页数量
+            type: 基金类型(1:全部 2:股票型 3:混合型 4:债券型 5:指数型 6:QDII 7:LOF 8:FOF)
+
+        Returns:
+            Dict: 基金净值列表
+            - page: 页码
+            - page_size: 每页数量
+            - total: 总数量
+            - items: 基金列表
+                - code: 基金代码
+                - name: 基金名称
+                - nav: 当前净值
+                - acc_nav: 累计净值
+                - last_nav: 上一日净值
+                - last_acc_nav: 上一日累计净值
+                - daily_return: 日增长率
+                - subscription_status: 申购状态
+                - redemption_status: 赎回状态
+        """
+        try:
+            url = "https://fund.eastmoney.com/Data/Fund_JJJZ_Data.aspx"
+            params = {
+                "t": 1,
+                "onlySale": 0,
+                "page": f"{page},{page_size}",
+                "sort": "zdf,desc",
+                "dt": get_timestamp_ms(),
+                "lx": self.get_fund_type(type),
+            }
+            logger.debug("请求基金最新净值列表: %s, params: %s", url, params)
+
+            response = requests.get(url, params=params, headers=self.headers)
+            response.raise_for_status()
+
+            # 解析返回的JavaScript对象
+            text = response.text
+            if not text.startswith("var db="):
+                error_msg = "获取基金最新净值列表失败: 返回格式错误"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            # 构造JavaScript代码
+            js_code = f"""
+            {text}
+            JSON.stringify(db);
+            """
+
+            # 执行JavaScript代码并获取结果
+            # JSON.stringify + loads 方式
+            # 优点:
+            # 1. 通过 JSON 序列化保证了数据类型的一致性
+            # 2. 跨平台/引擎行为更可预测
+            # 缺点:
+            # 1. 多了一次序列化和反序列化的开销
+            ctx = execjs.compile(js_code)
+            json_str = ctx.eval("JSON.stringify(db)")
+
+            data = json.loads(json_str)
+            print("解析到的数据: %s", data)
+            results = {
+                "page": data["curpage"],
+                "page_size": page_size,
+                "total": data["record"],
+                "items": [],
+            }
+
+            for fund in data["datas"]:
+                # 解析基金数据
+                item = {
+                    "nav_date": data["showday"][0],
+                    "fund_code": fund[0],  # 基金代码 a
+                    # "name": fund[1],  # 基金名称 b
+                    # "pinyin":fund[2], # 拼音 c
+                    "nav": float(fund[3]) if fund[3] else 0,  # 单位净值 d
+                    "acc_nav": float(fund[4]) if fund[4] else 0,  # 累计净值 f
+                    # "last_nav": float(fund[5]) if fund[5] else 0,  # 上一日净值 g
+                    # "last_acc_nav": float(fund[6]) if fund[6] else 0,  # 上一日累计净值 h
+                    "daily_return": (float(fund[8]) / 100 if fund[8] else 0),  # 日增长率 k
+                    "subscription_status": fund[9],  # 申购状态 l
+                    "redemption_status": fund[10],  # 赎回状态 m
+                    "data_source": self.get_name(),
+                    "data_source_version": self.get_version(),
+                }
+                results["items"].append(item)
+
+            logger.debug("获取到 %d 条基金净值记录", len(data["datas"]))
+            return results
+
+        except Exception as e:
+            logger.error("获取基金最新净值列表失败: %s", str(e), exc_info=True)
+            raise ValueError(f"获取基金最新净值列表失败: {str(e)}")

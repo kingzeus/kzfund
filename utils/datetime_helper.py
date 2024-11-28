@@ -86,6 +86,22 @@ def get_timestamp() -> int:
     return int(datetime.now().timestamp())
 
 
+def get_timestamp_ms() -> int:
+    """获取当前时间戳(毫秒)
+
+    返回当前时间的Unix时间戳（从1970年1月1日UTC零点开始的毫秒数）。
+    时间戳为整数，精确到毫秒。
+
+    Returns:
+        int: 当前时间的Unix时间戳(毫秒)
+
+    Examples:
+        >>> get_timestamp_ms()
+        1709251200000  # 2024-03-01 00:00:00 UTC
+    """
+    return int(datetime.now().timestamp() * 1000)
+
+
 def get_date_str_after_days(start_date: Union[str, date], days: int) -> str:
     """获取开始日期后几天的日期字符串"""
     return format_date(get_date_after_days(start_date, days))

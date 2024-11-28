@@ -6,16 +6,13 @@
 # - 处理详情查看操作
 
 
-import json
 import logging
 from collections import Counter
 
 import feffery_antd_components as fac
 from dash import (
-    ALL,
     Input,
     Output,
-    Patch,
     State,
     callback,
     callback_context,
@@ -100,12 +97,12 @@ def handle_task_detail(nClicks, custom, recentlyButtonClickedRow):
         task_id = recentlyButtonClickedRow["task_id"]
 
         if custom != "view":
-            raise PreventUpdate
+            return no_update
 
         task = get_record(ModelTask, {"task_id": task_id})
         if not task:
             logger.warning("未找到任务: %s", task_id)
-            raise PreventUpdate
+            return no_update
 
         # 是否更新任务详情内容
         is_update = task.status == TaskStatus.RUNNING or task.status == TaskStatus.PENDING
@@ -116,7 +113,7 @@ def handle_task_detail(nClicks, custom, recentlyButtonClickedRow):
 
     except Exception as e:
         logger.error("处理任务详情失败: %s", str(e), exc_info=True)
-        raise PreventUpdate
+        return no_update
 
 
 @callback(

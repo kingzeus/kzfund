@@ -120,3 +120,19 @@ class DataSourceProxy:
             api_func=self._data_source.get_fund_nav_history_size,
             error_msg="获取基金历史净值失败",
         )
+
+    def get_fund_nav_list(
+        self,
+        page_size: int,
+        page: int,
+        type: int,
+    ) -> Dict[str, Any]:
+        """获取基金最新净值列表"""
+        return self._call_api(
+            func_name="get_fund_nav_list",
+            api_func=self._data_source.get_fund_nav_list,
+            error_msg="获取基金最新净值列表失败",
+            page_size=page_size,
+            page=page,
+            type=type,
+        )

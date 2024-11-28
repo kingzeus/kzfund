@@ -4,6 +4,81 @@ from typing import Any, Dict, Optional, Protocol, Tuple
 
 logger = logging.getLogger(__name__)
 
+# ------------常用参数定义------------
+# 基金代码参数
+PARAM_FUND_CODE = {
+    "name": "基金代码",
+    "key": "fund_code",
+    "type": "fund-code-aio",
+    "required": True,
+    "description": "要更新的基金代码",
+}
+# 子任务间隔参数
+PARAM_SUB_TASK_DELAY = {
+    "name": "子任务间隔",
+    "key": "sub_task_delay",
+    "type": "number",
+    "required": False,
+    "default": 2,
+    "description": "子任务间隔时间，随机增加间隔上限",
+}
+
+# 子任务间隔参数
+PARAM_PAGE = {
+    "name": "页码",
+    "key": "page",
+    "type": "number",
+    "required": True,
+    "default": 1,
+    "description": "页码",
+}
+PARAM_PAGE_SIZE = {
+    "name": "每页数据量",
+    "key": "page_size",
+    "type": "number",
+    "required": False,
+    "default": 100,
+    "description": "每页数据量",
+}
+
+
+# 基金类型选择参数
+
+
+# 基金类型枚举
+class FundType:
+    """基金类型枚举"""
+
+    STOCK = 1  # 股票型
+    MIXED = 2  # 混合型
+    INDEX = 3  # 指数型
+    QDII = 4  # QDII
+    LOF = 5  # LOF
+    BOND = 6  # 债券型
+    FOF = 7  # FOF
+    ALL = 10  # 全部数据
+
+
+# 基金类型参数配置
+PARAM_FUND_TYPE = {
+    "name": "类型",
+    "key": "fund_type",
+    "type": "select",
+    "required": True,
+    "description": "选择要同步的数据类型",
+    "default": FundType.ALL,
+    "select_options": [
+        {"label": "全部数据", "value": FundType.ALL},
+        {"label": "股票型", "value": FundType.STOCK},
+        {"label": "混合型", "value": FundType.MIXED},
+        {"label": "指数型", "value": FundType.INDEX},
+        {"label": "QDII", "value": FundType.QDII},
+        {"label": "LOF", "value": FundType.LOF},
+        {"label": "债券型", "value": FundType.BOND},
+        {"label": "FOF", "value": FundType.FOF},
+    ],
+}
+
 
 class TaskProgressUpdater(Protocol):
     """任务进度更新器协议"""
@@ -81,7 +156,7 @@ class BaseTask(ABC):
                 - required: 是否必填
                 - description: 参数描述
                 - default: 默认值
-                - options: 选项列表(type为select时使用)
+                - select_options: 选项列表(type为select时使用)
         """
 
     @classmethod

@@ -125,6 +125,7 @@ def generate_param_form_item(
                     if use_pattern_id
                     else f"param-{param['key']}"
                 ),
+                defaultValue=param.get("default", None),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
@@ -135,7 +136,8 @@ def generate_param_form_item(
                     if use_pattern_id
                     else f"param-{param['key']}"
                 ),
-                options=param.get("options", []),
+                options=param.get("select_options", []),
+                defaultValue=param.get("default", None),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
             )
@@ -148,6 +150,17 @@ def generate_param_form_item(
                 ),
                 placeholder=param.get("description", ""),
                 style={"width": "100%"},
+            )
+        elif param["type"] == "boolean":
+            input_component = fac.AntdSwitch(
+                id=(
+                    {"type": "task-param", "param": param["key"]}
+                    if use_pattern_id
+                    else f"param-{param['key']}"
+                ),
+                checkedChildren=fac.AntdIcon(icon="antd-check"),
+                unCheckedChildren=fac.AntdIcon(icon="antd-close"),
+                checked=True if param.get("default", False) else False,
             )
         else:
             logger.warning("未知的参数类型: %s", param["type"])
@@ -253,7 +266,8 @@ def show_task_modal(n_clicks, task_type):
     [
         State("task-type-select", "value"),
         State({"type": "task-param", "param": ALL}, "value"),
-        State(FundCodeAIO.ids.select("task-param-fund_code"), "value"),
+        State({"type": "task-param", "param": ALL}, "checked"),
+        State({"aio_id": ALL, "component": "FundCodeAIO", "subcomponent": "select"}, "value"),
         State("delay-input", "value"),
         State("timeout-input", "value"),
     ],
@@ -263,10 +277,11 @@ def handle_task_create(
     ok_counts: int,
     task_type: str,
     param_values: List[Any],
-    fund_code: Optional[str],
+    param_checked: List[bool],
+    fund_code_values: List[str],
     delay: Optional[int],
     timeout: Optional[int],
-):  # pylint: R0917
+):
     """处理任务创建"""
     if not ok_counts or not task_type:
         raise PreventUpdate
@@ -278,10 +293,15 @@ def handle_task_create(
     # 构建参数字典
     task_params = {}
     param_index = 0
+    fund_code_index = 0
 
     for param in params:
         if param["type"] == "fund-code-aio":
-            value = fund_code
+            value = fund_code_values[fund_code_index] if fund_code_values else None
+            fund_code_index += 1
+        elif param["type"] == "boolean":
+            value = param_checked[param_index]
+            param_index += 1
         else:
             value = param_values[param_index]
             param_index += 1

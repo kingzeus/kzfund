@@ -7,7 +7,7 @@ from models.database import update_record
 from models.fund import ModelFundNav
 from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
 
-from .base import BaseTask
+from .base import PARAM_FUND_CODE, BaseTask
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +26,7 @@ class FundNavTask(BaseTask):
             "description": "更新单个基金历史净值",
             "timeout": 300,
             "params": [
-                {
-                    "name": "基金代码",
-                    "key": "fund_code",
-                    "type": "fund-code-aio",  # 使用基金选择器组件
-                    "required": True,
-                    "description": "要更新的基金代码",
-                },
+                PARAM_FUND_CODE,
                 {
                     "name": "开始日期",
                     "key": "start_date",

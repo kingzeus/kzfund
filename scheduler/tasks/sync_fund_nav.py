@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from random import random
+from random import Random
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
@@ -9,11 +9,12 @@ from models.fund import ModelFund
 from scheduler.tasks.task_factory import TaskFactory
 from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
 
-from .base import BaseTask
+from .base import PARAM_FUND_CODE, PARAM_SUB_TASK_DELAY, BaseTask
 
 logger = logging.getLogger(__name__)
 
-
+# 创建Random实例
+random = Random()
 class SyncFundNavTask(BaseTask):
     """基金净值更新任务"""
 
@@ -27,23 +28,7 @@ class SyncFundNavTask(BaseTask):
             "name": "【同步】基金历史净值",
             "description": "同步单个基金历史净值",
             "timeout": 300,
-            "params": [
-                {
-                    "name": "基金代码",
-                    "key": "fund_code",
-                    "type": "fund-code-aio",  # 使用基金选择器组件
-                    "required": True,
-                    "description": "要更新的基金代码",
-                },
-                {
-                    "name": "子任务间隔",
-                    "key": "sub_task_delay",
-                    "type": "number",
-                    "required": False,
-                    "default": 2,
-                    "description": "子任务间隔时间，随机增加间隔上限",
-                },
-            ],
+            "params": [PARAM_FUND_CODE, PARAM_SUB_TASK_DELAY],
         }
 
     @classmethod

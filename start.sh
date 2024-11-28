@@ -346,6 +346,7 @@ show_menu() {
     echo "3) 运行代码检查"
     echo "4) 启动应用"
     echo "5) 完整安装(1-4步骤)"
+    echo "6) 备份数据库"
     echo "------------"
     echo "8) 清理日志"
     echo "9) 测试"
@@ -387,6 +388,43 @@ clean_logs() {
     return 0
 }
 
+# 修改backup_database函数
+backup_database() {
+    echo -e "${YELLOW}开始备份数据库...${NC}"
+
+    # 检查database目录是否存在
+    if [ ! -d "database" ]; then
+        echo -e "${RED}错误: database目录不存在${NC}"
+        return 1
+    fi
+
+    # 创建backups目录(如果不存在)
+    if [ ! -d "backups" ]; then
+        mkdir -p backups
+    fi
+
+    # 生成备份文件名(使用当前时间戳)
+    backup_file="backups/db_backup_$(date +%Y%m%d_%H%M%S).zip"
+
+    # 执行备份
+    if zip -r "$backup_file" database/*.db > /dev/null 2>&1; then
+        echo -e "${GREEN}数据库备份成功: $backup_file${NC}"
+
+        # 保留最近5个备份文件
+        echo -e "${YELLOW}清理旧备份文件...${NC}"
+        backup_count=$(ls -t backups/db_backup_*.zip 2>/dev/null | wc -l)
+        if [ "$backup_count" -gt 5 ]; then
+            ls -t backups/db_backup_*.zip | tail -n +6 | xargs rm -f
+            echo -e "${GREEN}已清理旧备份文件，保留最近5个备份${NC}"
+        fi
+
+        return 0
+    else
+        echo -e "${RED}数据库备份失败${NC}"
+        return 1
+    fi
+}
+
 # 主循环
 while true; do
     show_menu
@@ -425,10 +463,14 @@ while true; do
             ensure_directories || continue
             activate_conda_env || continue
             clean_logs
+            backup_database
             start_app
             ;;
         5)
             do_full_install || continue
+            ;;
+        6)
+            backup_database
             ;;
         8)
             clean_logs

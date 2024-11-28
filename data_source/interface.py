@@ -81,6 +81,36 @@ class IDataSource(ABC):
             }]
         """
 
+    @abstractmethod
+    def get_fund_type(self, type: int) -> int:
+        """
+        转换基金类型
+        Args:
+            type: 基金类型 参考FundType
+        Returns:
+            int: 基金类型
+        """
+
+    @abstractmethod
+    def get_fund_nav_list(
+        self,
+        page_size: int = 10,
+        page: int = 1,
+        type: int = 1,
+    ) -> List[Dict[str, Any]]:
+        """
+        获取基金最新净值列表
+        Args:
+            fund_codes: 基金代码列表
+        Returns:
+            List[Dict]: [{
+                "code": "基金代码",
+                "name": "基金名称",
+                "nav": "最新净值",
+                "nav_date": "净值日期"
+            }]
+        """
+
     @classmethod
     @abstractmethod
     def get_version(cls) -> str:

@@ -99,18 +99,18 @@ def render_home_page() -> html.Div:
                     # 当前系统基金数据
                     fac.AntdCol(
                         render_fund_data_card(initial_stats),
-                        span=6,
+                        span=8,
                         style={"padding": "8px"},
                     ),
                     # 今日更新基金数据
                     fac.AntdCol(
                         render_today_fund_card(initial_stats),
-                        span=6,
+                        span=8,
                         style={"padding": "8px"},
                     ),
                     fac.AntdCol(
                         render_today_task_card(initial_stats),
-                        span=6,
+                        span=8,
                         style={"padding": "8px"},
                     ),
                 ]

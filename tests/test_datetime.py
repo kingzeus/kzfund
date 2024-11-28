@@ -8,11 +8,11 @@ class TestDatetimeFunctions(unittest.TestCase):
     def test_format_datetime(self):
         # 测试datetime对象
         dt = datetime(2021, 7, 6, 12, 30)
-        self.assertEqual(format_datetime(dt), "2021-07-06 12:30")
+        self.assertEqual(format_datetime(dt), "2021-07-06 12:30:00")
         self.assertEqual(format_datetime(dt, output_format="%Y/%m/%d %H:%M"), "2021/07/06 12:30")
 
         # 测试ISO格式字符串
-        self.assertEqual(format_datetime("2021-07-06T12:30:00"), "2021-07-06 12:30")
+        self.assertEqual(format_datetime("2021-07-06T12:30:00"), "2021-07-06 12:30:00")
 
         # 测试空值
         self.assertEqual(format_datetime(None), "未知时间")

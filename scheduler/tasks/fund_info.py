@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
 
-from .base import BaseTask
+from .base import PARAM_FUND_CODE, BaseTask
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +22,7 @@ class FundInfoTask(BaseTask):
             "name": "基金信息更新",
             "description": "更新基金基本信息",
             "timeout": 300,
-            "params": [
-                {
-                    "name": "基金代码",
-                    "key": "fund_code",
-                    "type": "fund-code-aio",  # 使用基金选择器组件
-                    "required": True,
-                    "description": "要更新的基金代码",
-                }
-            ],
+            "params": [PARAM_FUND_CODE],
         }
 
     @classmethod

@@ -176,6 +176,21 @@ class TestDataSource(unittest.TestCase):
         dates = [record["nav_date"] for record in nav_history[:2]]
         self.assertGreater(dates[0], dates[1], "净值历史记录未按日期降序排序")
 
+    def test_get_fund_nav_list(self):
+        """测试获取基金净值列表功能"""
+        # 使用默认参数获取第一页数据
+        nav_list = self.data_source.get_fund_nav_list(page_size=2)
+
+        # 打印完整的返回数据，方便调试
+        print("\n获取到的基金净值列表:")
+        print(nav_list)
+
+        # 验证结果不为空
+        self.assertIsNotNone(nav_list, "获取基金净值列表失败，返回为空")
+
+        # 验证第一条记录的字段
+        first_record = nav_list["items"][0]
+
     def tearDown(self):
         """测试后的清理工作"""
 

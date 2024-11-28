@@ -21,3 +21,4 @@ htmlcov/
 logs/
 database/
 .pylint_rate
+backups
