@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from random import random
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
@@ -33,7 +34,15 @@ class SyncFundNavTask(BaseTask):
                     "type": "fund-code-aio",  # 使用基金选择器组件
                     "required": True,
                     "description": "要更新的基金代码",
-                }
+                },
+                {
+                    "name": "子任务间隔",
+                    "key": "sub_task_delay",
+                    "type": "number",
+                    "required": False,
+                    "default": 2,
+                    "description": "子任务间隔时间，随机增加间隔上限",
+                },
             ],
         }
 
@@ -50,6 +59,8 @@ class SyncFundNavTask(BaseTask):
         fund_code = kwargs.get("fund_code")
         if not fund_code:
             raise ValueError("fund_code 不能为空")
+
+        sub_task_delay = kwargs.get("sub_task_delay", 2)
 
         try:
             # 初始化数据源
@@ -100,7 +111,7 @@ class SyncFundNavTask(BaseTask):
 
                 # 更新下一个任务的起始日期和延迟时间
                 current_date = get_date_str_after_days(end_date, 1)
-                delay += 5  # 每个任务间隔5秒
+                delay += random.randint(0, sub_task_delay)
 
             self.update_progress(10)
             logger.info("成功添加 %d 个任务", len(tasks))
