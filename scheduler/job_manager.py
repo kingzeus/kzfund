@@ -1,14 +1,13 @@
 import json
 import logging
-import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List
 
 from flask_apscheduler import APScheduler
-from peewee import DatabaseError, DoesNotExist, IntegrityError
+from peewee import DatabaseError, IntegrityError
 
 from config import SCHEDULER_CONFIG
-from models.database import get_record, get_record_list
+from models.database import get_record, get_record_list, update_record
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
 from utils.singleton import Singleton
@@ -98,11 +97,12 @@ class JobManager:
         """
         try:
             # 更新任务状态为运行中
-            try:
-                task_history = ModelTask.get(ModelTask.task_id == task_id)
-            except DoesNotExist as exc:
+
+            task_history = get_record(ModelTask, {"task_id": task_id})
+
+            if not task_history:
                 logger.error("任务不存在: %s", task_id)
-                raise TaskExecutionError(f"任务不存在: {task_id}") from exc
+                raise TaskExecutionError(f"任务不存在: {task_id}")
 
             task_history.status = TaskStatus.RUNNING
             task_history.start_time = datetime.now()
@@ -270,19 +270,19 @@ class JobManager:
         if timeout == 0:
             timeout = task_config.get("timeout", SCHEDULER_CONFIG["DEFAULT_TIMEOUT"])
 
-        # 过滤掉已单独保存的参数
-        input_params = kwargs.copy()
-
         # 创建任务记录
-        ModelTask.create(
-            task_id=task_id,
-            parent_task_id=parent_task_id,
-            type=task_type,  # 设置任务类型
-            name=task_config.get("name", task_type),
-            delay=delay,
-            status=TaskStatus.PENDING,
-            timeout=timeout,
-            input_params=json.dumps(input_params),  # 将参数转换为JSON字符串
+        update_record(
+            ModelTask,
+            {"task_id": task_id},
+            {
+                "parent_task_id": parent_task_id,
+                "type": task_type,  # 设置任务类型
+                "name": task_config.get("name", task_type),
+                "delay": delay,
+                "status": TaskStatus.PENDING,
+                "timeout": timeout,
+                "input_params": json.dumps(kwargs),  # 将参数转换为JSON字符串
+            },
         )
 
         # 添加到调度器立即执行
@@ -302,19 +302,26 @@ class JobManager:
     def copy_task(self, task_id: str) -> str:
         """复制任务"""
         try:
-            task = ModelTask.get(ModelTask.task_id == task_id)
+            task = get_record(ModelTask, search_fields={"task_id": task_id})
+            if not task:
+                logger.error("任务不存在: %s", task_id)
+                raise TaskExecutionError(f"任务不存在: {task_id}")
+
             new_task_id = get_uuid()
 
             args = json.loads(task.input_params)
 
-            ModelTask.create(
-                task_id=new_task_id,
-                type=task.type,
-                name=task.name,
-                delay=task.delay,
-                status=TaskStatus.PENDING,
-                timeout=task.timeout,
-                input_params=task.input_params,
+            update_record(
+                ModelTask,
+                {"task_id": new_task_id},
+                {
+                    "type": task.type,
+                    "name": task.name,
+                    "delay": task.delay,
+                    "status": TaskStatus.PENDING,
+                    "timeout": task.timeout,
+                    "input_params": task.input_params,
+                },
             )
             logger.info("任务复制成功: %s -> %s", task_id, new_task_id)
 
@@ -333,105 +340,10 @@ class JobManager:
             logger.error("复制任务失败: %s", str(e), exc_info=True)
             return ""
 
-    def pause_task(self, task_id: str) -> bool:
-        """暂停指定任务"""
-        try:
-            self.scheduler.pause_job(task_id)
-            ModelTask.update(status=TaskStatus.PAUSED).where(ModelTask.task_id == task_id).execute()
-            logger.info("任务已暂停: %s", task_id)
-            return True
-        except (DatabaseError, IntegrityError) as e:
-            logger.error("暂停任务失败: %s:%s", task_id, str(e), exc_info=True)
-            return False
-
-    def resume_task(self, task_id: str) -> bool:
-        """恢复已暂停的任务"""
-        try:
-            self.scheduler.resume_job(task_id)
-            ModelTask.update(status=TaskStatus.PENDING).where(
-                ModelTask.task_id == task_id
-            ).execute()
-            logger.info("任务已恢复: %s", task_id)
-            return True
-        except (DatabaseError, IntegrityError) as e:
-            logger.error("恢复任务失败: %s: %s", task_id, str(e), exc_info=True)
-            return False
-
     def update_task_progress(self, task_id: str, progress: int):
         """更新任务进度到缓存"""
         self._progress_cache[task_id] = progress
         logger.debug("更新任务进度缓存: %s -> %d%%", task_id, progress)
-
-    def get_tasks_progress(self, task_ids: List[str]) -> Dict[str, int]:
-        """获取指定任务的最新进度
-
-        优先从缓存获取,缓存不存在则从数据库读取
-        """
-        # 优先从缓存获取
-        progress_dict = {
-            task_id: self._progress_cache[task_id]
-            for task_id in task_ids
-            if task_id in self._progress_cache
-        }
-
-        # 缓存未命中的从数据库获取
-        missing_task_ids = [task_id for task_id in task_ids if task_id not in progress_dict]
-
-        if missing_task_ids:
-            try:
-                query = ModelTask.select(ModelTask.task_id, ModelTask.progress).where(
-                    ModelTask.task_id.in_(missing_task_ids)
-                )
-                progress_dict.update({task.task_id: task.progress for task in query.execute()})
-            except (DatabaseError, IntegrityError) as e:
-                logger.error("从数据库获取任务进度失败: %s", str(e))
-
-        return progress_dict
-
-    def get_task(self, task_id: str) -> Dict:
-        """获取指定任务的详细信息
-
-        Args:
-            task_id: 任务ID
-
-        Returns:
-            Dict: 包含任务详细信息的字典，如果任务不存在返回 {"status": "not_found"}
-        """
-        try:
-            # 从数据库获取任务信息
-            try:
-                task = ModelTask.get(ModelTask.task_id == task_id)
-            except DoesNotExist:
-                logger.warning("任务不存在: %s", task_id)
-                return {"status": "not_found"}
-
-            # 获取最新进度
-            progress = self._progress_cache.get(task_id, task.progress)
-
-            # 获取任务运行状态
-            job = self.scheduler.get_job(task_id)
-            current_status = task.status
-            if job and task.status == TaskStatus.PENDING:
-                current_status = TaskStatus.RUNNING
-
-            return {
-                "task_id": task.task_id,
-                "name": task.name,
-                "delay": task.delay,
-                "status": current_status,
-                "progress": progress,
-                "result": task.result,
-                "error": task.error,
-                "start_time": task.start_time,
-                "end_time": task.end_time,
-                "timeout": task.timeout,
-                "created_at": task.created_at,
-                "input_params": json.loads(task.input_params),
-            }
-
-        except (DatabaseError, IntegrityError, DoesNotExist, TypeError, ValueError) as e:
-            logger.error("获取任务信息失败: %s, 错误: %s", task_id, str(e), exc_info=True)
-            return {"status": "not_found", "error": str(e)}
 
     def get_task_progress(self, task_ids: List[str]) -> Dict[str, int]:
         """获取多个任务的进度
@@ -461,36 +373,3 @@ class JobManager:
                 logger.error("从数据库获取任务进度失败: %s", str(e))
 
         return progress_dict
-
-    def get_task_status(self, task_id: str) -> Dict:
-        """获取任务状态详情
-
-        Args:
-            task_id: 任务ID
-
-        Returns:
-            Dict: 包含任务详细信息的字典，如果任务不存在返回 {"status": "not_found"}
-        """
-        try:
-            # 从数据库获取任务信息
-            try:
-                task = ModelTask.get(ModelTask.task_id == task_id)
-            except DoesNotExist:
-                logger.warning("任务不存在: %s", task_id)
-                return {"status": "not_found"}
-
-            # 获取最新进度
-            progress = self._progress_cache.get(task_id, task.progress)
-
-            return {
-                "status": task.status,
-                "progress": progress,
-                "result": task.result,
-                "error": task.error,
-                "start_time": task.start_time,
-                "end_time": task.end_time,
-                "input_params": json.loads(task.input_params),
-            }
-        except (DatabaseError, IntegrityError, TypeError, ValueError) as e:
-            logger.error("获取任务状态失败: %s", str(e))
-            return {"status": "error", "message": str(e)}

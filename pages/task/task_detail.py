@@ -15,12 +15,12 @@ from dash import (
     ALL,
     Input,
     Output,
+    Patch,
     State,
     callback,
     callback_context,
     dcc,
     html,
-    Patch,
     no_update,
 )
 from dash.development.base_component import Component

@@ -117,18 +117,18 @@ class Task(Resource):
             logger.error("获取任务状态失败: %s", str(e))
             return format_response(message=f"获取任务状态失败: {str(e)}", code=500)
 
-    @api.doc("暂停任务")
-    @api.marshal_with(task_response)
-    def put(self, task_id):
-        """暂停任务"""
-        if self.job_manager.pause_task(task_id):
-            return format_response(message="任务已暂停")
-        return format_response(message="任务不存在或无法暂停", code=404)
+    # @api.doc("暂停任务")
+    # @api.marshal_with(task_response)
+    # def put(self, task_id):
+    #     """暂停任务"""
+    #     if self.job_manager.pause_task(task_id):
+    #         return format_response(message="任务已暂停")
+    #     return format_response(message="任务不存在或无法暂停", code=404)
 
-    @api.doc("恢复任务")
-    @api.marshal_with(task_response)
-    def post(self, task_id):
-        """恢复任务"""
-        if self.job_manager.resume_task(task_id):
-            return format_response(message="任务已恢复")
-        return format_response(message="任务不存在或无法恢复", code=404)
+    # @api.doc("恢复任务")
+    # @api.marshal_with(task_response)
+    # def post(self, task_id):
+    #     """恢复任务"""
+    #     if self.job_manager.resume_task(task_id):
+    #         return format_response(message="任务已恢复")
+    #     return format_response(message="任务不存在或无法恢复", code=404)

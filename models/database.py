@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from playhouse.shortcuts import update_model_from_dict
 
@@ -9,7 +9,7 @@ from utils.datetime_helper import format_datetime
 from utils.string_helper import get_uuid
 
 from .account import ModelAccount, ModelPortfolio
-from .base import BaseModel, Database, db_connection
+from .base import BaseModel, db_connection
 from .fund import ModelFund, ModelFundNav, ModelFundPosition, ModelFundTransaction
 from .task import ModelTask
 
@@ -376,38 +376,39 @@ def get_statistics() -> Dict[str, int]:
         "today_pending_task_count": 0,  # 今日待处理任务数量
         "today_failed_task_count": 0,  # 今日失败任务数量
     }
+    today = datetime.now().date()
 
     # 使用单个连接处理 main 数据库的查询
     with db_connection(db_name="main"):
         stats.update(
             {
-                "account_count": ModelAccount.select().count(),
-                "portfolio_count": ModelPortfolio.select().count(),
-                "fund_count": ModelFund.select().count(),
-                "fund_nav_count": ModelFundNav.select().count(),
-                "today_fund_nav_count": ModelFundNav.select()
-                .where(ModelFundNav.nav_date == datetime.now().date())
-                .count(),
-                "today_update_fund_nav_count": ModelFundNav.select()
-                .where(ModelFundNav.updated_at >= datetime.now().date())
-                .count(),
-                "position_count": ModelFundPosition.select().count(),
+                "account_count": get_record_count(ModelAccount),
+                "portfolio_count": get_record_count(ModelPortfolio),
+                "fund_count": get_record_count(ModelFund),
+                "fund_nav_count": get_record_count(ModelFundNav),
+                "today_fund_nav_count": get_record_count(
+                    ModelFundNav, search_fields={"nav_date": today}
+                ),
+                "today_update_fund_nav_count": get_record_count(
+                    ModelFundNav, search_fields={"updated_at__gte": today}
+                ),
+                "position_count": get_record_count(ModelFundPosition),
             }
         )
 
     with db_connection(db_name="task"):
-        today = datetime.now().date()
-        base_query = ModelTask.select().where(ModelTask.updated_at >= today)
-
         stats.update(
             {
-                "today_task_count": base_query.count(),
-                "today_pending_task_count": base_query.where(
-                    ModelTask.status == TaskStatus.PENDING
-                ).count(),
-                "today_failed_task_count": base_query.where(
-                    ModelTask.status == TaskStatus.FAILED
-                ).count(),
+                "today_task_count": get_record_count(
+                    ModelTask, search_fields={"updated_at__gte": today}
+                ),
+                "today_pending_task_count": get_record_count(
+                    ModelTask,
+                    search_fields={"status": TaskStatus.PENDING, "updated_at__gte": today},
+                ),
+                "today_failed_task_count": get_record_count(
+                    ModelTask, search_fields={"status": TaskStatus.FAILED, "updated_at__gte": today}
+                ),
             }
         )
 
@@ -697,35 +698,3 @@ def recalculate_position(portfolio_id: str, fund_code: str) -> None:
                 )
     except Exception as e:
         logger.error("重新计算持仓失败: %s", str(e))
-
-
-def check_database_content():
-    """检查数据库内容"""
-    with db_connection():
-        # 检查交易记录表
-        trans_count = ModelFundTransaction.select().count()  # pylint: disable=E1120
-        logger.info("交易记录数量: %s", trans_count)
-
-        # 检查组合表
-        portfolio_count = ModelPortfolio.select().count()  # pylint: disable=E1120
-        logger.info("组合数量: %s", portfolio_count)
-
-        # 如果有交易记录，打印第一条记录的详细信息
-        if trans_count > 0:
-            first_trans = ModelFundTransaction.select().first()  # pylint: disable=E1120
-            logger.info(
-                "第一条交易记录: %s",
-                str(
-                    {
-                        "id": first_trans.id,
-                        "portfolio": first_trans.portfolio.id,
-                        "code": first_trans.code,
-                        "type": first_trans.type,
-                        "amount": first_trans.amount,
-                        "shares": first_trans.shares,
-                        "nav": first_trans.nav,
-                        "fee": first_trans.fee,
-                        "transaction_date": format_datetime(first_trans.transaction_date),
-                    }
-                ),
-            )

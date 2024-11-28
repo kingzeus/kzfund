@@ -17,8 +17,8 @@ from dash.exceptions import PreventUpdate
 
 from config import PAGE_CONFIG
 from pages.task.task_utils import (
-    TABLE_STYLES,
     STATUS_LABELS,
+    TABLE_STYLES,
     TASK_PAGE_SIZE,
     get_tasks_with_pagination,
     prepare_task_for_display,

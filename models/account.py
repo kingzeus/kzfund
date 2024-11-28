@@ -1,4 +1,3 @@
-import uuid
 from typing import Any, Dict, Optional
 
 from peewee import BooleanField, CharField, ForeignKeyField
@@ -68,12 +67,15 @@ def update_account(account_id: Optional[str], data: Dict[str, Any]) -> bool:
 
     def on_created(result):
         # 创建默认投资组合
-        ModelPortfolio.create(
-            id=get_uuid(),
-            account=account_id,
-            name=f"{data['name']}-默认组合",
-            description=f"{data['name']}的默认投资组合",
-            is_default=True,
+        update_record(
+            ModelPortfolio,
+            {"id": get_uuid()},
+            {
+                "account_id": account_id,
+                "name": f"{data['name']}-默认组合",
+                "description": f"{data['name']}的默认投资组合",
+                "is_default": True,
+            },
         )
         print(f"账户创建完成: {result.to_dict()}")
 
@@ -82,13 +84,11 @@ def update_account(account_id: Optional[str], data: Dict[str, Any]) -> bool:
 
 def delete_account(account_id: str) -> bool:
     """更新账户信息"""
-    from models.database import delete_record
+    from models.database import delete_record, get_record_count
 
     def on_before(result):
         # 删除默认投资组合
-        portfolio_count = (
-            ModelPortfolio.select().where(ModelPortfolio.account == account_id).count()
-        )
+        portfolio_count = get_record_count(ModelPortfolio, search_fields={"account_id": account_id})
         if portfolio_count > 0:
             raise ValueError("账户下存在投资组合，无法删除")
 
