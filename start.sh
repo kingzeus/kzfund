@@ -444,6 +444,7 @@ while true; do
             fi
             ;;
         2)
+            backup_database
             echo -e "${YELLOW}开始迁移数据库...${NC}"
             init_database || continue
             ;;

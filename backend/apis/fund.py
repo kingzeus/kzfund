@@ -8,7 +8,8 @@ from models.database import (
     get_fund_transactions,
     update_record,
 )
-from models.fund import ModelFundPosition
+from models.fund_user import ModelFundPosition
+
 from utils.response import format_response
 
 api = Namespace("funds", description="基金相关操作")

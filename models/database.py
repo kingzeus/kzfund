@@ -10,7 +10,8 @@ from utils.string_helper import get_uuid
 
 from .account import ModelAccount, ModelPortfolio
 from .base import BaseModel, db_connection
-from .fund import ModelFund, ModelFundNav, ModelFundPosition, ModelFundTransaction
+from .fund import ModelFund, ModelFundNav
+from .fund_user import ModelFundPosition, ModelFundTransaction
 from .task import ModelTask
 
 logger = logging.getLogger(__name__)

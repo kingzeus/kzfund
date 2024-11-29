@@ -11,7 +11,7 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from models.database import delete_record, get_transactions
-from models.fund import ModelFundTransaction
+from models.fund_user import ModelFundTransaction
 
 
 def render_delete_confirm_modal() -> fac.AntdModal:

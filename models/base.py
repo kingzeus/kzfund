@@ -18,10 +18,12 @@ class Database:
         self.databases: Dict[str, Optional[SqliteDatabase]] = {
             "main": None,  # 主数据库(账户、组合等基础数据)
             "task": None,  # 任务数据库
+            "user": None,  # 用户数据库
         }
         self.db_paths: Dict[str, Optional[str]] = {
             "main": None,
             "task": None,
+            "user": None,
         }
 
     def connect(self, db_name: str = "main"):
