@@ -6,15 +6,20 @@ from typing import Any, Dict
 from data_source.proxy import DataSourceProxy
 from models.database import get_record, get_record_count, update_record
 from models.fund import ModelFund, ModelFundNav
-from scheduler.tasks.task_factory import TaskFactory
-from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
 
-from .base import PARAM_FUND_TYPE, PARAM_PAGE, PARAM_PAGE_SIZE, PARAM_SUB_TASK_DELAY, BaseTask
+from .base import (
+    PARAM_FUND_TYPE,
+    PARAM_PAGE,
+    PARAM_PAGE_SIZE,
+    PARAM_SUB_TASK_DELAY,
+    BaseTask,
+)
 
 logger = logging.getLogger(__name__)
 
 # 创建Random实例
 random = Random()
+
 
 class SyncFundListPageTask(BaseTask):
     """基金列表更新任务"""

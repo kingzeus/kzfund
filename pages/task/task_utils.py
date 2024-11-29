@@ -247,3 +247,41 @@ def create_status_tag(task: dict, show_error: bool = True) -> Component:
             content=STATUS_LABELS.get(task["status"], "未知"),
             color=STATUS_COLORS.get(task["status"], "default"),
         )
+
+
+def create_name_with_input_params(task: dict) -> Component:
+    """创建任务名称和输入参数"""
+    return fac.AntdPopover(
+        task["name"],
+        title="输入参数",
+        content=(
+            (
+                html.Div(
+                    [
+                        FefferyJsonViewer(
+                            data=json.loads(task["input_params"]),
+                            quotesOnKeys=False,
+                            enableClipboard=False,
+                            displayDataTypes=False,
+                            displayObjectSize=False,
+                            style={
+                                "fontSize": "12px",
+                                "backgroundColor": "transparent",
+                                "padding": "0",
+                                "textAlign": "left",
+                            },
+                            collapseStringsAfterLength=False,
+                        ),
+                    ],
+                    style={
+                        "maxHeight": "200px",
+                        "overflow": "auto",
+                        "textAlign": "left",
+                        "padding": "4px",
+                    },
+                )
+                if task["input_params"]
+                else "-"
+            ),
+        ),
+    )

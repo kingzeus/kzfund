@@ -12,20 +12,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import dash
 import feffery_antd_components as fac
-from dash import callback, Input, Output, State
+from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
-from models.database import (
-    get_record,
-    get_transactions,
-    update_record,
-)
+from models.database import get_record, get_transactions, update_record
 from models.fund import ModelFundNav
 from models.fund_user import ModelFundTransaction
 from scheduler.job_manager import JobManager
 from utils.fac_helper import show_message
 from utils.string_helper import get_uuid
+
 from .utils import build_cascader_options
 
 # ============= 日志配置 =============

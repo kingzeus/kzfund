@@ -10,16 +10,7 @@ import logging
 from collections import Counter
 
 import feffery_antd_components as fac
-from dash import (
-    Input,
-    Output,
-    State,
-    callback,
-    callback_context,
-    dcc,
-    html,
-    no_update,
-)
+from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from feffery_utils_components import FefferyJsonViewer
@@ -30,6 +21,7 @@ from models.task import ModelTask
 from pages.task.task_utils import (
     STATUS_COLORS,
     STATUS_LABELS,
+    create_name_with_input_params,
     create_status_tag,
     get_sub_tasks,
 )
@@ -304,13 +296,19 @@ def get_task_detail(task: dict) -> list:
                                 "title": "序号",
                                 "key": "index",
                                 "dataIndex": "index",
-                                "width": "8%",
+                                "width": "6%",
                             },
                             {
                                 "title": "任务ID",
                                 "dataIndex": "task_id",
                                 "key": "task_id",
                                 "width": "20%",
+                            },
+                            {
+                                "title": "任务名称",
+                                "dataIndex": "name",
+                                "key": "name",
+                                "width": "10%",
                             },
                             {
                                 "title": "状态",
@@ -331,12 +329,6 @@ def get_task_detail(task: dict) -> list:
                                 "width": "18%",
                             },
                             {
-                                "title": "结束时间",
-                                "dataIndex": "end_time",
-                                "key": "end_time",
-                                "width": "18%",
-                            },
-                            {
                                 "title": "操作",
                                 "dataIndex": "action",
                                 "key": "action",
@@ -350,6 +342,7 @@ def get_task_detail(task: dict) -> list:
                             {
                                 "index": i + 1,
                                 "task_id": subtask["task_id"],
+                                "name": create_name_with_input_params(subtask),
                                 "status_tag": create_status_tag(subtask),
                                 "progress_bar": fac.AntdProgress(
                                     percent=subtask["progress"],
@@ -358,11 +351,6 @@ def get_task_detail(task: dict) -> list:
                                 "start_time": (
                                     format_datetime(subtask["start_time"])
                                     if subtask.get("start_time")
-                                    else ""
-                                ),
-                                "end_time": (
-                                    format_datetime(subtask["end_time"])
-                                    if subtask.get("end_time")
                                     else ""
                                 ),
                                 "action": {

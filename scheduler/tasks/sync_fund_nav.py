@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 # 创建Random实例
 random = Random()
+
+
 class SyncFundNavTask(BaseTask):
     """基金净值更新任务"""
 

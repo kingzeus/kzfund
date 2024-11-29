@@ -141,7 +141,7 @@ def update_content_margin(is_collapsed: bool) -> dict:
 @callback(
     Output("main-content", "children"),
     Input("side-menu", "currentKey"),
-    prevent_initial_call=False,
+    prevent_initial_call=True,
 )
 def update_page_content(current_key: str) -> Any:
     """根据菜单选择更新页面内容"""

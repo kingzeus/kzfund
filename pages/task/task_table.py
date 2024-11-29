@@ -6,18 +6,15 @@
 - 数据刷新
 """
 
-import json
 import logging
-from typing import Any, Dict, List
 
 import dash
 import feffery_antd_components as fac
-from dash import ALL, Input, Output, State, callback, dcc, no_update
+from dash import Input, Output, State, callback, dcc, no_update
 from dash.exceptions import PreventUpdate
 
 from config import PAGE_CONFIG
 from pages.task.task_utils import (
-    STATUS_LABELS,
     TABLE_STYLES,
     TASK_PAGE_SIZE,
     get_tasks_with_pagination,

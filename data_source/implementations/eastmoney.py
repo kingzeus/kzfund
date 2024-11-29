@@ -1,10 +1,9 @@
+import json
 import logging
 import urllib.parse
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-import json
-import execjs
+from typing import Any, Dict, List
 
+import execjs
 import requests
 from bs4 import BeautifulSoup
 
@@ -308,7 +307,7 @@ class EastMoneyDataSource(IDataSource):
 
         except Exception as e:
             logger.error("获取基金历史净值失败: %s", str(e), exc_info=True)
-            raise ValueError(f"获取基金历史净值失败: {str(e)}")
+            raise ValueError(f"获取基金历史净值失败: {str(e)}") from e
 
     def get_fund_type(self, type: int) -> int:
         """转换基金类型"""
@@ -430,4 +429,4 @@ class EastMoneyDataSource(IDataSource):
 
         except Exception as e:
             logger.error("获取基金最新净值列表失败: %s", str(e), exc_info=True)
-            raise ValueError(f"获取基金最新净值列表失败: {str(e)}")
+            raise ValueError(f"获取基金最新净值列表失败: {str(e)}") from e

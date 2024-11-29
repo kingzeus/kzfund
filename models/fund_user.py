@@ -1,10 +1,4 @@
-from peewee import (
-    CharField,
-    DateField,
-    DateTimeField,
-    DecimalField,
-    ForeignKeyField,
-)
+from peewee import CharField, DateField, DateTimeField, DecimalField, ForeignKeyField
 
 from models.fund import ModelFund
 

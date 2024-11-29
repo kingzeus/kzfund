@@ -1,6 +1,5 @@
 import json
 import unittest
-import uuid
 
 from data_source.data_source_factory import DataSourceFactory
 from data_source.implementations.eastmoney import EastMoneyDataSource

@@ -189,7 +189,7 @@ class TestDataSource(unittest.TestCase):
         self.assertIsNotNone(nav_list, "获取基金净值列表失败，返回为空")
 
         # 验证第一条记录的字段
-        first_record = nav_list["items"][0]
+        nav_list["items"][0]
 
     def tearDown(self):
         """测试后的清理工作"""
