@@ -170,6 +170,13 @@ def prepare_task_for_display(task: Dict[str, Any]) -> Dict[str, Any]:
         "actions": [
             {"icon": "antd-eye", "type": "link", "iconRenderer": "AntdIcon", "custom": "view"},
             {
+                "icon": "antd-close",
+                "type": "link",
+                "danger": True,
+                "iconRenderer": "AntdIcon",
+                "custom": "delete",
+            },
+            {
                 "icon": "antd-reload",
                 "type": "link",
                 "iconRenderer": "AntdIcon",

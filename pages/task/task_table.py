@@ -21,6 +21,7 @@ from pages.task.task_utils import (
     prepare_task_for_display,
 )
 from scheduler.job_manager import JobManager, TaskStatus
+from utils.fac_helper import show_message
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +130,8 @@ def render_task_table() -> fac.AntdCard:
 
 @callback(
     [
-        Output("task-list", "data"),
-        Output("task-list", "pagination"),
+        Output("task-list", "data", allow_duplicate=True),
+        Output("task-list", "pagination", allow_duplicate=True),
         Output("task-list-interval", "disabled", allow_duplicate=True),
     ],
     [
@@ -180,15 +181,16 @@ def update_task_list(pagination, sorter, filters, n_intervals):
 
 # 添加回调函数
 @callback(
-    Output("message-container", "children", allow_duplicate=True),
+    Output("task-list", "pagination", allow_duplicate=True),
     [
         Input("task-list", "nClicksButton"),
         State("task-list", "clickedCustom"),
         State("task-list", "recentlyButtonClickedRow"),
+        State("task-list", "pagination"),
     ],
     prevent_initial_call=True,
 )
-def handle_task_list_action(nClicks, custom, recentlyButtonClickedRow):
+def handle_task_list_action(nClicks, custom, recentlyButtonClickedRow, pagination):
     """处理任务列表操作的回调"""
     if not nClicks:
         raise PreventUpdate
@@ -199,6 +201,17 @@ def handle_task_list_action(nClicks, custom, recentlyButtonClickedRow):
         return no_update
     elif custom == "copy":
         JobManager().copy_task(task_id)
-        return fac.AntdMessage(content="任务重新运行", type="success")
+        # 重新加载任务列表
+        new_pagination = pagination.copy()
+        new_pagination["current"] = 1
+        return new_pagination
+    elif custom == "delete":
+        try:
+            JobManager().delete_task(task_id)
+            new_pagination = pagination.copy()
+            show_message(message="任务已删除", display_type="success")
+            return new_pagination
+        except Exception as e:
+            show_message(message=str(e), display_type="error")
 
     return no_update

@@ -7,7 +7,7 @@ from flask_apscheduler import APScheduler
 from peewee import DatabaseError, IntegrityError
 
 from config import SCHEDULER_CONFIG
-from models.database import get_record, get_record_list, update_record
+from models.database import delete_record, get_record, get_record_list, update_record
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
 from utils.singleton import Singleton
@@ -59,14 +59,15 @@ class JobManager:
         """
 
         # 如果存在子任务，则任务状态设置成运行中
-        if len(task.sub_tasks) > 0:
+        sub_tasks = task.sub_tasks
+        if len(sub_tasks) > 0:
             # 统计子任务状态
             sub_task_status_count = {
                 TaskStatus.RUNNING: 0,
                 TaskStatus.COMPLETED: 0,
                 TaskStatus.FAILED: 0,
             }
-            for sub_task in task.sub_tasks:
+            for sub_task in sub_tasks:
                 if sub_task.status in sub_task_status_count:
                     sub_task_status_count[sub_task.status] += 1
 
@@ -385,3 +386,46 @@ class JobManager:
                 logger.error("从数据库获取任务进度失败: %s", str(e))
 
         return progress_dict
+
+    def _delete_task(self, task: ModelTask):
+        """删除指定任务及其所有子任务"""
+        try:
+            # 1. 获取任务信息
+            sub_tasks = task.sub_tasks
+            if len(sub_tasks) > 0:
+                for sub_task in sub_tasks:
+                    self._delete_task(sub_task)
+
+            # 2. 从调度器中移除任务
+            if self.scheduler.get_job(task.task_id):
+                try:
+                    self.scheduler.remove_job(task.task_id)
+                except Exception as e:
+                    logger.error(f"从调度器移除任务失败 {task.task_id}: {e}")
+
+            # 3. 从数据库中删除任务
+            if not delete_record(ModelTask, {"task_id": task.task_id}):
+                logger.error(f"从数据库删除任务失败 {task.task_id}")
+                raise TaskExecutionError(f"删除任务失败: {task.task_id}")
+
+        except Exception as e:
+            logger.error(f"删除任务失败 {task.task_id}: {e}", exc_info=True)
+            raise
+
+    def delete_task(self, task_id: str):
+        """删除指定任务及其所有子任务
+
+        Args:
+            task_id: 要删除的任务ID
+        """
+        try:
+            task = get_record(ModelTask, {"task_id": task_id})
+            if not task:
+                logger.error("任务不存在: %s", task_id)
+                raise TaskExecutionError(f"任务不存在: {task_id}")
+
+            self._delete_task(task)
+
+        except Exception as e:
+            logger.error(f"Error deleting task {task_id}: {e}")
+            raise e
