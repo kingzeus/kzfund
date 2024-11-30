@@ -10,7 +10,7 @@ import logging
 from collections import Counter
 
 import feffery_antd_components as fac
-from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
+from dash import Input, Output, State, callback, callback_context, dcc, html, no_update, set_props
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from feffery_utils_components import FefferyJsonViewer
@@ -126,18 +126,26 @@ def update_task_detail_task_id(visible: bool) -> str:
     Output("message-container", "children", allow_duplicate=True),
     [
         Input("subtask-table", "nClicksButton"),
+        State("subtask-table", "clickedCustom"),
         State("subtask-table", "recentlyButtonClickedRow"),
     ],
     prevent_initial_call=True,
 )
-def handle_copy_task(nClicks, recentlyButtonClickedRow):
-    """处理复制任务ID的回调"""
+def handle_sub_task_action(nClicks, custom, recentlyButtonClickedRow):
+    """处理子任务操作的回调"""
     if not nClicks:
         raise PreventUpdate
 
-    task_id = recentlyButtonClickedRow["task_id"]
-    JobManager().copy_task(task_id)
-    return fac.AntdMessage(content="任务重新运行", type="success")
+    if custom == "view":
+        # 关闭当前任务详情弹窗
+        set_props("task-detail-modal", {"visible": False})
+        return no_update
+    elif custom == "copy":
+        task_id = recentlyButtonClickedRow["task_id"]
+        JobManager().copy_task(task_id)
+        return fac.AntdMessage(content="任务重新运行", type="success")
+    else:
+        return no_update
 
 
 def get_task_detail(task: dict) -> list:
@@ -353,11 +361,20 @@ def get_task_detail(task: dict) -> list:
                                     if subtask.get("start_time")
                                     else ""
                                 ),
-                                "action": {
-                                    "icon": "antd-reload",
-                                    "type": "link",
-                                    "iconRenderer": "AntdIcon",
-                                },
+                                "action": [
+                                    {
+                                        "icon": "antd-eye",
+                                        "type": "link",
+                                        "iconRenderer": "AntdIcon",
+                                        "custom": "view",
+                                    },
+                                    {
+                                        "icon": "antd-reload",
+                                        "type": "link",
+                                        "iconRenderer": "AntdIcon",
+                                        "custom": "copy",
+                                    },
+                                ],
                             }
                             for i, subtask in enumerate(subtasks)
                         ],
