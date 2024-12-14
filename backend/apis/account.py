@@ -5,8 +5,8 @@ from flask_restx import Namespace, Resource, fields
 from backend.apis.common import create_list_response_model, create_response_model
 from models.account import ModelAccount, update_account
 from models.database import delete_record, get_record, get_record_list, update_record
-from utils.response import format_response
-from utils.string_helper import get_uuid
+from kz_dash.utility.response import format_response
+from kz_dash.utility.string_helper import get_uuid
 
 api = Namespace("accounts", description="账户相关操作")
 

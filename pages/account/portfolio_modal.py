@@ -8,7 +8,7 @@ from models.account import ModelPortfolio
 from models.database import update_record
 from pages.account.table import get_account_table_data
 from pages.account.utils import validate_name
-from utils.string_helper import get_uuid
+from kz_dash.utility.string_helper import get_uuid
 
 
 # 组合编辑弹窗模块

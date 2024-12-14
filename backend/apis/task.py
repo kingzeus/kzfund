@@ -11,7 +11,7 @@ from models.database import get_record_list
 from models.task import ModelTask
 from scheduler.job_manager import JobManager
 from scheduler.tasks import TaskFactory
-from utils.response import format_response
+from kz_dash.utility.response import format_response
 
 logger = logging.getLogger(__name__)
 

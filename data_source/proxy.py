@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, TypeVar, Union
 
 from config import DATA_SOURCE_DEFAULT
 from data_source import DataSourceFactory
-from utils.response import format_response
+from kz_dash.utility.response import format_response
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")  # 用于泛型返回类型

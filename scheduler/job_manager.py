@@ -10,8 +10,8 @@ from config import SCHEDULER_CONFIG
 from models.database import delete_record, get_record, get_record_list, update_record
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
-from utils.singleton import Singleton
-from utils.string_helper import get_uuid
+from kz_dash.utility.singleton import Singleton
+from kz_dash.utility.string_helper import get_uuid
 
 # 创建调度器实例
 scheduler = APScheduler()

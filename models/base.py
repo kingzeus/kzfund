@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from peewee import DatabaseError, DateTimeField, Model, SqliteDatabase
 
 from config import DATABASE_CONFIG
-from utils.singleton import Singleton
+from kz_dash.utility.singleton import Singleton
 
 logger = logging.getLogger(__name__)
 

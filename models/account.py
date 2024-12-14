@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from peewee import BooleanField, CharField, ForeignKeyField
 
 from models.base import BaseModel
-from utils.string_helper import get_uuid
+from kz_dash.utility.string_helper import get_uuid
 
 
 class ModelAccount(BaseModel):

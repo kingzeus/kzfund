@@ -5,7 +5,7 @@ from data_source.data_source_factory import DataSourceFactory
 from data_source.implementations.eastmoney import EastMoneyDataSource
 from models.database import init_database
 from scheduler.tasks.fund_detail import FundDetailTask
-from utils.string_helper import get_uuid
+from kz_dash.utility.string_helper import get_uuid
 
 
 class TestFundDetailTasks(unittest.TestCase):

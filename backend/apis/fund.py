@@ -9,7 +9,7 @@ from models.database import (
     update_record,
 )
 from models.fund_user import ModelFundPosition
-from utils.response import format_response
+from kz_dash.utility.response import format_response
 
 api = Namespace("funds", description="基金相关操作")
 

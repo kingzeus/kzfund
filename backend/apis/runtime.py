@@ -8,7 +8,7 @@ from flask_restx import Namespace, Resource, fields
 
 from backend.apis.common import create_response_model
 from config import VERSION
-from utils.response import format_response
+from kz_dash.utility.response import format_response
 
 logger = logging.getLogger(__name__)
 

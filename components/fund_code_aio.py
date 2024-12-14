@@ -8,7 +8,7 @@ from requests.exceptions import RequestException
 
 from config import DATA_SOURCE_DEFAULT
 from data_source.proxy import DataSourceProxy
-from utils.string_helper import get_uuid
+from kz_dash.utility.string_helper import get_uuid
 
 logger = logging.getLogger(__name__)
 

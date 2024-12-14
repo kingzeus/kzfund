@@ -20,8 +20,8 @@ from models.database import get_record, get_transactions, update_record
 from models.fund import ModelFundNav
 from models.fund_user import ModelFundTransaction
 from scheduler.job_manager import JobManager
-from utils.fac_helper import show_message
-from utils.string_helper import get_uuid
+from kz_dash.utility.fac_helper import show_message
+from kz_dash.utility.string_helper import get_uuid
 
 from .utils import build_cascader_options
 

@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple, Type
 
 from config import DEBUG
 from scheduler.tasks.base import BaseTask
-from utils.singleton import Singleton
+from kz_dash.utility.singleton import Singleton
 
 logger = logging.getLogger(__name__)
 
