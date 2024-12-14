@@ -5,7 +5,7 @@ from typing import Any, Dict
 from data_source.proxy import DataSourceProxy
 from models.database import update_record
 from models.fund import ModelFundNav
-from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
+from kz_dash.utility.datetime_helper import get_date_str_after_days, get_days_between_dates
 
 from .base import PARAM_FUND_CODE, BaseTask
 

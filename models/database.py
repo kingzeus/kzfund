@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from playhouse.shortcuts import update_model_from_dict
 
-from utils.datetime_helper import format_datetime
+from kz_dash.utility.datetime_helper import format_datetime
 from utils.string_helper import get_uuid
 
 from .account import ModelAccount, ModelPortfolio

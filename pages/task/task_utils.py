@@ -17,7 +17,7 @@ from feffery_utils_components import FefferyJsonViewer
 from models.database import get_record_count, get_record_list
 from models.task import ModelTask
 from scheduler.job_manager import JobManager, TaskStatus
-from utils.datetime_helper import format_datetime
+from kz_dash.utility.datetime_helper import format_datetime
 
 # ============= 状态常量 =============
 STATUS_LABELS = {

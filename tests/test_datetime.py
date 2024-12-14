@@ -1,7 +1,7 @@
 import unittest
 from datetime import date, datetime
 
-from utils.datetime_helper import format_date, format_datetime
+from kz_dash.utility.datetime_helper import format_date, format_datetime
 
 
 class TestDatetimeFunctions(unittest.TestCase):

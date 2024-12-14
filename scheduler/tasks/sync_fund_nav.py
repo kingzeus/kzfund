@@ -7,7 +7,7 @@ from data_source.proxy import DataSourceProxy
 from models.database import get_record
 from models.fund import ModelFund
 from scheduler.tasks.task_factory import TaskFactory
-from utils.datetime_helper import get_date_str_after_days, get_days_between_dates
+from kz_dash.utility.datetime_helper import get_date_str_after_days, get_days_between_dates
 
 from .base import PARAM_FUND_CODE, PARAM_SUB_TASK_DELAY, BaseTask
 
