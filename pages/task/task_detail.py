@@ -123,7 +123,7 @@ def update_task_detail_task_id(visible: bool) -> str:
 
 # 添加回调函数
 @callback(
-    Output("message-container", "children", allow_duplicate=True),
+    Output("global-message-container", "children", allow_duplicate=True),
     [
         Input("subtask-table", "nClicksButton"),
         State("subtask-table", "clickedCustom"),
