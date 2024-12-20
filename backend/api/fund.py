@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 
-from backend.apis.common import create_list_response_model, create_response_model
+from kz_dash.backend.api.common import create_list_response_model, create_response_model
 from models.database import (
     add_fund_position,
     delete_record,

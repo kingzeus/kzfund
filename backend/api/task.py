@@ -6,7 +6,7 @@ import logging
 from flask import request
 from flask_restx import Namespace, Resource, fields
 
-from backend.apis.common import create_list_response_model, create_response_model
+from kz_dash.backend.api.common import create_list_response_model, create_response_model
 from models.database import get_record_list
 from models.task import ModelTask
 from scheduler.job_manager import JobManager
