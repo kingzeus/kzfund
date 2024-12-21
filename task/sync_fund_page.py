@@ -7,13 +7,8 @@ from data_source.proxy import DataSourceProxy
 from kz_dash.models.database import get_record, get_record_count, update_record
 from models.fund import ModelFund, ModelFundNav
 
-from .base import (
-    PARAM_FUND_TYPE,
-    PARAM_PAGE,
-    PARAM_PAGE_SIZE,
-    PARAM_SUB_TASK_DELAY,
-    BaseTask,
-)
+from task.task_config import PARAM_FUND_TYPE, PARAM_PAGE, PARAM_PAGE_SIZE, PARAM_SUB_TASK_DELAY
+from kz_dash.scheduler.base_task import BaseTask
 
 logger = logging.getLogger(__name__)
 

@@ -15,10 +15,9 @@ from kz_dash.models.database import init_database
 from models.account import ModelAccount, ModelPortfolio
 from models.fund import ModelFund, ModelFundNav
 from models.fund_user import ModelFundPosition, ModelFundTransaction
-from models.task import ModelTask
 from pages.account import render_account_page
 from pages.home import render_home_page
-from pages.task import render_task_page
+from kz_dash.page.task.task_page import render_task_page
 from pages.transaction import render_transaction_page
 
 
@@ -62,7 +61,6 @@ def init_application():
             ModelFundTransaction,
             ModelFundNav,
             ModelFund,
-            ModelTask,
         ]
     )
     logger.info("数据库初始化成功")

@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict
 
-from .base import BaseTask
+from kz_dash.scheduler.base_task import BaseTask
 
 logger = logging.getLogger(__name__)
 

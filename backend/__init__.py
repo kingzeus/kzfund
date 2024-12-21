@@ -5,10 +5,10 @@ from backend.api.account import api as account_ns
 from backend.api.fund import api as fund_ns
 from backend.api.portfolio import api as portfolio_ns
 from kz_dash.backend.api.runtime import api as runtime_ns
-from backend.api.task import api as task_ns
+from kz_dash.backend.api.task import api as task_ns
 from config import API_CONFIG
-from scheduler.job_manager import JobManager
-from scheduler.tasks import init_tasks
+from kz_dash.scheduler.job_manager import JobManager
+from task.task_init import init_tasks
 
 
 def register_blueprint(app):

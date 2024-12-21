@@ -4,7 +4,8 @@ from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
 
-from .base import PARAM_FUND_CODE, BaseTask
+from task.task_config import PARAM_FUND_CODE
+from kz_dash.scheduler.base_task import BaseTask
 
 logger = logging.getLogger(__name__)
 

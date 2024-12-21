@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from data_source.interface import IDataSource
-from scheduler.tasks.base import FundType
+from task.task_config import FundType
 from kz_dash.utility.datetime_helper import format_date, get_timestamp, get_timestamp_ms
 from kz_dash.utility.string_helper import (
     extract_number_with_unit,

@@ -20,7 +20,7 @@ from kz_dash.models.database import get_record, update_record
 from models.database import get_transactions
 from models.fund import ModelFundNav
 from models.fund_user import ModelFundTransaction
-from scheduler.job_manager import JobManager
+from kz_dash.scheduler.job_manager import JobManager
 from kz_dash.utility.fac_helper import show_message
 from kz_dash.utility.string_helper import get_uuid
 

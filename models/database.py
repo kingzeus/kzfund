@@ -97,7 +97,7 @@ def get_fund_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
 
 def get_statistics() -> Dict[str, int]:
     """获取统计数据"""
-    from scheduler.tasks import TaskStatus
+    from kz_dash.scheduler.base_task import TaskStatus
 
     stats = {
         # main db
