@@ -10,7 +10,8 @@ import feffery_antd_components as fac
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from models.database import delete_record, get_transactions
+from kz_dash.models.database import delete_record
+from models.database import get_transactions
 from models.fund_user import ModelFundTransaction
 
 

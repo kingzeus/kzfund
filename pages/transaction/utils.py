@@ -8,7 +8,7 @@
 from typing import Any, Dict, List
 
 from models.account import ModelAccount
-from models.database import get_record_list
+from kz_dash.models.database import get_record_list
 
 
 def create_operation_buttons(transaction_id: str) -> List[Dict[str, Any]]:

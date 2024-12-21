@@ -11,7 +11,11 @@ from components.header import create_header
 from components.sidebar import create_sidebar
 from config import APP_NAME, DEBUG, LOG_CONFIG, ROOT_DIR, SERVER_CONFIG, THEME_CONFIG
 from data_source import init_data_source
-from models.database import init_database
+from kz_dash.models.database import init_database
+from models.account import ModelAccount, ModelPortfolio
+from models.fund import ModelFund, ModelFundNav
+from models.fund_user import ModelFundPosition, ModelFundTransaction
+from models.task import ModelTask
 from pages.account import render_account_page
 from pages.home import render_home_page
 from pages.task import render_task_page
@@ -50,7 +54,17 @@ def init_application():
     logger = init_log()
 
     # 初始化数据库
-    init_database()
+    init_database(
+        [
+            ModelAccount,
+            ModelPortfolio,
+            ModelFundPosition,
+            ModelFundTransaction,
+            ModelFundNav,
+            ModelFund,
+            ModelTask,
+        ]
+    )
     logger.info("数据库初始化成功")
 
     # 初始化数据源

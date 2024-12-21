@@ -1,10 +1,8 @@
-import uuid
-
 from flask_restx import Namespace, Resource, fields
 
 from kz_dash.backend.api.common import create_list_response_model, create_response_model
 from models.account import ModelAccount, update_account
-from models.database import delete_record, get_record, get_record_list, update_record
+from kz_dash.models.database import delete_record, get_record, get_record_list, update_record
 from kz_dash.utility.response import format_response
 from kz_dash.utility.string_helper import get_uuid
 

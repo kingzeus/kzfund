@@ -6,7 +6,7 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from models.account import ModelAccount, ModelPortfolio
-from models.database import get_record, get_record_list
+from kz_dash.models.database import get_record, get_record_list
 from kz_dash.utility.datetime_helper import format_datetime
 
 from .utils import create_operation_buttons

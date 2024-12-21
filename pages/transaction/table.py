@@ -14,7 +14,7 @@ from dash.exceptions import PreventUpdate
 
 from components.fund_code_aio import FundCodeAIO
 from models.account import ModelPortfolio
-from models.database import get_record
+from kz_dash.models.database import get_record
 
 from .utils import build_cascader_options
 

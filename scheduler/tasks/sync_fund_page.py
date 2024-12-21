@@ -4,7 +4,7 @@ from random import Random
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
-from models.database import get_record, get_record_count, update_record
+from kz_dash.models.database import get_record, get_record_count, update_record
 from models.fund import ModelFund, ModelFundNav
 
 from .base import (

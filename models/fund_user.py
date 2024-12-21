@@ -1,9 +1,8 @@
 from peewee import CharField, DateField, DateTimeField, DecimalField, ForeignKeyField
 
-from models.fund import ModelFund
-
+from .fund import ModelFund
 from .account import ModelPortfolio
-from .base import BaseModel
+from kz_dash.models.base import BaseModel
 
 
 class ModelFundPosition(BaseModel):

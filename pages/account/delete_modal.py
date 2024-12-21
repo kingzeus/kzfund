@@ -4,7 +4,7 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from models.account import ModelPortfolio, delete_account
-from models.database import delete_record
+from kz_dash.models.database import delete_record
 from pages.account.table import get_account_table_data
 
 

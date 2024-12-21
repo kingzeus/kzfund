@@ -7,7 +7,7 @@ from peewee import (
     TextField,
 )
 
-from .base import BaseModel
+from kz_dash.models.base import BaseModel
 
 
 class ModelFund(BaseModel):

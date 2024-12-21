@@ -1,12 +1,14 @@
 from flask_restx import Namespace, Resource, fields
 
 from kz_dash.backend.api.common import create_list_response_model, create_response_model
+from kz_dash.models.database import (
+    delete_record,
+    update_record,
+)
 from models.database import (
     add_fund_position,
-    delete_record,
     get_fund_positions,
     get_fund_transactions,
-    update_record,
 )
 from models.fund_user import ModelFundPosition
 from kz_dash.utility.response import format_response

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from data_source.proxy import DataSourceProxy
-from models.database import update_record
+from kz_dash.models.database import update_record
 from models.fund import ModelFund
 
 from .base import PARAM_FUND_CODE, BaseTask

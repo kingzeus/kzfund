@@ -1,6 +1,6 @@
 from peewee import CharField, DateTimeField, ForeignKeyField, IntegerField, TextField
 
-from .base import BaseModel
+from kz_dash.models.base import BaseModel
 
 
 class ModelTask(BaseModel):

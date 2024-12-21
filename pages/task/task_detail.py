@@ -16,7 +16,7 @@ from dash.exceptions import PreventUpdate
 from feffery_utils_components import FefferyJsonViewer
 
 from config import PAGE_CONFIG
-from models.database import get_record
+from kz_dash.models.database import get_record
 from models.task import ModelTask
 from pages.task.task_utils import (
     STATUS_COLORS,

@@ -7,7 +7,7 @@ from flask_apscheduler import APScheduler
 from peewee import DatabaseError, IntegrityError
 
 from config import SCHEDULER_CONFIG
-from models.database import delete_record, get_record, get_record_list, update_record
+from kz_dash.models.database import delete_record, get_record, get_record_list, update_record
 from models.task import ModelTask
 from scheduler.tasks import TaskFactory, TaskStatus
 from kz_dash.utility.singleton import Singleton

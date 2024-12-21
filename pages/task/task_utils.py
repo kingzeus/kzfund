@@ -14,7 +14,7 @@ from dash import html
 from dash.development.base_component import Component
 from feffery_utils_components import FefferyJsonViewer
 
-from models.database import get_record_count, get_record_list
+from kz_dash.models.database import get_record_count, get_record_list
 from models.task import ModelTask
 from scheduler.job_manager import JobManager, TaskStatus
 from kz_dash.utility.datetime_helper import format_datetime
