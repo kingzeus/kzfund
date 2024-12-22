@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from kz_dash.models.base import db_connection
 from kz_dash.models.database import get_record_count
+from kz_dash.models.task import ModelTask
 from kz_dash.utility.datetime_helper import format_datetime
 from kz_dash.utility.string_helper import get_uuid
 
@@ -12,7 +13,7 @@ from .account import ModelAccount, ModelPortfolio
 
 from .fund import ModelFund, ModelFundNav
 from .fund_user import ModelFundPosition, ModelFundTransaction
-from .task import ModelTask
+
 
 logger = logging.getLogger(__name__)
 
